@@ -2,6 +2,8 @@
 
     python3 -m harness.scorecard runs/<dir>/results.json [--gold gold/gold_labels.json]
                                  [--out runs/<dir>/scorecard.md] [--stdout]
+    python3 -m harness.scorecard runs/<dir>/results.json --prefill \
+                                 --from runs/*/scorecard-filled.md [more globs or dirs]
     python3 -m harness.scorecard --score runs/<dir>/scorecard-filled.md
     python3 -m harness.scorecard --compare runs/<a>/scorecard-filled.md \
                                            runs/<b>/scorecard-filled.md
@@ -17,15 +19,28 @@ salad" covering three gold rows, "sashimi" vs "nigiri" (a rice miss),
 "mediterranean salad" swallowing feta and olives. So the worksheet lays the
 gold core items out as rows with an empty cell per approach, and a human (or a
 reviewing agent looking at the photo) fills them in.
+
+`--prefill` removes the repeat work, never the judgment. It reads every earlier
+filled worksheet named by `--from` into a verdict memory keyed on (plate, gold
+item, model item name) and answers only the rows whose model item names it has
+judged before, by exact match on the lower-cased, space-collapsed name. A row it
+cannot answer is left blank and marked `NEEDS JUDGMENT`; a row on which two
+earlier sheets disagree is marked `CONFLICT` and shows the newest verdict. A
+`--score` run refuses a sheet that still carries either marker.
 """
 
 from __future__ import annotations
 
 import argparse
+import dataclasses
+import glob
+import hashlib
 import json
+import os
 import re
 import statistics
 import sys
+import tempfile
 from pathlib import Path
 
 from . import approaches as approach_lib
@@ -345,11 +360,587 @@ def render_portion_macro(portion_macro: dict, keys: list[str]) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# Prefill: a verdict memory built from earlier filled worksheets
+# ---------------------------------------------------------------------------
+#
+# The judgment stays human. What repeats between runs is the SAME model item name
+# on the SAME plate being judged against the SAME gold item again. The memory
+# answers only that, by exact match after lower-casing, trimming and collapsing
+# spaces. No fuzzy matching: "ham" and "ham slices" are two names, and a new name
+# is a new judgment.
+#
+# A filled sheet does not store the matched model item as a field. It is read from
+# the Notes cell: the first quoted string outside parentheses that equals an item
+# the sheet reported on that plate (`"Ham slices" (C3 "cooked ham")` names "Ham
+# slices"; the parenthesis names another sheet's item). With no such quote, a plate
+# with exactly one reported item names it. Otherwise the Y is real but its item is
+# unknown, so it cannot be remembered and is counted as unattributed. A remembered
+# `n` needs no name: the verdict says no reported item of that plate covered the
+# gold item, so every reported item gets the `n`. `Y?` and `n?` are not remembered.
+
+NEEDS_MARKER = "NEEDS JUDGMENT"
+CONFLICT_MARKER = "CONFLICT"
+PREFILL_HEADER_PREFIX = "- prefill:"
+FILLED_SHEET_NAME = "scorecard-filled.md"
+HIT_VERDICTS = ("Y", "Y merged")
+
+_UNRESOLVED_RE = re.compile(r"\b(NEEDS JUDGMENT|CONFLICT)\b")
+_PLATE_HEADING_RE = re.compile(r"^###\s+([0-9A-Za-z_-]+)\b[ ,]*(.*)$")
+_REPORTED_LINE_RE = re.compile(r"^- \*\*(.+?)\*\*:\s*(.*)$")
+_FLAGS_SUFFIX_RE = re.compile(r"\s+_\[[^\]]*\]_\s*$")
+_QUOTED_RE = re.compile(r'"([^"\n]+)"|“([^”\n]+)”|`([^`\n]+)`')
+_RECALL_LABEL_RE = re.compile(r"core recall\s*\(/(\d+)\)")
+_HITS_RE = re.compile(r"(\d+)\s*/\s*(\d+)")
+_SPECIAL_ROW_PREFIXES = ("core recall", "hallucination", "over-decomposed")
+
+
+def normalize_item_name(name: object) -> str:
+    """Lower case, trimmed, runs of whitespace collapsed to one space. Nothing else."""
+    return " ".join(str(name).lower().split())
+
+
+def parse_verdict(cell: str) -> str | None:
+    """`Y`, `Y merged` or `n` (any case); everything else, `Y?` and blank included, is None."""
+    text = " ".join(cell.replace("*", "").replace("`", "").split()).lower()
+    return {"y": "Y", "y merged": "Y merged", "n": "n"}.get(text)
+
+
+def _cells(line: str) -> list[str]:
+    stripped = line.strip()
+    if not stripped.startswith("|"):
+        return []
+    return [c.strip() for c in stripped.strip("|").split("|")]
+
+
+def _table_safe(text: str) -> str:
+    return " ".join(text.replace("|", "/").split())
+
+
+@dataclasses.dataclass
+class SheetRow:
+    gold: str
+    cells: list[str]
+    notes: str
+    line: int
+
+
+@dataclasses.dataclass
+class SheetPlate:
+    plate: str
+    reported: dict[str, str] = dataclasses.field(default_factory=dict)
+    columns: list[str] = dataclasses.field(default_factory=list)
+    rows: list[SheetRow] = dataclasses.field(default_factory=list)
+    recall_line: int | None = None
+    recall_total: int | None = None
+
+
+def parse_sheet(text: str) -> list[SheetPlate]:
+    """A worksheet's plates: reported-item lines, gold rows with their cells and notes."""
+    plates: list[SheetPlate] = []
+    current: SheetPlate | None = None
+    for index, line in enumerate(text.splitlines()):
+        heading = _PLATE_HEADING_RE.match(line)
+        if heading:
+            current = SheetPlate(plate=heading.group(1))
+            plates.append(current)
+            continue
+        if current is None:
+            continue
+        reported = _REPORTED_LINE_RE.match(line)
+        if reported:
+            current.reported[reported.group(1).strip()] = reported.group(2).strip()
+            continue
+        cells = _cells(line)
+        if not cells:
+            continue
+        label = cells[0].replace("*", "").replace("`", "").strip().lower()
+        if label == "gold core item":
+            columns = [c.replace("*", "").replace("`", "").strip() for c in cells[1:]]
+            if columns and columns[-1].lower() in {"notes", "note"}:
+                columns = columns[:-1]
+            current.columns = columns
+            continue
+        if label in {"metric", "gold item", "image", "img"}:
+            current = None
+            continue
+        if not current.columns or set(label) <= {"-", ":", ""}:
+            continue
+        width = len(current.columns)
+        if label.startswith(_SPECIAL_ROW_PREFIXES):
+            recall = _RECALL_LABEL_RE.search(label)
+            if recall:
+                current.recall_line = index
+                current.recall_total = int(recall.group(1))
+            continue
+        values = (cells[1 : 1 + width] + [""] * width)[:width]
+        notes = cells[1 + width] if len(cells) > 1 + width else ""
+        current.rows.append(SheetRow(gold=cells[0], cells=values, notes=notes, line=index))
+    return plates
+
+
+def _strip_parentheses(text: str) -> str:
+    previous = None
+    while previous != text:
+        previous = text
+        text = re.sub(r"\([^()]*\)", " ", text)
+    return text
+
+
+def matched_item(notes: str, items: list[str]) -> str | None:
+    """The reported item a `Y` row's notes name, or None when they name none.
+
+    First quoted string outside parentheses that equals a reported item. With no
+    such quote, a plate with exactly one reported item names it.
+    """
+    index = {normalize_item_name(i): i for i in items}
+    for groups in _QUOTED_RE.findall(_strip_parentheses(notes)):
+        quoted = next(g for g in groups if g)
+        if normalize_item_name(quoted) in index:
+            return index[normalize_item_name(quoted)]
+    if len(index) == 1:
+        return next(iter(index.values()))
+    return None
+
+
+def _clean_reason(notes: str) -> str:
+    """Notes without the `prefill ...:` tag this module writes, so tags never nest."""
+    return re.sub(r"^prefill (?:Y|n) from [^:]*:\s*", "", notes.strip())
+
+
+@dataclasses.dataclass(frozen=True)
+class Memory:
+    verdict: str
+    reason: str
+    source: str
+    mtime: float
+    path: str
+
+
+def _newest(entries: list[Memory]) -> Memory:
+    return max(entries, key=lambda e: (e.mtime, e.path))
+
+
+class VerdictMemory:
+    """(plate, normalised gold item, normalised model item) -> every earlier verdict."""
+
+    def __init__(self) -> None:
+        self.entries: dict[tuple[str, str, str], list[Memory]] = {}
+        self.sheets: list[tuple[str, str]] = []
+        self.excluded = 0
+        self.hits_named = 0
+        self.hits_unattributed = 0
+        self.misses = 0
+        self.uncertain = 0
+
+    def add(self, plate: str, gold: str, item: str, memory: Memory) -> None:
+        key = (plate, normalize_item_name(gold), normalize_item_name(item))
+        self.entries.setdefault(key, []).append(memory)
+
+    def lookup(self, plate: str, gold: str, item: str) -> list[Memory]:
+        return self.entries.get((plate, normalize_item_name(gold), normalize_item_name(item)), [])
+
+
+def discover_sheets(
+    specs: list[str], own_run: str | None = None, own_paths: tuple[Path, ...] = ()
+) -> tuple[list[Path], int]:
+    """Filled sheets named by globs, directories (searched for scorecard-filled.md) or files.
+
+    A run never learns from itself: its own sheet and any copy of a run with the
+    same directory name (sibling worktrees carry copies) are skipped and counted.
+    Returns the sheets and the number skipped.
+    """
+    found: list[Path] = []
+    for spec in specs:
+        matches = sorted(glob.glob(os.path.expanduser(spec), recursive=True))
+        if not matches:
+            raise SystemExit(f"ERROR: --from matched nothing: {spec}")
+        for match in map(Path, matches):
+            if match.is_dir():
+                found.extend(sorted(match.rglob(FILLED_SHEET_NAME)))
+            elif match.is_file():
+                found.append(match)
+    own = {p.resolve() for p in own_paths}
+    kept: list[Path] = []
+    seen: set[Path] = set()
+    excluded = 0
+    for path in found:
+        resolved = path.resolve()
+        if resolved in seen:
+            continue
+        seen.add(resolved)
+        if resolved in own or (own_run and resolved.parent.name == own_run):
+            excluded += 1
+            continue
+        kept.append(path)
+    return kept, excluded
+
+
+def _sibling_results(sheet: Path) -> dict | None:
+    candidate = sheet.parent / "results.json"
+    if not candidate.is_file():
+        return None
+    try:
+        data = json.loads(candidate.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def sheet_items(plate: SheetPlate, results: dict | None) -> dict[str, list[str]]:
+    """Per column, the model items the sheet reported on this plate.
+
+    Exact names come from the results.json beside the sheet when its names join to
+    the sheet's own line; otherwise the line is split on commas (a name that holds
+    a comma splits wrongly there, which can only lose a match, never invent one).
+    """
+    out: dict[str, list[str]] = {}
+    for column in plate.columns:
+        line = plate.reported.get(column)
+        if line is None:
+            continue
+        text = _FLAGS_SUFFIX_RE.sub("", line).strip()
+        names: list[str] | None = None
+        record = ((results or {}).get(plate.plate) or {}).get(column)
+        if isinstance(record, dict):
+            candidate = food_name_list(record)
+            if ", ".join(candidate) == text or (not candidate and text in {"", "(none)"}):
+                names = candidate
+        if names is None:
+            names = [] if text in {"", "(none)"} else [p.strip() for p in text.split(", ") if p.strip()]
+        out[column] = names
+    return out
+
+
+def load_memory(sheet_paths: list[Path], excluded: int = 0) -> VerdictMemory:
+    """Read every sheet into the memory. Identical copies count once (newest copy)."""
+    memory = VerdictMemory()
+    memory.excluded = excluded
+
+    by_content: dict[str, Path] = {}
+    for path in sheet_paths:
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        held = by_content.get(digest)
+        rank = lambda q: ((q.parent / "results.json").is_file(), q.stat().st_mtime, str(q))  # noqa: E731
+        if held is None or rank(path) > rank(held):
+            by_content[digest] = path
+    names: dict[str, int] = {}
+    for path in by_content.values():
+        names[path.parent.name] = names.get(path.parent.name, 0) + 1
+
+    for digest, path in sorted(by_content.items(), key=lambda kv: str(kv[1])):
+        run = path.parent.name if names[path.parent.name] == 1 else f"{path.parent.name}#{digest[:6]}"
+        mtime = path.stat().st_mtime
+        memory.sheets.append((run, str(path)))
+        results = _sibling_results(path)
+        for plate in parse_sheet(path.read_text(encoding="utf-8")):
+            items = sheet_items(plate, results)
+            for position, column in enumerate(plate.columns):
+                source = run if len(plate.columns) == 1 else f"{run}:{column}"
+                reported = items.get(column, [])
+                for row in plate.rows:
+                    verdict = parse_verdict(row.cells[position])
+                    if verdict is None:
+                        memory.uncertain += 1 if row.cells[position].strip() else 0
+                        continue
+                    reason = _clean_reason(row.notes)
+                    entry = Memory(verdict, reason, source, mtime, str(path))
+                    if verdict == "n":
+                        memory.misses += 1
+                        for item in reported:
+                            memory.add(plate.plate, row.gold, item, entry)
+                        continue
+                    name = matched_item(row.notes, reported)
+                    if name is None:
+                        memory.hits_unattributed += 1
+                        continue
+                    memory.hits_named += 1
+                    memory.add(plate.plate, row.gold, name, entry)
+    return memory
+
+
+@dataclasses.dataclass
+class RowDecision:
+    kind: str  # "Y", "n", "conflict" or "needs"
+    cell: str
+    notes: str
+    verdict: str | None = None  # the verdict the cell carries, when it carries one
+    gold: str = ""
+
+
+def _source_list(entries: list[Memory], limit: int = 3) -> str:
+    sources = sorted({e.source for e in entries})
+    shown = ", ".join(sources[:limit])
+    return shown + (f" and {len(sources) - limit} more" if len(sources) > limit else "")
+
+
+def decide_row(memory: VerdictMemory, plate: str, gold: str, items: list[str]) -> RowDecision:
+    return dataclasses.replace(_decide_row(memory, plate, gold, items), gold=gold)
+
+
+def _decide_row(memory: VerdictMemory, plate: str, gold: str, items: list[str]) -> RowDecision:
+    """One gold row of one approach: Y, n, CONFLICT or NEEDS JUDGMENT.
+
+    Y: some model item has a remembered, undisputed Y or Y merged for this gold item.
+    n: every model item has a remembered, undisputed n (a plate with no items too).
+    CONFLICT: earlier sheets disagree about an item and no other item gives a clean Y.
+    Otherwise NEEDS JUDGMENT, listing the names the memory has never judged.
+    """
+    unique: dict[str, str] = {}
+    for item in items:
+        if normalize_item_name(item):
+            unique.setdefault(normalize_item_name(item), item)
+
+    known: list[tuple[str, list[Memory], Memory, bool]] = []
+    unknown: list[str] = []
+    for display in unique.values():
+        entries = memory.lookup(plate, gold, display)
+        if not entries:
+            unknown.append(display)
+            continue
+        newest = _newest(entries)
+        known.append((display, entries, newest, any(e.verdict != newest.verdict for e in entries)))
+
+    clean_hits = [k for k in known if not k[3] and k[2].verdict in HIT_VERDICTS]
+    if clean_hits:
+        display, _entries, newest, _flag = max(clean_hits, key=lambda k: (k[2].mtime, k[2].path))
+        quoted = {
+            normalize_item_name(next(g for g in groups if g)) for groups in _QUOTED_RE.findall(newest.reason)
+        }
+        reason = newest.reason if normalize_item_name(display) in quoted else (
+            f'"{display}"' + (f", {newest.reason}" if newest.reason else "")
+        )
+        return RowDecision("Y", newest.verdict, _table_safe(f"prefill Y from {newest.source}: {reason}"), newest.verdict)
+
+    disputed = [k for k in known if k[3]]
+    if disputed:
+        display, entries, newest, _flag = next(
+            (k for k in disputed if k[2].verdict in HIT_VERDICTS), disputed[0]
+        )
+        by_verdict: dict[str, list[Memory]] = {}
+        for entry in entries:
+            by_verdict.setdefault(entry.verdict, []).append(entry)
+        parts = "; ".join(f"{v} per {_source_list(es)}" for v, es in sorted(by_verdict.items()))
+        text = (
+            f'{CONFLICT_MARKER} "{display}": {parts}. The cell shows the newest sheet, '
+            f"{newest.verdict} per {newest.source}. Decide, then delete this marker."
+        )
+        if unknown:
+            text += " Also unremembered: " + ", ".join(f'"{u}"' for u in unknown) + "."
+        return RowDecision("conflict", newest.verdict, _table_safe(text), newest.verdict)
+
+    if unknown:
+        text = f"{NEEDS_MARKER}: unremembered items " + ", ".join(f'"{u}"' for u in unknown)
+        return RowDecision("needs", " ", _table_safe(text))
+
+    if not known:
+        return RowDecision("n", "n", "prefill n: the run reported no items on this plate", "n")
+    every = [e for k in known for e in k[1]]
+    return RowDecision("n", "n", _table_safe(f"prefill n from {_source_list(every)}: no reported item covered it"), "n")
+
+
+PrefillPlan = dict  # (plate, approach key) -> list[RowDecision], one per gold core item
+
+
+def build_prefill_plan(memory: VerdictMemory, results: dict, gold: dict, keys: list[str]) -> PrefillPlan:
+    plan: PrefillPlan = {}
+    for plate in image_ids(results):
+        core = (gold.get(plate) or {}).get("core") or []
+        for key in keys:
+            result = results[plate].get(key)
+            if result is None:
+                continue
+            items = food_name_list(result)
+            plan[(plate, key)] = [decide_row(memory, plate, item, items) for item in core]
+    return plan
+
+
+def plan_counts(plan: PrefillPlan) -> dict[str, int]:
+    counts = {"rows": 0, "Y": 0, "Y merged": 0, "n": 0, "conflict": 0, "needs": 0}
+    for decisions in plan.values():
+        for decision in decisions:
+            counts["rows"] += 1
+            if decision.kind == "Y":
+                counts["Y"] += 1
+                counts["Y merged"] += 1 if decision.verdict == "Y merged" else 0
+            else:
+                counts[decision.kind] += 1
+    return counts
+
+
+def render_prefill_summary(memory: VerdictMemory, plan: PrefillPlan) -> list[str]:
+    counts = plan_counts(plan)
+    remembered = sum(len(v) for v in memory.entries.values())
+    lines = [
+        f"prefill memory: {len(memory.sheets)} sheets read ({memory.excluded} skipped as the run's own), "
+        f"{remembered} remembered verdicts; {memory.hits_unattributed} Y rows had no nameable item "
+        f"and {memory.uncertain} cells were uncertain (Y? or n?), none of them remembered",
+        f"prefill rows: {counts['rows']}",
+        f"  prefilled Y: {counts['Y']} (of which Y merged: {counts['Y merged']})",
+        f"  prefilled n: {counts['n']}",
+        f"  conflicts: {counts['conflict']}",
+        f"  needs judgment: {counts['needs']}",
+    ]
+    return lines
+
+
+def compare_plan_with_filled(plan: PrefillPlan, filled_text: str) -> dict:
+    """Score a prefill against the worksheet a person filled for the same run.
+
+    `wrong` is a clean (unflagged) prefill whose Y/n disagrees with the person's.
+    A conflict row is flagged, so its newest verdict being wrong is the design
+    working, not a bug; it is counted apart.
+    """
+    filled: dict[tuple[str, str], dict[str, str]] = {}
+    for plate in parse_sheet(filled_text):
+        for position, column in enumerate(plate.columns):
+            rows = filled.setdefault((plate.plate, column), {})
+            for row in plate.rows:
+                rows.setdefault(normalize_item_name(row.gold), row.cells[position])
+
+    result: dict = {
+        "rows": 0, "unscorable": 0, "decided": 0, "right": 0, "wrong": 0, "merged_differs": 0,
+        "conflict": 0, "conflict_newest_right": 0, "needs": 0, "wrong_rows": [],
+    }
+    for (plate, key), decisions in plan.items():
+        theirs_by_gold = filled.get((plate, key), {})
+        for decision in decisions:
+            result["rows"] += 1
+            if decision.kind == "needs":
+                result["needs"] += 1
+                continue
+            cell = theirs_by_gold.get(normalize_item_name(decision.gold))
+            theirs = parse_verdict(cell) if cell is not None else None
+            if theirs is None:
+                result["unscorable"] += 1
+                continue
+            agrees = (decision.verdict in HIT_VERDICTS) == (theirs in HIT_VERDICTS)
+            if decision.kind == "conflict":
+                result["conflict"] += 1
+                result["conflict_newest_right"] += 1 if agrees else 0
+                continue
+            result["decided"] += 1
+            if agrees:
+                result["right"] += 1
+                result["merged_differs"] += 1 if decision.verdict != theirs else 0
+            else:
+                result["wrong"] += 1
+                result["wrong_rows"].append((plate, key, decision.gold, decision.verdict, theirs, decision.notes))
+    return result
+
+
+def render_comparison(result: dict, source: Path) -> list[str]:
+    lines = [
+        f"prefill check against {source}:",
+        f"  rows compared: {result['rows']} ({result['unscorable']} with no clean Y or n in the filled sheet)",
+        f"  decided by the prefill (clean Y or n): {result['decided']}, right {result['right']}, WRONG {result['wrong']}",
+        f"  right on Y or n but differing on `Y merged` marking: {result['merged_differs']}",
+        f"  flagged CONFLICT: {result['conflict']}, whose newest verdict was right: {result['conflict_newest_right']}",
+        f"  left NEEDS JUDGMENT: {result['needs']}",
+    ]
+    for plate, key, gold, ours, theirs, notes in result["wrong_rows"]:
+        lines.append(f"  wrong: plate {plate} [{key}] {gold!r}: prefill {ours}, filled {theirs}; {notes}")
+    return lines
+
+
+# ---------------------------------------------------------------------------
+# Reading a prefilled worksheet back: refuse unresolved rows, derive blank recall
+# ---------------------------------------------------------------------------
+
+
+class UnresolvedSheet(Exception):
+    """A worksheet that cannot be scored yet."""
+
+
+def sheet_problems(text: str) -> list[str]:
+    """Rows that still carry a marker, and (prefilled sheets only) blank gold cells."""
+    problems: list[str] = []
+    prefilled = any(line.startswith(PREFILL_HEADER_PREFIX) for line in text.splitlines())
+    for plate in parse_sheet(text):
+        for row in plate.rows:
+            marker = _UNRESOLVED_RE.search(row.notes) or next(
+                (m for m in (_UNRESOLVED_RE.search(c) for c in row.cells) if m), None
+            )
+            if marker:
+                problems.append(f"plate {plate.plate}, {row.gold!r}: {marker.group(1)}")
+            elif prefilled and any(not c.strip() for c in row.cells):
+                problems.append(f"plate {plate.plate}, {row.gold!r}: empty cell")
+    return problems
+
+
+def _with_recall(line: str, position: int, hits: int, total: int) -> str:
+    cells = [c.strip() for c in line.strip().strip("|").split("|")]
+    cells[1 + position] = f"{hits}/{total}"
+    return "| " + " | ".join(cells) + " |"
+
+
+def derive_recall(text: str) -> tuple[str, list[str]]:
+    """Fill an empty `core recall` cell from the Y/n cells above it.
+
+    Only when every gold cell of that column is a clean Y, Y merged or n. On a
+    prefilled sheet, a recall cell that disagrees with its own clean cells is
+    reported as a warning instead of replaced: the person's number stands.
+    """
+    lines = text.splitlines()
+    prefilled = any(line.startswith(PREFILL_HEADER_PREFIX) for line in lines)
+    warnings: list[str] = []
+    for plate in parse_sheet(text):
+        if plate.recall_line is None or not plate.rows:
+            continue
+        recall_cells = _cells(lines[plate.recall_line])
+        for position, column in enumerate(plate.columns):
+            verdicts = [parse_verdict(row.cells[position]) for row in plate.rows]
+            if any(v is None for v in verdicts):
+                continue
+            hits = sum(1 for v in verdicts if v in HIT_VERDICTS)
+            total = plate.recall_total or len(plate.rows)
+            cell = recall_cells[1 + position] if len(recall_cells) > 1 + position else ""
+            if not cell.replace("*", "").strip():
+                lines[plate.recall_line] = _with_recall(lines[plate.recall_line], position, hits, total)
+                recall_cells = _cells(lines[plate.recall_line])
+                continue
+            written = _HITS_RE.search(cell)
+            if prefilled and written and (int(written.group(1)), int(written.group(2))) != (hits, total):
+                warnings.append(
+                    f"{plate.plate}/{column}: recall row says {written.group(1)}/{written.group(2)}, "
+                    f"its cells say {hits}/{total}"
+                )
+    return "\n".join(lines) + "\n", warnings
+
+
+def load_filled(path: Path) -> dict:
+    """`stats.parse_filled_worksheet` behind the prefill guards."""
+    if not path.is_file():
+        raise SystemExit(f"ERROR: filled worksheet not found: {path}")
+    text = path.read_text(encoding="utf-8")
+    problems = sheet_problems(text)
+    if problems:
+        shown = "\n".join(f"  {p}" for p in problems[:15])
+        more = f"\n  ... and {len(problems) - 15} more" if len(problems) > 15 else ""
+        raise UnresolvedSheet(
+            f"{path} still has {len(problems)} unresolved row(s); resolve each, then score again:\n{shown}{more}"
+        )
+    derived, warnings = derive_recall(text)
+    with tempfile.TemporaryDirectory() as scratch:
+        copy = Path(scratch) / FILLED_SHEET_NAME
+        copy.write_text(derived, encoding="utf-8")
+        worksheet = stats_lib.parse_filled_worksheet(copy)
+    worksheet["path"] = str(path)
+    worksheet["warnings"] = [*worksheet["warnings"], *warnings]
+    return worksheet
+
+
+# ---------------------------------------------------------------------------
 # Worksheet
 # ---------------------------------------------------------------------------
 
 
-def render_worksheet(results: dict, gold: dict, keys: list[str], results_path: Path) -> str:
+def render_worksheet(
+    results: dict,
+    gold: dict,
+    keys: list[str],
+    results_path: Path,
+    prefill: tuple[VerdictMemory, PrefillPlan] | None = None,
+) -> str:
     summary = results.get("_summary") or {}
     metrics = compute_metrics(results, keys)
     ids = image_ids(results)
@@ -383,6 +974,13 @@ def render_worksheet(results: dict, gold: dict, keys: list[str], results_path: P
     failures = summary.get("failures") or []
     if failures:
         lines.append(f"- **failures: {len(failures)}**: {json.dumps(failures)}")
+    if prefill is not None:
+        memory, plan = prefill
+        counts = plan_counts(plan)
+        lines.append(
+            f"{PREFILL_HEADER_PREFIX} {counts['Y']} Y, {counts['n']} n, {counts['conflict']} conflicts, "
+            f"{counts['needs']} need judgment, from {len(memory.sheets)} earlier sheets"
+        )
 
     lines += [
         "",
@@ -417,6 +1015,18 @@ def render_worksheet(results: dict, gold: dict, keys: list[str], results_path: P
         "prints bootstrap 95% CIs; `--compare A B` reports WINNER or UNDECIDED.",
         "",
     ]
+    if prefill is not None:
+        lines[-1:] = [
+            "8. This sheet is prefilled from earlier verdicts (exact item name, same plate, same gold",
+            "   item). A prefilled `Y` or `n` names its source sheet in Notes. Change it when you",
+            "   disagree. A row marked `NEEDS JUDGMENT` has an empty cell and lists the item names no",
+            f"   earlier sheet judged: judge it, then delete the `{NEEDS_MARKER}` text. A row marked",
+            f"   `{CONFLICT_MARKER}` shows the newest sheet's verdict while earlier sheets disagree: decide,",
+            f"   then delete the `{CONFLICT_MARKER}` text. `--score` refuses a sheet with either marker.",
+            "   Hallucinations and over-decomposed rows are not prefilled. The recall row may stay",
+            "   empty: `--score` counts it from the cells.",
+            "",
+        ]
 
     gold_note = gold.get("_note")
     if gold_note:
@@ -453,8 +1063,17 @@ def render_worksheet(results: dict, gold: dict, keys: list[str], results_path: P
 
         lines += ["| gold core item | " + " | ".join(keys) + " | notes |",
                   "|---|" + "---|" * len(keys) + "---|"]
-        for item in core:
-            lines.append(f"| {item} | " + " | ".join([" "] * len(keys)) + " |  |")
+        for position, item in enumerate(core):
+            cells = [" "] * len(keys)
+            notes: list[str] = []
+            if prefill is not None:
+                for column, key in enumerate(keys):
+                    decision = prefill[1].get((image_id, key), [None] * len(core))[position]
+                    if decision is None:
+                        continue
+                    cells[column] = decision.cell
+                    notes.append(decision.notes if len(keys) == 1 else f"{key}: {decision.notes}")
+            lines.append(f"| {item} | " + " | ".join(cells) + f" | {' ; '.join(notes) or ' '} |")
         lines.append(
             f"| **core recall (/{len(core)})** | " + " | ".join([" "] * len(keys)) + " |  |"
         )
@@ -542,7 +1161,11 @@ def render_filled_report(worksheet: dict, resamples: int) -> list[str]:
 
 
 def score_filled(path: Path, resamples: int) -> int:
-    worksheet = stats_lib.parse_filled_worksheet(path)
+    try:
+        worksheet = load_filled(path)
+    except UnresolvedSheet as error:
+        print(f"ERROR: {error}", file=sys.stderr)
+        return 1
     if not worksheet["images"]:
         print(f"ERROR: no filled per-image recall rows found in {path}", file=sys.stderr)
         return 1
@@ -554,7 +1177,11 @@ def compare_filled(path_a: Path, path_b: Path, resamples: int) -> int:
     """Compare two filled worksheets; overlapping CIs report UNDECIDED."""
     results: list[tuple[str, list[tuple[int, int]], dict]] = []
     for path in (path_a, path_b):
-        worksheet = stats_lib.parse_filled_worksheet(path)
+        try:
+            worksheet = load_filled(path)
+        except UnresolvedSheet as error:
+            print(f"ERROR: {error}", file=sys.stderr)
+            return 1
         if not worksheet["approaches"]:
             print(f"ERROR: no approach columns found in {path}", file=sys.stderr)
             return 1
@@ -648,6 +1275,36 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="FILLED_MD",
         help="The filled worksheet --granularity reads (default: scorecard-filled.md next to results.json).",
     )
+    parser.add_argument(
+        "--prefill",
+        action="store_true",
+        help=(
+            "Prefill the worksheet from earlier filled sheets named by --from: exact model item name, "
+            "same plate, same gold item. Unanswerable rows are marked NEEDS JUDGMENT, disputed rows CONFLICT."
+        ),
+    )
+    parser.add_argument(
+        "--from",
+        dest="sources",
+        nargs="+",
+        default=None,
+        metavar="GLOB_OR_DIR",
+        help=(
+            "Where --prefill reads earlier filled sheets: globs, files, or directories searched "
+            f"recursively for {FILLED_SHEET_NAME}. Put it after the results.json path. The run's own "
+            "sheet, and sheets of a run with the same directory name, are skipped."
+        ),
+    )
+    parser.add_argument(
+        "--check-against",
+        type=Path,
+        default=None,
+        metavar="FILLED_MD",
+        help="With --prefill: compare the prefill with the worksheet a person filled for this run, and report wrong rows.",
+    )
+    parser.add_argument(
+        "--force", action="store_true", help="Let --prefill overwrite an existing output worksheet."
+    )
     parser.add_argument("--stdout", action="store_true", help="Also print the worksheet.")
     parser.add_argument("--json", action="store_true", help="Print the mechanical metrics as JSON and exit.")
     return parser
@@ -660,8 +1317,16 @@ def main(argv: list[str] | None = None) -> int:
         return compare_filled(args.compare[0], args.compare[1], args.resamples)
     if args.score:
         return score_filled(args.score, args.resamples)
+    if args.results is None and args.sources and Path(args.sources[-1]).name == "results.json":
+        args.results = Path(args.sources.pop())
     if args.results is None:
         build_parser().error("a results.json path is required (or use --score / --compare)")
+    if args.sources and not args.prefill:
+        build_parser().error("--from only works with --prefill")
+    if args.prefill and not args.sources:
+        build_parser().error("--prefill needs --from <globs or dirs of filled sheets>")
+    if args.check_against and not args.prefill:
+        build_parser().error("--check-against only works with --prefill")
 
     results = load_json(args.results)
     keys = approach_keys(results)
@@ -674,10 +1339,34 @@ def main(argv: list[str] | None = None) -> int:
     gold_path = args.gold or (infer_eval_root(args.results) / "gold" / "gold_labels.json")
     gold = load_json(gold_path)
 
-    worksheet = render_worksheet(results, gold, keys, args.results)
     out_path = args.out or args.results.parent / "scorecard.md"
+    prefill = None
+    if args.prefill:
+        if out_path.exists() and not args.force:
+            print(f"ERROR: {out_path} exists; a prefilled sheet may hold work. Use --out or --force.", file=sys.stderr)
+            return 1
+        sheets, excluded = discover_sheets(
+            args.sources,
+            own_run=args.results.resolve().parent.name,
+            own_paths=(args.results.parent / FILLED_SHEET_NAME, out_path),
+        )
+        if not sheets:
+            print("ERROR: --from found no filled worksheets", file=sys.stderr)
+            return 1
+        memory = load_memory(sheets, excluded)
+        plan = build_prefill_plan(memory, results, {k: v for k, v in gold.items() if not k.startswith("_")}, keys)
+        prefill = (memory, plan)
+
+    worksheet = render_worksheet(results, gold, keys, args.results, prefill)
     out_path.write_text(worksheet, encoding="utf-8")
     print(f"Wrote {out_path}")
+    if prefill is not None:
+        print("\n".join(render_prefill_summary(*prefill)))
+        if args.check_against:
+            print("\n".join(render_comparison(
+                compare_plan_with_filled(prefill[1], args.check_against.read_text(encoding="utf-8")),
+                args.check_against,
+            )))
     print(f"gold labels: {gold_path}")
     print(f"approaches: {keys}; images: {len(image_ids(results))}")
 

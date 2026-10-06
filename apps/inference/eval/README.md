@@ -152,6 +152,56 @@ hallucinations row.
 matters: "Greek salad" legitimately covers three gold rows, while "sashimi" for nigiri hides a rice
 miss that changes the carb number. An auto-scorer would have graded both the same way.
 
+#### Prefill from earlier verdicts
+
+A new run repeats most judgments of the old ones: the same item name, on the same plate, against
+the same gold item. `--prefill` answers those and leaves the rest to a person:
+
+```bash
+python3 -m harness.scorecard runs/<new-run>/results.json --prefill \
+    --from "runs/*/scorecard-filled.md" /path/to/other/worktree/eval/runs
+```
+
+`--from` takes globs, files and directories (searched for `scorecard-filled.md`) and goes after the
+results path. The memory key is (plate, gold item, model item name), compared after lower case,
+trim and space collapse, and nothing else: "ham" and "ham slices" are two names. For each gold row:
+
+- a model item with a remembered `Y` or `Y merged` fills `Y` (or `Y merged`) and copies the reason and
+  the source sheet into Notes;
+- every model item remembered as `n` for that gold item fills `n` (so does a plate with no items);
+- two sheets that disagree about one item (`Y` against `n`, or `Y` against `Y merged`) fill the
+  newest sheet's verdict by file mtime and mark the row `CONFLICT` with both sources;
+- any other row stays blank and reads `NEEDS JUDGMENT` with the item names the memory never judged.
+
+The command prints the counts: rows prefilled Y, prefilled n, conflicts, needs judgment. A run never
+learns from its own sheet, or from a copy of a run with the same directory name. Identical copies of a
+sheet in several worktrees count once.
+
+A filled sheet has no field for the matched model item. It is read from Notes: the first quoted name
+outside parentheses that equals an item the sheet reported on that plate, or the only item of a
+one-item plate. A `Y` that names nothing cannot be remembered and is counted in the summary as having
+no nameable item. `Y?` and `n?` are never remembered. A remembered `n` needs no name, because it
+says that no reported item covered the gold item.
+
+Hallucinations and over-decomposed rows are not prefilled, and neither is the recall row: `--score`
+counts an empty recall cell from the Y and n cells, and warns when a prefilled sheet's written
+recall disagrees with its cells. `--score` and `--compare` refuse a sheet that still has a
+`NEEDS JUDGMENT` or `CONFLICT` row, and `--score` refuses an empty gold cell on a prefilled sheet.
+The prefill refuses to overwrite an existing worksheet without `--force`.
+
+Verdicts age. The 2026-08-12 sheets credit "mixed vegetables" for three gold items that the strict
+reading of rule 1 scores `n`, and a prefill takes whichever side its sources hold. Point `--from` at
+sheets filled under the rules you want, and read the source named in Notes before you keep a prefill.
+
+`--check-against <filled.md>` compares a prefill with the sheet a person filled for the same run and
+lists every clean prefill that the person judged the other way. Use it after a run is scored, to see
+whether the memory can be trusted:
+
+```bash
+python3 -m harness.scorecard runs/<run>/results.json --prefill --from "runs/*/scorecard-filled.md" \
+    --out /tmp/prefill-check.md --check-against runs/<run>/scorecard-filled.md
+```
+
 ### 4. Read a filled worksheet back (statistics)
 
 Save the reviewed worksheet as `scorecard-filled.md` next to the `results.json`. Then:
