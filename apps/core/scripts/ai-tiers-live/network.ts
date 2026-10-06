@@ -1,10 +1,12 @@
 /**
  * The one place `pnpm ai-tiers:check-live` touches the network. It sends a plain
- * GET with no credential, because the two endpoints it reads are public. Tests
+ * GET with no credential, because the two endpoints it reads are public. It
+ * refuses any address that is not on one of the two OpenRouter hosts, and it
+ * never follows a redirect, so a request cannot end up anywhere else. Tests
  * never import this file: they hand `runCli` a function that plays recorded answers.
  */
 import type { JsonValue } from '../../src/lib/json.js';
-import type { FetchedJson } from './check.js';
+import { isOpenRouterUrl, type FetchedJson } from './check.js';
 
 const REQUEST_TIMEOUT_MS = 30_000;
 
@@ -20,8 +22,10 @@ function parseBody(text: string): JsonValue | null {
 
 /** Throws when the request cannot be made (no route, timeout). Any HTTP status comes back as an answer. */
 export async function fetchJsonFromNetwork(url: string): Promise<FetchedJson> {
+  if (!isOpenRouterUrl(url)) throw new Error('the address is not on an OpenRouter host, no request was sent');
   const response = await fetch(url, {
     headers: { accept: 'application/json' },
+    redirect: 'error',
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
   return { status: response.status, body: parseBody(await response.text()) };
