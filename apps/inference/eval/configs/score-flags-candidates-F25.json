@@ -1,0 +1,59 @@
+{
+ "title": "EU switch: candidate cell F25 against 3.8 (fixed scorers)",
+ "intro": [
+  "Candidate F25, v3 prompt, EU host. References B and C3. Runs named worktree:directory live in a sibling worktree."
+ ],
+ "refs": [
+  "B",
+  "C3"
+ ],
+ "cells": {
+  "B": {
+   "label": "3.8, default reasoning, production prompt",
+   "text": [
+    "../../../../../eval-harness/apps/inference/eval/runs/text-eu-cell-38-newprompt-r1",
+    "../../../../../eval-harness/apps/inference/eval/runs/text-eu-cell-38-newprompt-r2",
+    "../../../../../eval-harness/apps/inference/eval/runs/text-eu-cell-38-newprompt-r3"
+   ],
+   "plates": [
+    "../../../../../eval-harness/apps/inference/eval/runs/eu-cell-38-newprompt"
+   ]
+  },
+  "C3": {
+   "label": "3.8, reasoning minimal, v3 prompt",
+   "text": [
+    "../../../../../prompt-v3/apps/inference/eval/runs/v3-text-eu-cell-38-minimal-newprompt-r1",
+    "../../../../../prompt-v3/apps/inference/eval/runs/v3-text-eu-cell-38-minimal-newprompt-r2",
+    "../../../../../prompt-v3/apps/inference/eval/runs/v3-text-eu-cell-38-minimal-newprompt-r3"
+   ],
+   "plates": [
+    "../../../../../prompt-v3/apps/inference/eval/runs/v3-eu-cell-38-minimal-newprompt",
+    "../../../../../prompt-v3/apps/inference/eval/runs/v3-eu-cell-38-minimal-newprompt-r2"
+   ]
+  },
+  "F25": {
+   "label": "2.5 flash, google-vertex/eu, minimal, v3 prompt",
+   "text": [
+    "../../../../../prompt-v3/apps/inference/eval/runs/v3-text-eu-cell-25-flash-newprompt-r1",
+    "../../../../../prompt-v3/apps/inference/eval/runs/v3-text-eu-cell-25-flash-newprompt-r2",
+    "../../../../../prompt-v3/apps/inference/eval/runs/v3-text-eu-cell-25-flash-newprompt-r3"
+   ],
+   "plates": [
+    "../../../../../prompt-v3/apps/inference/eval/runs/v3-eu-cell-25-flash-newprompt"
+   ]
+  }
+ },
+ "sanity_cells": [
+  "B",
+  "C3",
+  "F25"
+ ],
+ "category_cells": [
+  "B",
+  "C3",
+  "F25"
+ ],
+ "expected_repeats": 3,
+ "test": "F25",
+ "out": "runs/CANDIDATES-FLAGS-F25"
+}

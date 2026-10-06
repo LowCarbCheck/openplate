@@ -1,0 +1,87 @@
+{
+ "title": "EU switch: candidate cells against 3.8 (fixed scorers)",
+ "intro": [
+  "Candidates L25 and MM, v3 prompt, EU host. References B and C3. Runs named worktree:directory live in a sibling worktree."
+ ],
+ "refs": [
+  "B",
+  "C3"
+ ],
+ "cells": {
+  "B": {
+   "label": "3.8, default reasoning, production prompt",
+   "text": [
+    "../../../../../eval-harness/apps/inference/eval/runs/text-eu-cell-38-newprompt-r1",
+    "../../../../../eval-harness/apps/inference/eval/runs/text-eu-cell-38-newprompt-r2",
+    "../../../../../eval-harness/apps/inference/eval/runs/text-eu-cell-38-newprompt-r3"
+   ],
+   "plates": [
+    "../../../../../eval-harness/apps/inference/eval/runs/eu-cell-38-newprompt"
+   ]
+  },
+  "C3": {
+   "label": "3.8, reasoning minimal, v3 prompt",
+   "text": [
+    "../../../../../prompt-v3/apps/inference/eval/runs/v3-text-eu-cell-38-minimal-newprompt-r1",
+    "../../../../../prompt-v3/apps/inference/eval/runs/v3-text-eu-cell-38-minimal-newprompt-r2",
+    "../../../../../prompt-v3/apps/inference/eval/runs/v3-text-eu-cell-38-minimal-newprompt-r3"
+   ],
+   "plates": [
+    "../../../../../prompt-v3/apps/inference/eval/runs/v3-eu-cell-38-minimal-newprompt",
+    "../../../../../prompt-v3/apps/inference/eval/runs/v3-eu-cell-38-minimal-newprompt-r2"
+   ]
+  },
+  "D3": {
+   "label": "3.5 flash lite EU, minimal, v3 prompt",
+   "text": [
+    "../../../../../prompt-v3/apps/inference/eval/runs/v3-text-eu-cell-35-eu-newprompt-r1",
+    "../../../../../prompt-v3/apps/inference/eval/runs/v3-text-eu-cell-35-eu-newprompt-r2",
+    "../../../../../prompt-v3/apps/inference/eval/runs/v3-text-eu-cell-35-eu-newprompt-r3"
+   ],
+   "plates": [
+    "../../../../../prompt-v3/apps/inference/eval/runs/v3-eu-cell-35-eu-newprompt",
+    "../../../../../prompt-v3/apps/inference/eval/runs/v3-eu-cell-35-eu-newprompt-r2",
+    "../../../../../prompt-v3/apps/inference/eval/runs/v3-eu-cell-35-eu-newprompt-r3"
+   ]
+  },
+  "L25": {
+   "label": "2.5 flash lite, google-vertex/eu, minimal, v3 prompt",
+   "text": [
+    "../../../../../prompt-v3/apps/inference/eval/runs/v3-text-eu-cell-25-lite-newprompt-r1",
+    "../../../../../prompt-v3/apps/inference/eval/runs/v3-text-eu-cell-25-lite-newprompt-r2",
+    "../../../../../prompt-v3/apps/inference/eval/runs/v3-text-eu-cell-25-lite-newprompt-r3"
+   ],
+   "plates": [
+    "../../../../../prompt-v3/apps/inference/eval/runs/v3-eu-cell-25-lite-newprompt"
+   ]
+  },
+  "MM": {
+   "label": "mistral medium 3.1, mistral/eu, no reasoning, v3 prompt",
+   "text": [
+    "../../../../../prompt-v3/apps/inference/eval/runs/v3-text-eu-cell-mistral-medium-newprompt-r1",
+    "../../../../../prompt-v3/apps/inference/eval/runs/v3-text-eu-cell-mistral-medium-newprompt-r2",
+    "../../../../../prompt-v3/apps/inference/eval/runs/v3-text-eu-cell-mistral-medium-newprompt-r3"
+   ],
+   "plates": [
+    "../../../../../prompt-v3/apps/inference/eval/runs/v3-eu-cell-mistral-medium-newprompt"
+   ]
+  }
+ },
+ "sanity_cells": [
+  "B",
+  "C3",
+  "D3",
+  "L25",
+  "MM"
+ ],
+ "category_cells": [
+  "B",
+  "C3",
+  "D3",
+  "L25",
+  "MM"
+ ],
+ "expected_repeats": 3,
+ "test": "L25",
+ "out": "runs/CANDIDATES-FLAGS-L25"
+}
