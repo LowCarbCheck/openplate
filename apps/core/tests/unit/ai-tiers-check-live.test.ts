@@ -678,6 +678,82 @@ test('on the EU host a pin without a region suffix is a warning, not a failure',
   assert.equal(suffixed.warnings, 0, 'control: the /eu pin does not warn');
 });
 
+test('the EU surcharge case: a tier file at the global price fails against the EU host, and the EU price passes', async () => {
+  // The global host lists google-vertex/global at 0.30 / 2.50. The EU host charges about 10 percent more
+  // (0.33 / 2.75), so a file copied from the global price is wrong for an instance that asks the EU host.
+  const atGlobalPrice = await runCheck({
+    file: euTierFile({ input: 0.3, output: 2.5 }),
+    stub: euStub(),
+    host: EU_HOST,
+    now: EU_DAY,
+  });
+  const [stale] = linesOf(atGlobalPrice.lines, 'price');
+  assert.equal(stale?.status, 'FAIL');
+  assert.match(stale?.detail ?? '', /input: file 0\.3, OpenRouter 0\.33 \(google-vertex\/eu\)/);
+  assert.match(stale?.detail ?? '', /output: file 2\.5, OpenRouter 2\.75 \(google-vertex\/eu\)/);
+  assert.equal(atGlobalPrice.failed, 1, 'only the price fails, the region, ZDR and model lines pass');
+
+  // Control: the same file at the EU price passes on the same host and the same answer.
+  const atEuPrice = await runCheck({
+    file: euTierFile({ input: 0.33, output: 2.75 }),
+    stub: euStub(),
+    host: EU_HOST,
+    now: EU_DAY,
+  });
+  assert.equal(linesOf(atEuPrice.lines, 'price')[0]?.status, 'PASS');
+  assert.equal(atEuPrice.failed, 0);
+});
+
+test('a bare provider pin matches an EU-only answer on the global host too: it passes, and the price comes from the /eu row', async () => {
+  const onlyEu = withRows(LITE_GLOBAL_ENDPOINTS, (rows) => rows.filter((r) => asObject(r)?.tag === 'google-vertex/eu'));
+  assert.equal(asArray(asObject(asObject(onlyEu)?.data)?.endpoints)?.length, 1, 'the planted answer holds one row');
+  const globalStub = () =>
+    stubFetch({
+      [LITE_GLOBAL_URL]: { status: 200, body: onlyEu },
+      [`${OPENROUTER_API}/endpoints/zdr`]: { status: 200, body: ZDR },
+    });
+  const bareFile = (price: { input: number; output: number }) =>
+    tierFile({ model: LITE, only: ['google-vertex'], zdr: false, checked: '2026-10-06', ...price });
+
+  // Global host: the bare pin names the whole provider, so the /eu row serves it and sets the price.
+  // Nothing says the call stays in the EU, and the global host raises no warning for that.
+  const onGlobal = await runCheck({
+    file: bareFile({ input: 0.33, output: 2.75 }),
+    stub: globalStub(),
+    host: GLOBAL_HOST,
+    now: EU_DAY,
+  });
+  assert.equal(onGlobal.failed, 0);
+  assert.equal(onGlobal.warnings, 0);
+  assert.equal(linesOf(onGlobal.lines, 'provider google-vertex')[0]?.status, 'PASS');
+  assert.equal(linesOf(onGlobal.lines, 'price')[0]?.status, 'PASS');
+  assert.equal(linesOf(onGlobal.lines, 'region').length, 0);
+
+  // Control: the global price does not pass, so the price above was read from the /eu row.
+  const wrong = await runCheck({
+    file: bareFile({ input: 0.3, output: 2.5 }),
+    stub: globalStub(),
+    host: GLOBAL_HOST,
+    now: EU_DAY,
+  });
+  assert.match(
+    linesOf(wrong.lines, 'price')[0]?.detail ?? '',
+    /input: file 0\.3, OpenRouter 0\.33 \(google-vertex\/eu\)/,
+  );
+
+  // EU host, same bare pin: still a pass, and the region line is the one WARN.
+  const onEu = await runCheck({
+    file: bareFile({ input: 0.33, output: 2.75 }),
+    stub: euStub(),
+    host: EU_HOST,
+    now: EU_DAY,
+  });
+  assert.equal(onEu.failed, 0);
+  assert.equal(onEu.warnings, 1);
+  assert.equal(linesOf(onEu.lines, 'region')[0]?.status, 'WARN');
+  assert.equal(linesOf(onEu.lines, 'price')[0]?.status, 'PASS');
+});
+
 // ── The host ─────────────────────────────────────────────────────────────────
 
 function parse(value: string): CheckHost {

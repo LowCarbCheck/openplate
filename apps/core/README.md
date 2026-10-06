@@ -345,12 +345,17 @@ uses. Pass it as `--host <base url>`, or set the env variable `AI_TIERS_CHECK_HO
 only when the flag is absent; the flag wins). With neither, the global host is asked. Bay
 passes its `UPSTREAM_BASE_URL` here. Only those two hosts are accepted. Any other host is
 refused with exit 1 before a request is made. Both calls, the endpoint list and the ZDR
-list, go to the chosen host.
+list, go to the chosen host. The value must be exactly one of the two base URLs, never a
+full chat URL such as `.../chat/completions`.
 
 ```bash
 pnpm ai-tiers:check-live --host https://eu.openrouter.ai/api/v1
 AI_TIERS_CHECK_HOST=https://eu.openrouter.ai/api/v1 pnpm ai-tiers:check-live --file /path/to/ai-tiers.json
 ```
+
+A bare provider pin such as `google-vertex` matches every region of that provider. On the
+global host it therefore also passes when only an `/eu` row exists, and the price is read
+from that row. To keep the call in the EU, pin `google-vertex/eu` and check against the EU host.
 
 **Bay compares the host with the pin suffix.** The check does it too, so a mismatch is
 visible in the output:
