@@ -1,0 +1,1107 @@
+{
+ "C3v4": {
+  "notes": [
+   "v4-eu-cell-38-minimal-newprompt-r1: 50 records, ids differ"
+  ],
+  "holdout": {
+   "n": 108,
+   "production_records": 108,
+   "error_records": 0,
+   "error_ids": [],
+   "http_status": {
+    "200": 108
+   },
+   "schema_valid_stored": 108,
+   "schema_invalid_ids": [],
+   "old_schema_raw_ok": 0,
+   "revalidation_disagreements": [],
+   "cost_total": 0.568803,
+   "cost_calls": 108,
+   "cost_mean": 0.005266694444444444,
+   "cost_sources": {
+    "usage": 108
+   },
+   "cost_null_ids": [],
+   "latency_median": 5.781827925471589,
+   "latency_p95": 24.994068257487392,
+   "latency_max": 84.80266793211922,
+   "last_attempt_latency_median": 5.781779482960701,
+   "last_attempt_latency_p95": 24.994016746850697,
+   "slow": [
+    [
+     "h3:h016",
+     75.7
+    ],
+    [
+     "h3:h022",
+     84.8
+    ],
+    [
+     "h3:h036",
+     81.0
+    ]
+   ],
+   "prompt_tokens_mean": 3856.472222222222,
+   "completion_tokens_mean": 633.1574074074074,
+   "reasoning_tokens_mean": 0.0,
+   "reasoning_tokens_recorded": 108,
+   "providers": {
+    "Google": 108
+   },
+   "models_returned": {
+    "google/gemini-3.8-flash": 108
+   },
+   "retried": [
+    "h3:h016"
+   ],
+   "not_stop": {},
+   "not_stop_ids": [],
+   "detail": {},
+   "reasoning_mean_calls": 0.0,
+   "reasoning_n": 108
+  },
+  "plates": {
+   "n": 50,
+   "production_records": 50,
+   "error_records": 0,
+   "error_ids": [],
+   "http_status": {
+    "200": 50
+   },
+   "schema_valid_stored": 50,
+   "schema_invalid_ids": [],
+   "old_schema_raw_ok": 0,
+   "revalidation_disagreements": [],
+   "cost_total": 0.471066,
+   "cost_calls": 50,
+   "cost_mean": 0.00942132,
+   "cost_sources": {
+    "usage": 50
+   },
+   "cost_null_ids": [],
+   "latency_median": 9.489683820400387,
+   "latency_p95": 39.382667853264074,
+   "latency_max": 131.32414366025478,
+   "last_attempt_latency_median": 9.489628489362076,
+   "last_attempt_latency_p95": 39.38261036609759,
+   "slow": [
+    [
+     "p1:29",
+     131.3
+    ],
+    [
+     "p1:49",
+     78.7
+    ]
+   ],
+   "prompt_tokens_mean": 5863.76,
+   "completion_tokens_mean": 1339.6,
+   "reasoning_tokens_mean": 98.32,
+   "reasoning_tokens_recorded": 50,
+   "providers": {
+    "Google": 50
+   },
+   "models_returned": {
+    "google/gemini-3.8-flash": 50
+   },
+   "retried": [],
+   "not_stop": {},
+   "not_stop_ids": [],
+   "detail": {},
+   "reasoning_mean_calls": 98.32,
+   "reasoning_n": 50
+  },
+  "main": {
+   "n": 91,
+   "production_records": 91,
+   "error_records": 0,
+   "error_ids": [],
+   "http_status": {
+    "200": 91
+   },
+   "schema_valid_stored": 91,
+   "schema_invalid_ids": [],
+   "old_schema_raw_ok": 0,
+   "revalidation_disagreements": [],
+   "cost_total": 0.40683975,
+   "cost_calls": 91,
+   "cost_mean": 0.004470766483516484,
+   "cost_sources": {
+    "usage": 91
+   },
+   "cost_null_ids": [],
+   "latency_median": 4.5960933500900865,
+   "latency_p95": 7.940170838497579,
+   "latency_max": 64.46221313113347,
+   "last_attempt_latency_median": 4.59604446683079,
+   "last_attempt_latency_p95": 7.940109270391986,
+   "slow": [
+    [
+     "m1:t069",
+     64.5
+    ]
+   ],
+   "prompt_tokens_mean": 3853.3296703296705,
+   "completion_tokens_mean": 421.53846153846155,
+   "reasoning_tokens_mean": 7.373626373626373,
+   "reasoning_tokens_recorded": 91,
+   "providers": {
+    "Google": 91
+   },
+   "models_returned": {
+    "google/gemini-3.8-flash": 91
+   },
+   "retried": [],
+   "not_stop": {},
+   "not_stop_ids": [],
+   "detail": {},
+   "reasoning_mean_calls": 7.373626373626373,
+   "reasoning_n": 91
+  },
+  "all": {
+   "n": 249,
+   "production_records": 249,
+   "error_records": 0,
+   "error_ids": [],
+   "http_status": {
+    "200": 249
+   },
+   "schema_valid_stored": 249,
+   "schema_invalid_ids": [],
+   "old_schema_raw_ok": 0,
+   "revalidation_disagreements": [],
+   "cost_total": 1.44670875,
+   "cost_calls": 249,
+   "cost_mean": 0.005810075301204819,
+   "cost_sources": {
+    "usage": 249
+   },
+   "cost_null_ids": [],
+   "latency_median": 5.730826274026185,
+   "latency_p95": 23.199234612006688,
+   "latency_max": 131.32414366025478,
+   "last_attempt_latency_median": 5.730685763992369,
+   "last_attempt_latency_p95": 23.199176861066366,
+   "slow": [
+    [
+     "h3:h016",
+     75.7
+    ],
+    [
+     "h3:h022",
+     84.8
+    ],
+    [
+     "h3:h036",
+     81.0
+    ],
+    [
+     "p1:29",
+     131.3
+    ],
+    [
+     "p1:49",
+     78.7
+    ],
+    [
+     "m1:t069",
+     64.5
+    ]
+   ],
+   "prompt_tokens_mean": 4258.393574297189,
+   "completion_tokens_mean": 697.6746987951807,
+   "reasoning_tokens_mean": 22.437751004016064,
+   "reasoning_tokens_recorded": 249,
+   "providers": {
+    "Google": 249
+   },
+   "models_returned": {
+    "google/gemini-3.8-flash": 249
+   },
+   "retried": [
+    "h3:h016"
+   ],
+   "not_stop": {},
+   "not_stop_ids": [],
+   "detail": {},
+   "reasoning_mean_calls": 22.437751004016064,
+   "reasoning_n": 249
+  },
+  "brands": [
+   {
+    "label": "m1:t017",
+    "case": "t017",
+    "found": true,
+    "confidence": "medium",
+    "expected_conf": "low",
+    "brand": "Snickers",
+    "brand_ok": true,
+    "macro_source": "estimated"
+   },
+   {
+    "label": "m1:t028",
+    "case": "t028",
+    "found": true,
+    "confidence": "medium",
+    "expected_conf": null,
+    "brand": "Nutella",
+    "brand_ok": true,
+    "macro_source": "estimated"
+   },
+   {
+    "label": "m1:t057",
+    "case": "t057",
+    "found": true,
+    "confidence": "medium",
+    "expected_conf": null,
+    "brand": "Philadelphia",
+    "brand_ok": true,
+    "macro_source": "estimated"
+   },
+   {
+    "label": "m1:t061",
+    "case": "t061",
+    "found": true,
+    "confidence": "medium",
+    "expected_conf": "low",
+    "brand": "McDonald's",
+    "brand_ok": true,
+    "macro_source": "estimated"
+   },
+   {
+    "label": "m1:t076",
+    "case": "t076",
+    "found": true,
+    "confidence": "medium",
+    "expected_conf": "low",
+    "brand": "Starbucks",
+    "brand_ok": true,
+    "macro_source": "estimated"
+   }
+  ],
+  "vague": [
+   {
+    "label": "m1:t034",
+    "case": "t034",
+    "found": true,
+    "confidence": "medium"
+   },
+   {
+    "label": "m1:t035",
+    "case": "t035",
+    "found": true,
+    "confidence": "medium"
+   },
+   {
+    "label": "m1:t071",
+    "case": "t071",
+    "found": true,
+    "confidence": "low"
+   }
+  ],
+  "food": {
+   "empty": [],
+   "unreadable": [],
+   "no_answer": [],
+   "empty_kept_empty": 2,
+   "empty_expected_total": 2,
+   "empty_expected_wrongly_filled": []
+  }
+ },
+ "F25v4": {
+  "notes": [
+   "v4-eu-cell-25-flash-newprompt-r1: 50 records, ids differ",
+   "v4-eu-cell-25-flash-newprompt-r2: 50 records, ids differ",
+   "v4-eu-cell-25-flash-newprompt-r3: 50 records, ids differ"
+  ],
+  "holdout": {
+   "n": 108,
+   "production_records": 108,
+   "error_records": 0,
+   "error_ids": [],
+   "http_status": {
+    "200": 108
+   },
+   "schema_valid_stored": 108,
+   "schema_invalid_ids": [],
+   "old_schema_raw_ok": 0,
+   "revalidation_disagreements": [],
+   "cost_total": 0.45044046,
+   "cost_calls": 108,
+   "cost_mean": 0.004170745,
+   "cost_sources": {
+    "usage": 108
+   },
+   "cost_null_ids": [],
+   "latency_median": 8.613699179375544,
+   "latency_p95": 25.921894283406438,
+   "latency_max": 33.52427363395691,
+   "last_attempt_latency_median": 8.18214346957393,
+   "last_attempt_latency_p95": 11.057618460734375,
+   "slow": [],
+   "prompt_tokens_mean": 2276.527777777778,
+   "completion_tokens_mean": 1403.1666666666667,
+   "reasoning_tokens_mean": 748.0925925925926,
+   "reasoning_tokens_recorded": 108,
+   "providers": {
+    "Google": 108
+   },
+   "models_returned": {
+    "google/gemini-2.5-flash": 108
+   },
+   "retried": [
+    "h1:h004",
+    "h1:h008",
+    "h1:h012",
+    "h1:h020",
+    "h1:h035",
+    "h2:h014",
+    "h2:h015",
+    "h2:h016",
+    "h2:h018",
+    "h2:h020",
+    "h2:h024",
+    "h2:h031",
+    "h2:h033",
+    "h2:h036",
+    "h3:h016",
+    "h3:h027",
+    "h3:h035"
+   ],
+   "not_stop": {},
+   "not_stop_ids": [],
+   "detail": {},
+   "reasoning_mean_calls": 748.0925925925926,
+   "reasoning_n": 108
+  },
+  "plates": {
+   "n": 150,
+   "production_records": 150,
+   "error_records": 0,
+   "error_ids": [],
+   "http_status": {
+    "200": 150
+   },
+   "schema_valid_stored": 149,
+   "schema_invalid_ids": [
+    "p3:45"
+   ],
+   "old_schema_raw_ok": 0,
+   "revalidation_disagreements": [],
+   "cost_total": 0.88067686,
+   "cost_calls": 150,
+   "cost_mean": 0.005871179066666667,
+   "cost_sources": {
+    "usage": 150
+   },
+   "cost_null_ids": [],
+   "latency_median": 11.245374113088474,
+   "latency_p95": 21.26336704755669,
+   "latency_max": 38.72709733014926,
+   "last_attempt_latency_median": 11.133490870473906,
+   "last_attempt_latency_p95": 18.845058738533414,
+   "slow": [],
+   "prompt_tokens_mean": 4839.04,
+   "completion_tokens_mean": 2101.1266666666666,
+   "reasoning_tokens_mean": 742.5,
+   "reasoning_tokens_recorded": 150,
+   "providers": {
+    "Google": 150
+   },
+   "models_returned": {
+    "google/gemini-2.5-flash": 150
+   },
+   "retried": [
+    "p1:07",
+    "p1:08",
+    "p1:13",
+    "p2:46"
+   ],
+   "not_stop": {
+    "length": 1
+   },
+   "not_stop_ids": [
+    "p3:45"
+   ],
+   "detail": {
+    "p3:45": [
+     200,
+     "length",
+     "",
+     1
+    ]
+   },
+   "reasoning_mean_calls": 742.5,
+   "reasoning_n": 150
+  },
+  "all": {
+   "n": 258,
+   "production_records": 258,
+   "error_records": 0,
+   "error_ids": [],
+   "http_status": {
+    "200": 258
+   },
+   "schema_valid_stored": 257,
+   "schema_invalid_ids": [
+    "p3:45"
+   ],
+   "old_schema_raw_ok": 0,
+   "revalidation_disagreements": [],
+   "cost_total": 1.33111732,
+   "cost_calls": 258,
+   "cost_mean": 0.00515936945736434,
+   "cost_sources": {
+    "usage": 258
+   },
+   "cost_null_ids": [],
+   "latency_median": 10.185766295995563,
+   "latency_p95": 25.06508553971071,
+   "latency_max": 38.72709733014926,
+   "last_attempt_latency_median": 9.586219085147604,
+   "last_attempt_latency_p95": 17.464597383933143,
+   "slow": [],
+   "prompt_tokens_mean": 3766.360465116279,
+   "completion_tokens_mean": 1808.9573643410852,
+   "reasoning_tokens_mean": 744.8410852713179,
+   "reasoning_tokens_recorded": 258,
+   "providers": {
+    "Google": 258
+   },
+   "models_returned": {
+    "google/gemini-2.5-flash": 258
+   },
+   "retried": [
+    "h1:h004",
+    "h1:h008",
+    "h1:h012",
+    "h1:h020",
+    "h1:h035",
+    "h2:h014",
+    "h2:h015",
+    "h2:h016",
+    "h2:h018",
+    "h2:h020",
+    "h2:h024",
+    "h2:h031",
+    "h2:h033",
+    "h2:h036",
+    "h3:h016",
+    "h3:h027",
+    "h3:h035",
+    "p1:07",
+    "p1:08",
+    "p1:13",
+    "p2:46"
+   ],
+   "not_stop": {
+    "length": 1
+   },
+   "not_stop_ids": [
+    "p3:45"
+   ],
+   "detail": {
+    "p3:45": [
+     200,
+     "length",
+     "",
+     1
+    ]
+   },
+   "reasoning_mean_calls": 744.8410852713179,
+   "reasoning_n": 258
+  }
+ },
+ "G31": {
+  "notes": [
+   "v4-eu-cell-31-lite-newprompt-r1: 50 records, ids differ",
+   "v4-eu-cell-31-lite-newprompt-r2: 50 records, ids differ",
+   "v4-eu-cell-31-lite-newprompt-r3: 50 records, ids differ"
+  ],
+  "holdout": {
+   "n": 108,
+   "production_records": 108,
+   "error_records": 0,
+   "error_ids": [],
+   "http_status": {
+    "200": 108
+   },
+   "schema_valid_stored": 108,
+   "schema_invalid_ids": [],
+   "old_schema_raw_ok": 0,
+   "revalidation_disagreements": [],
+   "cost_total": 0.236363325,
+   "cost_calls": 108,
+   "cost_mean": 0.002188549305555556,
+   "cost_sources": {
+    "usage": 108
+   },
+   "cost_null_ids": [],
+   "latency_median": 2.5153276906348765,
+   "latency_p95": 3.4290526096476244,
+   "latency_max": 3.863245372660458,
+   "last_attempt_latency_median": 2.5152784308884293,
+   "last_attempt_latency_p95": 3.4289942193077882,
+   "slow": [],
+   "prompt_tokens_mean": 3856.472222222222,
+   "completion_tokens_mean": 683.6481481481482,
+   "reasoning_tokens_mean": 0.0,
+   "reasoning_tokens_recorded": 108,
+   "providers": {
+    "Google": 108
+   },
+   "models_returned": {
+    "google/gemini-3.1-flash-lite": 108
+   },
+   "retried": [],
+   "not_stop": {},
+   "not_stop_ids": [],
+   "detail": {},
+   "reasoning_mean_calls": 0.0,
+   "reasoning_n": 108
+  },
+  "plates": {
+   "n": 150,
+   "production_records": 150,
+   "error_records": 0,
+   "error_ids": [],
+   "http_status": {
+    "200": 150
+   },
+   "schema_valid_stored": 150,
+   "schema_invalid_ids": [],
+   "old_schema_raw_ok": 0,
+   "revalidation_disagreements": [],
+   "cost_total": 0.496375275,
+   "cost_calls": 150,
+   "cost_mean": 0.0033091685,
+   "cost_sources": {
+    "usage": 150
+   },
+   "cost_null_ids": [],
+   "latency_median": 3.9053527233190835,
+   "latency_p95": 6.68827446338255,
+   "latency_max": 8.12338823499158,
+   "last_attempt_latency_median": 3.9052839113865048,
+   "last_attempt_latency_p95": 6.688225222751498,
+   "slow": [],
+   "prompt_tokens_mean": 5863.76,
+   "completion_tokens_mean": 1048.2533333333333,
+   "reasoning_tokens_mean": 0.0,
+   "reasoning_tokens_recorded": 150,
+   "providers": {
+    "Google": 150
+   },
+   "models_returned": {
+    "google/gemini-3.1-flash-lite": 150
+   },
+   "retried": [],
+   "not_stop": {},
+   "not_stop_ids": [],
+   "detail": {},
+   "reasoning_mean_calls": 0.0,
+   "reasoning_n": 150
+  },
+  "main": {
+   "n": 91,
+   "production_records": 91,
+   "error_records": 0,
+   "error_ids": [],
+   "http_status": {
+    "200": 91
+   },
+   "schema_valid_stored": 91,
+   "schema_invalid_ids": [],
+   "old_schema_raw_ok": 0,
+   "revalidation_disagreements": [],
+   "cost_total": 0.163846925,
+   "cost_calls": 91,
+   "cost_mean": 0.0018005156593406595,
+   "cost_sources": {
+    "usage": 91
+   },
+   "cost_null_ids": [],
+   "latency_median": 1.930955327115953,
+   "latency_p95": 2.755770399933681,
+   "latency_max": 3.0117197539657354,
+   "last_attempt_latency_median": 1.9308999120257795,
+   "last_attempt_latency_p95": 2.755707684904337,
+   "slow": [],
+   "prompt_tokens_mean": 3853.3296703296705,
+   "completion_tokens_mean": 449.0,
+   "reasoning_tokens_mean": 0.0,
+   "reasoning_tokens_recorded": 91,
+   "providers": {
+    "Google": 91
+   },
+   "models_returned": {
+    "google/gemini-3.1-flash-lite": 91
+   },
+   "retried": [],
+   "not_stop": {},
+   "not_stop_ids": [],
+   "detail": {},
+   "reasoning_mean_calls": 0.0,
+   "reasoning_n": 91
+  },
+  "all": {
+   "n": 349,
+   "production_records": 349,
+   "error_records": 0,
+   "error_ids": [],
+   "http_status": {
+    "200": 349
+   },
+   "schema_valid_stored": 349,
+   "schema_invalid_ids": [],
+   "old_schema_raw_ok": 0,
+   "revalidation_disagreements": [],
+   "cost_total": 0.896585525,
+   "cost_calls": 349,
+   "cost_mean": 0.0025690129656160457,
+   "cost_sources": {
+    "usage": 349
+   },
+   "cost_null_ids": [],
+   "latency_median": 2.7693035816773772,
+   "latency_p95": 5.756766521837562,
+   "latency_max": 8.12338823499158,
+   "last_attempt_latency_median": 2.7692510709166527,
+   "last_attempt_latency_p95": 5.756630032602698,
+   "slow": [],
+   "prompt_tokens_mean": 4718.383954154728,
+   "completion_tokens_mean": 779.1719197707737,
+   "reasoning_tokens_mean": 0.0,
+   "reasoning_tokens_recorded": 349,
+   "providers": {
+    "Google": 349
+   },
+   "models_returned": {
+    "google/gemini-3.1-flash-lite": 349
+   },
+   "retried": [],
+   "not_stop": {},
+   "not_stop_ids": [],
+   "detail": {},
+   "reasoning_mean_calls": 0.0,
+   "reasoning_n": 349
+  },
+  "brands": [
+   {
+    "label": "m1:t017",
+    "case": "t017",
+    "found": true,
+    "confidence": "high",
+    "expected_conf": "low",
+    "brand": "Snickers",
+    "brand_ok": true,
+    "macro_source": "estimated"
+   },
+   {
+    "label": "m1:t028",
+    "case": "t028",
+    "found": true,
+    "confidence": "medium",
+    "expected_conf": null,
+    "brand": "Nutella",
+    "brand_ok": true,
+    "macro_source": "estimated"
+   },
+   {
+    "label": "m1:t057",
+    "case": "t057",
+    "found": true,
+    "confidence": "high",
+    "expected_conf": null,
+    "brand": "Philadelphia",
+    "brand_ok": true,
+    "macro_source": "estimated"
+   },
+   {
+    "label": "m1:t061",
+    "case": "t061",
+    "found": false,
+    "expected_conf": "low"
+   },
+   {
+    "label": "m1:t076",
+    "case": "t076",
+    "found": true,
+    "confidence": "high",
+    "expected_conf": "low",
+    "brand": "Starbucks",
+    "brand_ok": true,
+    "macro_source": "estimated"
+   }
+  ],
+  "vague": [
+   {
+    "label": "m1:t034",
+    "case": "t034",
+    "found": true,
+    "confidence": "medium"
+   },
+   {
+    "label": "m1:t035",
+    "case": "t035",
+    "found": true,
+    "confidence": "medium"
+   },
+   {
+    "label": "m1:t071",
+    "case": "t071",
+    "found": true,
+    "confidence": "medium"
+   }
+  ],
+  "food": {
+   "empty": [],
+   "unreadable": [],
+   "no_answer": [],
+   "empty_kept_empty": 2,
+   "empty_expected_total": 2,
+   "empty_expected_wrongly_filled": []
+  }
+ },
+ "O6": {
+  "notes": [
+   "v4-eu-cell-gpt6-luna-newprompt-r1: 50 records, ids differ",
+   "v4-eu-cell-gpt6-luna-newprompt-r2: 50 records, ids differ",
+   "v4-eu-cell-gpt6-luna-newprompt-r3: 50 records, ids differ"
+  ],
+  "holdout": {
+   "n": 108,
+   "production_records": 108,
+   "error_records": 0,
+   "error_ids": [],
+   "http_status": {
+    "200": 108
+   },
+   "schema_valid_stored": 105,
+   "schema_invalid_ids": [
+    "h1:h005",
+    "h2:h005",
+    "h3:h005"
+   ],
+   "old_schema_raw_ok": 0,
+   "revalidation_disagreements": [],
+   "cost_total": 0.0598420955,
+   "cost_calls": 108,
+   "cost_mean": 0.0005540934768518518,
+   "cost_sources": {
+    "usage": 108
+   },
+   "cost_null_ids": [],
+   "latency_median": 8.721649836050346,
+   "latency_p95": 16.110369025799447,
+   "latency_max": 22.38059964682907,
+   "last_attempt_latency_median": 8.72159909340553,
+   "last_attempt_latency_p95": 16.110317759006286,
+   "slow": [],
+   "prompt_tokens_mean": 2754.3888888888887,
+   "completion_tokens_mean": 921.8425925925926,
+   "reasoning_tokens_mean": 538.9629629629629,
+   "reasoning_tokens_recorded": 108,
+   "providers": {
+    "Azure": 108
+   },
+   "models_returned": {
+    "openai/gpt-6-luna": 108
+   },
+   "retried": [],
+   "not_stop": {
+    "content_filter": 3
+   },
+   "not_stop_ids": [
+    "h1:h005",
+    "h2:h005",
+    "h3:h005"
+   ],
+   "detail": {
+    "h1:h005": [
+     200,
+     "content_filter",
+     "",
+     1
+    ],
+    "h2:h005": [
+     200,
+     "content_filter",
+     "",
+     1
+    ],
+    "h3:h005": [
+     200,
+     "content_filter",
+     "",
+     1
+    ]
+   },
+   "reasoning_mean_calls": 538.9629629629629,
+   "reasoning_n": 108
+  },
+  "plates": {
+   "n": 150,
+   "production_records": 150,
+   "error_records": 0,
+   "error_ids": [],
+   "http_status": {
+    "200": 150
+   },
+   "schema_valid_stored": 149,
+   "schema_invalid_ids": [
+    "p3:06"
+   ],
+   "old_schema_raw_ok": 0,
+   "revalidation_disagreements": [],
+   "cost_total": 0.139983888,
+   "cost_calls": 149,
+   "cost_mean": 0.0009394891812080537,
+   "cost_sources": {
+    "usage": 149
+   },
+   "cost_null_ids": [
+    "p3:06"
+   ],
+   "latency_median": 13.116435131523758,
+   "latency_p95": 22.1356537374435,
+   "latency_max": 34.33014173898846,
+   "last_attempt_latency_median": 13.11637912876904,
+   "last_attempt_latency_p95": 22.13560192130972,
+   "slow": [],
+   "prompt_tokens_mean": 5224.463087248322,
+   "completion_tokens_mean": 1480.7852348993288,
+   "reasoning_tokens_mean": 753.3557046979865,
+   "reasoning_tokens_recorded": 149,
+   "providers": {
+    "Azure": 149,
+    "null": 1
+   },
+   "models_returned": {
+    "openai/gpt-6-luna": 150
+   },
+   "retried": [],
+   "not_stop": {
+    "None": 1
+   },
+   "not_stop_ids": [
+    "p3:06"
+   ],
+   "detail": {
+    "p3:06": [
+     200,
+     null,
+     "API error in a 200 body: {\"message\": \"upstream connect error or discon",
+     1
+    ]
+   },
+   "reasoning_mean_calls": 753.3557046979865,
+   "reasoning_n": 149
+  },
+  "main": {
+   "n": 91,
+   "production_records": 91,
+   "error_records": 0,
+   "error_ids": [],
+   "http_status": {
+    "200": 91
+   },
+   "schema_valid_stored": 91,
+   "schema_invalid_ids": [],
+   "old_schema_raw_ok": 0,
+   "revalidation_disagreements": [],
+   "cost_total": 0.0357661205,
+   "cost_calls": 91,
+   "cost_mean": 0.0003930342912087912,
+   "cost_sources": {
+    "usage": 91
+   },
+   "cost_null_ids": [],
+   "latency_median": 6.763403843156993,
+   "latency_p95": 13.464848554925993,
+   "latency_max": 18.40182457305491,
+   "last_attempt_latency_median": 6.76335536967963,
+   "last_attempt_latency_p95": 13.464804499875754,
+   "slow": [],
+   "prompt_tokens_mean": 2829.868131868132,
+   "completion_tokens_mean": 606.0439560439561,
+   "reasoning_tokens_mean": 344.84615384615387,
+   "reasoning_tokens_recorded": 91,
+   "providers": {
+    "Azure": 91
+   },
+   "models_returned": {
+    "openai/gpt-6-luna": 91
+   },
+   "retried": [],
+   "not_stop": {},
+   "not_stop_ids": [],
+   "detail": {},
+   "reasoning_mean_calls": 344.84615384615387,
+   "reasoning_n": 91
+  },
+  "all": {
+   "n": 349,
+   "production_records": 349,
+   "error_records": 0,
+   "error_ids": [],
+   "http_status": {
+    "200": 349
+   },
+   "schema_valid_stored": 345,
+   "schema_invalid_ids": [
+    "h1:h005",
+    "h2:h005",
+    "h3:h005",
+    "p3:06"
+   ],
+   "old_schema_raw_ok": 0,
+   "revalidation_disagreements": [],
+   "cost_total": 0.235592104,
+   "cost_calls": 348,
+   "cost_mean": 0.0006769888045977012,
+   "cost_sources": {
+    "usage": 348
+   },
+   "cost_null_ids": [
+    "p3:06"
+   ],
+   "latency_median": 9.995305018965155,
+   "latency_p95": 19.077988248597848,
+   "latency_max": 34.33014173898846,
+   "last_attempt_latency_median": 9.995263718999922,
+   "last_attempt_latency_p95": 19.077909962646682,
+   "slow": [],
+   "prompt_tokens_mean": 3831.7155172413795,
+   "completion_tokens_mean": 1078.5804597701149,
+   "reasoning_tokens_mean": 579.9971264367816,
+   "reasoning_tokens_recorded": 348,
+   "providers": {
+    "Azure": 348,
+    "null": 1
+   },
+   "models_returned": {
+    "openai/gpt-6-luna": 349
+   },
+   "retried": [],
+   "not_stop": {
+    "content_filter": 3,
+    "None": 1
+   },
+   "not_stop_ids": [
+    "h1:h005",
+    "h2:h005",
+    "h3:h005",
+    "p3:06"
+   ],
+   "detail": {
+    "h1:h005": [
+     200,
+     "content_filter",
+     "",
+     1
+    ],
+    "h2:h005": [
+     200,
+     "content_filter",
+     "",
+     1
+    ],
+    "h3:h005": [
+     200,
+     "content_filter",
+     "",
+     1
+    ],
+    "p3:06": [
+     200,
+     null,
+     "API error in a 200 body: {\"message\": \"upstream connect error or discon",
+     1
+    ]
+   },
+   "reasoning_mean_calls": 579.9971264367816,
+   "reasoning_n": 348
+  },
+  "brands": [
+   {
+    "label": "m1:t017",
+    "case": "t017",
+    "found": true,
+    "confidence": "medium",
+    "expected_conf": "low",
+    "brand": "Snickers",
+    "brand_ok": true,
+    "macro_source": "estimated"
+   },
+   {
+    "label": "m1:t028",
+    "case": "t028",
+    "found": true,
+    "confidence": "medium",
+    "expected_conf": null,
+    "brand": "Nutella",
+    "brand_ok": true,
+    "macro_source": "estimated"
+   },
+   {
+    "label": "m1:t057",
+    "case": "t057",
+    "found": true,
+    "confidence": "low",
+    "expected_conf": null,
+    "brand": "Philadelphia",
+    "brand_ok": true,
+    "macro_source": "estimated"
+   },
+   {
+    "label": "m1:t061",
+    "case": "t061",
+    "found": true,
+    "confidence": "medium",
+    "expected_conf": "low",
+    "brand": "McDonald's",
+    "brand_ok": true,
+    "macro_source": "estimated"
+   },
+   {
+    "label": "m1:t076",
+    "case": "t076",
+    "found": true,
+    "confidence": "medium",
+    "expected_conf": "low",
+    "brand": "Starbucks",
+    "brand_ok": true,
+    "macro_source": "estimated"
+   }
+  ],
+  "vague": [
+   {
+    "label": "m1:t034",
+    "case": "t034",
+    "found": true,
+    "confidence": "medium"
+   },
+   {
+    "label": "m1:t035",
+    "case": "t035",
+    "found": true,
+    "confidence": "medium"
+   },
+   {
+    "label": "m1:t071",
+    "case": "t071",
+    "found": true,
+    "confidence": "medium"
+   }
+  ],
+  "food": {
+   "empty": [],
+   "unreadable": [],
+   "no_answer": [],
+   "empty_kept_empty": 2,
+   "empty_expected_total": 2,
+   "empty_expected_wrongly_filled": []
+  }
+ }
+}
