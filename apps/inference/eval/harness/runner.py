@@ -18,7 +18,9 @@ results.json carries a top-level `"_partial": true` marker; the final write drop
 completed file is format-identical to what earlier runs produced.
 
 Re-invoking with the same `--out` **resumes**: already-recorded image x approach pairs are
-skipped outright. `--force` discards the prior results and starts over.
+skipped outright. `--force` discards the prior results and starts over. `--retry-errors` resumes too, but
+re-runs the records that failed in transit (HTTP 429, any 5xx, no HTTP status, or an `error` with no `kind`) and
+keeps every answer that arrived, including a 400 and a schema-invalid one, which a second call would not change.
 """
 
 from __future__ import annotations
@@ -285,7 +287,8 @@ def load_prior_results(results_path: Path) -> tuple[dict, list]:
     failure list stays consistent with the results actually on disk.
 
     A recorded *error* counts as done and is skipped on resume like any other record --
-    resume exists to avoid paying twice, not to retry. Use --force to re-attempt failures.
+    resume exists to avoid paying twice, not to retry. Use --retry-errors to re-run only the calls that failed
+    in transit, or --force to start over.
     """
     if not results_path.is_file():
         return {}, []
@@ -316,6 +319,59 @@ def load_prior_results(results_path: Path) -> tuple[dict, list]:
     return results, failures
 
 
+def needs_retry(record) -> bool:
+    """True for a recorded call that failed in transit and may succeed when asked again.
+
+    That is an HTTP 429, any 5xx, a production record with no HTTP status at all (a transport error), or a record
+    with an `error` and no `kind` (the runner's own `{"error": ...}` for an exception, or an old approach's failed
+    result). A 4xx other than 429, a 200 with an invalid schema and a 200 with an error inside are answers: asking
+    again would spend money on the same reply, so they are kept."""
+    if not isinstance(record, dict):
+        return False
+    if "http_status" in record:
+        status = record["http_status"]
+        return status is None or (isinstance(status, int) and (status == 429 or status >= 500))
+    return bool(record.get("error")) and not record.get("kind")
+
+
+def drop_retryable(results: dict, failures: list, in_scope=None) -> tuple[dict, list, list]:
+    """Remove the records `needs_retry` selects. Returns (kept results, kept failures, dropped (image id, approach)).
+
+    `in_scope(image_id, key)` limits the drop to what this invocation will run again. A record outside it stays in
+    the file untouched: dropping it would erase a result that nothing re-creates (a narrowed `--only` resume)."""
+    kept: dict = {}
+    dropped: list = []
+    for image_id, per_image in results.items():
+        survivors = {}
+        for key, record in per_image.items():
+            if needs_retry(record) and (in_scope is None or in_scope(image_id, key)):
+                dropped.append((image_id, key))
+            else:
+                survivors[key] = record
+        if survivors:
+            kept[image_id] = survivors
+    gone = set(dropped)
+    return kept, [f for f in failures if (f["image_id"], f["approach"]) not in gone], dropped
+
+
+def collect_failures(all_results: dict, failures: list) -> list:
+    """The recorded failures plus every record that carries an `error`, once per (image id, approach).
+
+    The runner appends to `failures` only in its `except` blocks. A production record with an HTTP 400, a transport
+    error or an API error inside a 200 carries `error` but never raised, so counting `failures` alone printed
+    "Failures: 0" over a run of 400s."""
+    merged = list(failures)
+    seen = {(f["image_id"], f["approach"]) for f in failures}
+    for image_id, per_image in all_results.items():
+        if image_id.startswith("_") or not isinstance(per_image, dict):
+            continue
+        for key, record in per_image.items():
+            if isinstance(record, dict) and record.get("error") and (image_id, key) not in seen:
+                seen.add((image_id, key))
+                merged.append({"image_id": image_id, "approach": key, "error": str(record["error"])[:400]})
+    return merged
+
+
 def build_summary(
     all_results: dict,
     keys: list[str],
@@ -342,7 +398,7 @@ def build_summary(
     summary = {
         "total_cost_usd": total_cost,
         "per_approach_cost_usd": per_approach_cost,
-        "failures": failures,
+        "failures": collect_failures(all_results, failures),
         "config_name": run_name,
         "config_path": str(args.config),
         "approaches": keys,
@@ -692,6 +748,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="Discard any prior results in the output dir and start over (default is to resume).",
     )
     parser.add_argument(
+        "--retry-errors",
+        action="store_true",
+        help=(
+            "Resume, but re-run the recorded calls that failed in transit: HTTP 429, any 5xx, no HTTP status, or "
+            "an `error` with no `kind`. Every other record is kept as it is. Without this flag a resume skips "
+            "every record, errors included. Ignored with --force."
+        ),
+    )
+    parser.add_argument(
         "--min-avail-mb",
         type=int,
         default=0,
@@ -877,6 +942,8 @@ def main(argv: list[str] | None = None) -> int:
             prior_results, prior_failures = load_prior_results(results_path)
             done = sum(len(v) for v in prior_results.values())
             print(f"resume: {done} prior image x approach result(s) loaded from {results_path}")
+    if args.retry_errors and args.force:
+        print("--retry-errors has no effect with --force: everything runs again")
 
     print(f"config: {args.config} (eval root {eval_root})")
     if image_keys:
@@ -912,6 +979,18 @@ def main(argv: list[str] | None = None) -> int:
         clash = sorted(seen_ids & {c["id"] for c in cases})
         if clash:
             raise SystemExit(f"ERROR: case ids {clash} of approach {k!r} are also image ids; rename the cases")
+
+    if args.retry_errors and prior_results:
+        image_ids = {p.stem for p in images}
+        case_ids = {k: {c["id"] for c in cases} for k, cases in case_sets.items()}
+
+        def in_scope(image_id: str, key: str) -> bool:
+            if key in case_ids:
+                return image_id in case_ids[key]
+            return key in image_keys and image_id in image_ids
+
+        prior_results, prior_failures, dropped = drop_retryable(prior_results, prior_failures, in_scope)
+        print(f"retry-errors: {len(dropped)} failed record(s) will run again: {dropped}")
 
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -985,6 +1064,7 @@ def main(argv: list[str] | None = None) -> int:
             )
 
     summary, total_cost, per_approach_cost = summarize()
+    failures = summary["failures"]
     checkpoint(all_results, keys, out_dir, summary, partial=False)
     print(f"Wrote {results_path}")
     print(f"Wrote {out_dir / 'results_summary.md'}")

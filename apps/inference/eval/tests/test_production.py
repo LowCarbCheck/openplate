@@ -254,6 +254,64 @@ class RecordedCall(unittest.TestCase):
         self.assertIsNone(record["provider"])
 
 
+class CostAndLatencyFields(unittest.TestCase):
+    """`cost_usd` falls back to the price table and says so; the record keeps the wait, not only the last attempt."""
+
+    PRICED = {**MODEL_35, "price_per_mtok_in": 0.33, "price_per_mtok_out": 2.75}
+
+    def run_photo(self, client, model=PRICED) -> dict:
+        cfg = {"type": "production", "model": "m", "task": "plate_photo", "language": "en"}
+        return production.run_production(cfg, DATA_URL, {"resizer": "test"}, {"m": model}, {"p": client}, CONTRACT)
+
+    def envelope(self, usage: dict | None) -> dict:
+        body = {"model": "m", "choices": [{"message": {"content": json.dumps(valid_plate_answer())}, "finish_reason": "stop"}]}
+        if usage is not None:
+            body["usage"] = usage
+        return body
+
+    def test_a_reply_without_usage_cost_is_priced_from_the_table(self):
+        record = self.run_photo(FakeClient(envelope=self.envelope({"prompt_tokens": 1000, "completion_tokens": 200})))
+        self.assertIsNone(record["usage_cost_usd"])
+        self.assertAlmostEqual(record["cost_usd"], (1000 * 0.33 + 200 * 2.75) / 1_000_000)
+        self.assertEqual(record["cost_source"], "price_table")
+
+    def test_control_a_reported_cost_wins_over_the_table(self):
+        record = self.run_photo(FakeClient(envelope=self.envelope({"prompt_tokens": 1000, "completion_tokens": 200, "cost": 0.5})))
+        self.assertEqual((record["cost_usd"], record["cost_source"]), (0.5, "usage"))
+
+    def test_no_usage_and_no_price_leave_the_cost_unknown_not_zero(self):
+        no_usage = self.run_photo(FakeClient(envelope=self.envelope(None)))
+        self.assertEqual((no_usage["cost_usd"], no_usage["cost_source"]), (None, None))
+        unpriced = self.run_photo(
+            FakeClient(envelope=self.envelope({"prompt_tokens": 1000, "completion_tokens": 200})), model=MODEL_35
+        )
+        self.assertEqual((unpriced["cost_usd"], unpriced["cost_source"]), (None, None))
+
+    def test_a_zero_price_is_a_price(self):
+        free = {**MODEL_35, "price_per_mtok_in": 0, "price_per_mtok_out": 0}
+        record = self.run_photo(FakeClient(envelope=self.envelope({"prompt_tokens": 10, "completion_tokens": 5})), model=free)
+        self.assertEqual((record["cost_usd"], record["cost_source"]), (0.0, "price_table"))
+
+    def test_the_record_carries_total_and_per_attempt_latency(self):
+        class Slow(FakeClient):
+            def post_raw(self, body):
+                raw = super().post_raw(body)
+                raw.latency_ms, raw.total_latency_ms, raw.attempt_latencies_ms, raw.attempts = 900.0, 7900.0, [5000.0, 2000.0, 900.0], 3
+                return raw
+
+        record = self.run_photo(Slow(valid_plate_answer()))
+        self.assertEqual(record["latency_ms"], 900.0)
+        self.assertEqual(record["total_latency_ms"], 7900.0)
+        self.assertEqual(record["attempt_latencies_ms"], [5000.0, 2000.0, 900.0])
+        # control: a response built without the new fields reads as one attempt of the same length
+        plain = self.run_photo(FakeClient(valid_plate_answer()))
+        self.assertEqual((plain["total_latency_ms"], plain["attempt_latencies_ms"]), (12.5, [12.5]))
+
+    def test_the_scorecard_reads_the_total_wait(self):
+        record = {"latency_ms": 900.0, "total_latency_ms": 7900.0}
+        self.assertEqual(approaches.approach_latency_ms(record), 7900.0)
+
+
 class TextAndRecipeModes(unittest.TestCase):
     """Two inline cases per mode, so the loaders and the runners are exercised end to end."""
 
