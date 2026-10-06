@@ -6,7 +6,8 @@ Stdlib only. No model call, no key: every answer is read from a run's `results.j
     python3 -m harness.score_flags --map-dump            # print the item mapping for review, score nothing
     python3 -m harness.score_flags --config configs/score-flags-v3.json   # cells, runs and rules from a file
 
-A config file names the cells, their run directories and the rule test (see `load_config`). A run name is a
+A config file names the cells, their run directories, the rule test and `expected_repeats`, the typed repeats rule 2
+needs (default 3; see `load_config`). A run name is a
 directory under `--runs-dir` (default `runs/`); a relative path with `..` reaches another worktree, an absolute
 path works too. A cell may list several plate runs (repeats); a plate run is used only when it holds every plate.
 Without `--config` the scorer runs the fixed EU cells B, C and D, as before.
@@ -35,8 +36,21 @@ A gold item that no model item holds was NOT LISTED. It cannot carry a flag. Tha
 effective-clear must_flag (the task's rule), and the report says whether the same flag sits on another item
 of the answer, so a person can judge it.
 
-A call that failed (no parseable answer) shows the person an error, not an unflagged food. It is scored by
-decision rule 1, not here: its entries are counted apart as `failed_call`, with what the truncated text held.
+A call that failed (no parseable answer, or an `{"error": ...}` record from a call that raised) shows the person
+an error, not an unflagged food. It is scored by decision rule 1, not as a flag miss: its entries are counted
+apart as `failed_call`, with what the truncated text held. They still reach the verdicts: every rule prints a
+second line that counts a failed call's must_flag entries as misses, and a rule whose verdict changes between the
+two lines is INCONCLUSIVE.
+
+Verdicts of rules 2 to 4 (`evaluate_rules`):
+
+- Rule 2 needs `expected_repeats` typed repeats (config key, default 3). Fewer is INCOMPLETE unless a miss already
+  decides it (FAIL). No miss and a failed call that holds a clear entry is INCONCLUSIVE.
+- Rules 3 and 4 PASS only when the clear-only comparison AND the all-entries comparison both pass. Both numbers
+  are printed.
+- Merge leniency: an item that holds more than one gold food carries its flags for each of them. The report counts
+  the hits credited that way per cell. The strict view lets one flag value on one such item credit one gold entry
+  only; it is printed beside the verdict and does not decide.
 """
 
 from __future__ import annotations
@@ -98,6 +112,8 @@ SKIPPED_CELLS = {
 }
 DEFAULT_TEST = "D"
 DEFAULT_REFS = ("B", "C")
+#: Typed repeats the decision rule asks for. Rule 2 is INCOMPLETE with fewer.
+DEFAULT_EXPECTED_REPEATS = 3
 
 
 def plate_names(spec: dict) -> list[str]:
@@ -125,12 +141,14 @@ def load_config(path: Path) -> dict:
     """Read a cell config. Shape (every key but `cells` and `test` optional):
 
         {"title": "...", "intro": ["line", ...], "out": "runs/EU-FLAG-SCORING-V3-2026-10-06",
-         "test": "D3", "refs": ["B", "C3"],
+         "test": "D3", "refs": ["B", "C3"], "expected_repeats": 3,
          "cells": {"D3": {"label": "...", "text": ["run-r1", "run-r2"], "plates": ["run", "run-r2"]}, ...},
          "skipped": {"run name": "why"},
          "sanity_cells": ["B", "C3", "D3"], "category_cells": [...], "compare": [["D", "D3"], ["C", "C3"]]}
 
     A cell needs at least one of `text` and `plates`. The test cell and every ref must be cells.
+    `expected_repeats` (default 3) is how many typed repeats the test cell must hold for rule 2 to be decided;
+    a cell with fewer gives INCOMPLETE. It must be a whole number of at least 1.
     """
     cfg = json.loads(Path(path).read_text(encoding="utf-8"))
     cells = cfg.get("cells")
@@ -148,6 +166,9 @@ def load_config(path: Path) -> dict:
         if name not in cells:
             raise ValueError(f"{path}: {name!r} is used but is not a cell")
     cfg["refs"] = refs
+    expected = cfg.setdefault("expected_repeats", DEFAULT_EXPECTED_REPEATS)
+    if isinstance(expected, bool) or not isinstance(expected, int) or expected < 1:
+        raise ValueError(f"{path}: `expected_repeats` must be a whole number of at least 1, got {expected!r}")
     return cfg
 
 # ---------------------------------------------------------------------------
@@ -781,7 +802,9 @@ def answer_of(case_result: dict) -> dict:
     """The single approach answer stored for a case (`plate_text`, `production` or `baseline`)."""
     if len(case_result) != 1:
         raise ValueError(f"expected one approach per case, got {sorted(case_result)}")
-    return next(iter(case_result.values()))
+    only = next(iter(case_result.values()))
+    # A bare `{"error": "..."}` has no approach level: its one value is the message, and the record is the dict.
+    return only if isinstance(only, dict) else case_result
 
 
 def food_flags(food: dict) -> dict[str, set[str]]:
@@ -794,7 +817,15 @@ def food_flags(food: dict) -> dict[str, set[str]]:
 
 
 def call_failed(answer: dict) -> bool:
-    return answer.get("foods") is None or answer.get("schema_valid") is False and not answer.get("foods")
+    """No answer to score: no `foods`, an invalid answer with none, or a recorded `error` with none.
+
+    A schema-valid answer whose `foods` is an empty list is an answer (the model listed nothing), not a failure.
+    It is scored, and every clear entry of it is an unlisted miss."""
+    if answer.get("foods") is None:
+        return True
+    if answer.get("foods"):
+        return False
+    return answer.get("schema_valid") is False or bool(answer.get("error"))
 
 
 def truncated_flags(raw: str | None) -> list[str]:
@@ -829,6 +860,25 @@ def _describe(food: dict) -> dict:
         "allergens": sorted(fl["allergens"]),
         "mayContain": sorted(fl["mayContain"]),
     }
+
+
+def _credit_merge(rec: dict, entry: dict, idxs: list[int], foods: list[dict], held_count: Counter, claimed: set) -> None:
+    """Mark a hit that only merged items carry, and apply the strict rule: one flag value on one item credits once.
+
+    A hit is `merged_credit` when every model item that carries the flag holds more than one gold food. In the
+    strict view the first gold entry such an item credits for that flag value keeps the hit; any further entry
+    credited by the same item and value is a `strict_miss` (the model wrote the flag once, for a food it did not
+    name on its own). A hit that some single-food item carries is never touched."""
+    kind = entry["kind"]
+    list_name = "pregnancy" if kind == "pregnancy" else "allergens"
+    carrying = [i for i in idxs if any(v in food_flags(foods[i])[list_name] for v in entry_values(entry))]
+    if not carrying or not all(held_count[i] > 1 for i in carrying):
+        return
+    rec["merged_credit"] = True
+    claims = {(i, kind, v) for i in carrying for v in entry_values(entry) if v in food_flags(foods[i])[list_name]}
+    if claims & claimed:
+        rec["strict_miss"] = True
+    claimed.update(claims)
 
 
 def score_case(case: dict, foods: list[dict], *, plate: bool, listed: dict[str, bool] | None = None) -> dict:
@@ -875,6 +925,11 @@ def score_case(case: dict, foods: list[dict], *, plate: bool, listed: dict[str, 
                     hits.append(f"{food.get('name')} ({where}: {v})")
         return hits
 
+    # How many gold foods each model item holds. An item that holds more than one is a merge, and its flags are
+    # credited to each of them (the lenient reading the report keeps visible).
+    held_count = Counter(i for ix in holders.values() for i in ix)
+    claimed: set[tuple[int, str, str]] = set()  # (model item, kind, value) already credited through a merge
+
     entries = []
     for lst in ("must_flag", "if_listed"):
         for e in case.get(lst, []):
@@ -890,6 +945,8 @@ def score_case(case: dict, foods: list[dict], *, plate: bool, listed: dict[str, 
                 "value": entry_label(e),
                 "clear": bool(eff_clear(e)),
                 "holders": [_describe(foods[i]) for i in idxs],
+                "merged_credit": False,
+                "strict_miss": False,
             }
             if not idxs:
                 rec["outcome"] = "unlisted_miss" if rec["clear"] else "unlisted_unscored"
@@ -910,6 +967,9 @@ def score_case(case: dict, foods: list[dict], *, plate: bool, listed: dict[str, 
                     rec["outcome"] = "demoted"
                 else:
                     rec["outcome"] = "miss"
+                if rec["outcome"] == "hit":
+                    _credit_merge(rec, e, idxs, foods, held_count, claimed)
+            rec["strict_outcome"] = "miss" if rec.get("strict_miss") else rec["outcome"]
             entries.append(rec)
 
     false_alarms = []
@@ -977,6 +1037,7 @@ def failed_case(case: dict, answer: dict, *, plate: bool) -> dict:
         "plate": plate,
         "input": case.get("input", ""),
         "finish_reason": answer.get("finish_reason"),
+        "error": answer.get("error"),
         "schema_errors": answer.get("schema_errors"),
         "must_flag": clear_entries,
         "truncated_flags": truncated_flags(answer.get("raw_content")),
@@ -1053,6 +1114,8 @@ def tally(scored_runs: list[dict]) -> dict:
                 cl = "clear" if e["clear"] else "nonclear"
                 src = "plate" if c["plate"] else "typed"
                 key = (c["case"], e["item"], e["kind"], e["value"])
+                if e["outcome"] in ("unlisted_unscored", "unlisted_miss"):
+                    t[f"unlisted_entries_{src}"] += 1  # the gold item had no model item that held it
                 if e["outcome"] == "unlisted_unscored":
                     t[f"{k}_{cl}_unlisted_unscored"] += 1
                     continue
@@ -1070,6 +1133,14 @@ def tally(scored_runs: list[dict]) -> dict:
                     per_value[(e["kind"], e["value"])][f"{cl}_miss"] += 1
                     distinct[f"{k}_{cl}_miss"].add(key)
                     misses.append({**e, "case": c["case"], "input": c["input"], "plate": c["plate"]})
+                elif e["outcome"] == "hit":
+                    if e.get("merged_credit"):
+                        t[f"{k}_{cl}_hit_merged"] += 1
+                        t[f"{k}_{cl}_hit_merged_{src}"] += 1
+                        if e.get("strict_miss"):
+                            t[f"{k}_{cl}_strict_extra_miss"] += 1
+                            t[f"{k}_{cl}_strict_extra_miss_{src}"] += 1
+                            distinct[f"{k}_{cl}_strict_extra_miss"].add(key)
                 elif e["outcome"] == "demoted":
                     t[f"alg_{cl}_demoted"] += 1
                     per_value[(e["kind"], e["value"])][f"{cl}_demoted"] += 1
@@ -1085,12 +1156,13 @@ def tally(scored_runs: list[dict]) -> dict:
             for o in c["outside_gold"]:
                 t["outside_items"] += 1
                 t["outside_flags"] += o["n_flags"]
+                if o["n_flags"]:
+                    t["outside_items_flagged"] += 1
         for f in run["failed"]:
             t["failed_calls"] += 1
             for e in f["must_flag"]:
                 k = "preg" if e["kind"] == "pregnancy" else "alg"
-                if e["clear"]:
-                    t[f"{k}_clear_failed_call"] += 1
+                t[f"{k}_{'clear' if e['clear'] else 'nonclear'}_failed_call"] += 1
     return {
         "counts": dict(t),
         "cases": n_cases,
@@ -1215,7 +1287,33 @@ def rule_numbers(summary: dict) -> dict:
                 row[f"{kind}_{cl}_total_listed_per3"] = round((typed - typed_ul) * 3 / n + (plates - plates_ul) / npr, 2)
                 row[f"{kind}_{cl}_typed_distinct"] = s["typed"]["distinct"].get(f"{kind}_{cl}_miss", 0)
                 row[f"{kind}_{cl}_plates_distinct"] = 0 if not s["plates"] else s["plates"]["distinct"].get(f"{kind}_{cl}_miss", 0)
+                # Failed calls, scaled like the misses. Their must_flag entries are not misses (rule 1 owns the
+                # call), but the verdict lines that count them as misses need the same scaling.
+                f_typed = _c(s["typed"], f"{kind}_{cl}_failed_call")
+                f_plates = _c(s["plates"], f"{kind}_{cl}_failed_call")
+                row[f"{kind}_{cl}_failed_typed"] = f_typed
+                row[f"{kind}_{cl}_failed_plates"] = f_plates
+                row[f"{kind}_{cl}_failed_total_per3"] = round(f_typed * 3 / n + f_plates / npr, 2)
+                # Merge leniency: hits only merged items carry, and the extra misses the strict view adds.
+                m_typed = _c(s["typed"], f"{kind}_{cl}_hit_merged")
+                m_plates = _c(s["plates"], f"{kind}_{cl}_hit_merged")
+                x_typed = _c(s["typed"], f"{kind}_{cl}_strict_extra_miss")
+                x_plates = _c(s["plates"], f"{kind}_{cl}_strict_extra_miss")
+                row[f"{kind}_{cl}_hit_merged_typed"] = m_typed
+                row[f"{kind}_{cl}_hit_merged_plates"] = m_plates
+                row[f"{kind}_{cl}_strict_extra_typed"] = x_typed
+                row[f"{kind}_{cl}_strict_extra_plates"] = x_plates
+                row[f"{kind}_{cl}_total_strict_per3"] = round((typed + x_typed) * 3 / n + (plates + x_plates) / npr, 2)
             row[f"{kind}_clear_failed_call"] = _c(s["typed"], f"{kind}_clear_failed_call") + _c(s["plates"], f"{kind}_clear_failed_call")
+        row["outside_items_typed"] = _c(s["typed"], "outside_items")
+        row["outside_items_plates"] = _c(s["plates"], "outside_items")
+        row["outside_items_flagged_typed"] = _c(s["typed"], "outside_items_flagged")
+        row["outside_items_flagged_plates"] = _c(s["plates"], "outside_items_flagged")
+        row["unlisted_entries_typed"] = _c(s["typed"], "unlisted_entries_typed")
+        row["unlisted_entries_plates"] = _c(s["plates"], "unlisted_entries_plate")
+        row["typed_answers"] = s["typed"]["cases"]
+        row["plate_answers"] = s["plates"]["cases"] if s["plates"] else 0
+        row["preg_clear_typed_strict_extra_per_repeat"] = [r.get("preg_clear_strict_extra_miss", 0) for r in s["typed_per_repeat"]]
         row["preg_clear_typed_per_repeat"] = [r.get("preg_clear_miss", 0) for r in s["typed_per_repeat"]]
         row["preg_clear_typed_failed_per_repeat"] = [r.get("preg_clear_failed_call", 0) for r in s["typed_per_repeat"]]
         for kind in ("preg", "alg"):
@@ -1228,43 +1326,110 @@ def _pf(ok: bool) -> str:
     return "PASS" if ok else "FAIL"
 
 
-def evaluate_rules(nums: dict, test: str = "D", refs: tuple[str, ...] = ("B", "C"), nums_ws: dict | None = None) -> list[dict]:
-    """Rules 2 to 4. Only effective-clear entries decide. Repeats are scaled to 3 when a cell has fewer."""
+def _fmt(x) -> str:
+    return f"{x:g}"
+
+
+def evaluate_rules(
+    nums: dict,
+    test: str = "D",
+    refs: tuple[str, ...] = ("B", "C"),
+    nums_ws: dict | None = None,
+    expected_repeats: int = DEFAULT_EXPECTED_REPEATS,
+) -> list[dict]:
+    """Rules 2 to 4. Repeats are scaled to 3 when a cell has fewer.
+
+    Rule 2: zero clear misses in every repeat. A miss is FAIL whatever else is true. With no miss, the test cell
+    must hold `expected_repeats` typed repeats, else INCOMPLETE; and a failed call that holds a clear entry makes it
+    INCONCLUSIVE, because zero misses was not shown for that case.
+
+    Rules 3 and 4: PASS only when the clear-only totals AND the all-entries totals (clear plus not clear) of the
+    test cell are no higher than the ref's. Both comparisons are printed. A second pair of lines counts the clear
+    must_flag entries of failed calls as misses on both sides. When that second reading gives a different verdict,
+    the rule is INCONCLUSIVE: the answer depends on how failed calls count.
+
+    Keys a hand-built `nums` row lacks (failed calls, strict view) read as zero."""
     rules = []
     d = nums[test]
     per_rep = d["preg_clear_typed_per_repeat"]
+    failed_rep = d["preg_clear_typed_failed_per_repeat"]
+    strict_extra = d.get("preg_clear_typed_strict_extra_per_repeat") or [0] * len(per_rep)
+    no_miss = all(x == 0 for x in per_rep)
+    no_failed = all(x == 0 for x in failed_rep)
+    complete = d["repeats"] == expected_repeats
+    if not no_miss:
+        verdict = "FAIL"
+    elif not complete:
+        verdict = "INCOMPLETE"
+    elif not no_failed:
+        verdict = "INCONCLUSIVE"
+    else:
+        verdict = "PASS"
+    notes = []
+    if not complete:
+        notes.append(f"{test} holds {d['repeats']} typed repeat(s), the rule needs {expected_repeats}")
     rules.append(
         {
             "rule": 2,
             "what": f"{test}: zero misses on the clear pregnancy must-flag typed cases, in every repeat",
-            "verdict": _pf(d["repeats"] >= 1 and all(x == 0 for x in per_rep)),
-            "numbers": f"misses per repeat {per_rep}; distinct entries missed {d['preg_clear_typed_distinct']}",
-            "strict_with_failed_calls": _pf(all(x == 0 for x in per_rep) and all(x == 0 for x in d["preg_clear_typed_failed_per_repeat"])),
-            "failed_call_entries_per_repeat": d["preg_clear_typed_failed_per_repeat"],
+            "verdict": verdict,
+            "numbers": f"misses per repeat {per_rep}; distinct entries missed {d['preg_clear_typed_distinct']}"
+            + (f"; {'; '.join(notes)}" if notes else ""),
+            "repeats": d["repeats"],
+            "expected_repeats": expected_repeats,
+            "strict_with_failed_calls": _pf(no_miss and no_failed),
+            "failed_call_entries_per_repeat": failed_rep,
+            "strict_merge_view": f"misses per repeat {[a + b for a, b in zip(per_rep, strict_extra)]} ({_pf(all(a + b == 0 for a, b in zip(per_rep, strict_extra)))})",
         }
     )
     for rule, kind, word in ((3, "preg", "pregnancy"), (4, "alg", "allergen")):
         for ref in refs:
             r = nums[ref]
+            g = lambda row, key: row.get(f"{kind}_{key}", 0)  # noqa: E731 - a hand-built row may lack the new keys
             dv, rv = d[f"{kind}_clear_total_per3"], r[f"{kind}_clear_total_per3"]
             dl, rl = d[f"{kind}_clear_total_listed_per3"], r[f"{kind}_clear_total_listed_per3"]
             dall = round(dv + d[f"{kind}_nonclear_total_per3"], 2)
             rall = round(rv + r[f"{kind}_nonclear_total_per3"], 2)
+            clear_ok, all_ok = dv <= rv, dall <= rall
+            base = "PASS" if clear_ok and all_ok else "FAIL"
+            # failed calls counted as misses, on both sides
+            dfc, rfc = g(d, "clear_failed_total_per3"), g(r, "clear_failed_total_per3")
+            dfa = round(dfc + g(d, "nonclear_failed_total_per3"), 2)
+            rfa = round(rfc + g(r, "nonclear_failed_total_per3"), 2)
+            dvf, rvf = round(dv + dfc, 2), round(rv + rfc, 2)
+            dallf, rallf = round(dall + dfa, 2), round(rall + rfa, 2)
+            clear_ok_f, all_ok_f = dvf <= rvf, dallf <= rallf
+            combined = "PASS" if clear_ok_f and all_ok_f else "FAIL"
             ddist = d[f"{kind}_clear_typed_distinct"] + d[f"{kind}_clear_plates_distinct"]
             rdist = r[f"{kind}_clear_typed_distinct"] + r[f"{kind}_clear_plates_distinct"]
             scaled = "" if r["repeats"] == d["repeats"] == 3 else f" (typed scaled to 3 repeats: {test} {d['repeats']}, {ref} {r['repeats']})"
             dp, rp = d.get("plate_runs", 1), r.get("plate_runs", 1)
             if not dp == rp == 1:
                 scaled += f" (plates: mean per plate run, {test} {dp} run(s) {d.get(f'{kind}_clear_plates_each_run', [])}, {ref} {rp} run(s) {r.get(f'{kind}_clear_plates_each_run', [])})"
+            ds_c, rs_c = g(d, "clear_total_strict_per3") or dv, g(r, "clear_total_strict_per3") or rv
+            ds_a = round(ds_c + (g(d, "nonclear_total_strict_per3") or d[f"{kind}_nonclear_total_per3"]), 2)
+            rs_a = round(rs_c + (g(r, "nonclear_total_strict_per3") or r[f"{kind}_nonclear_total_per3"]), 2)
             row = {
                 "rule": rule,
                 "ref": ref,
-                "what": f"{test} total {word} misses (typed plus plates) no higher than {ref}",
-                "verdict": _pf(dv <= rv),
-                "numbers": f"{test} {dv} vs {ref} {rv}{scaled}",
+                "what": f"{test} total {word} misses (typed plus plates) no higher than {ref}, clear entries AND all entries",
+                "verdict": base if base == combined else "INCONCLUSIVE",
+                "verdict_without_failed_calls": base,
+                "verdict_with_failed_calls": combined,
+                "clear_verdict": _pf(clear_ok),
+                "all_verdict": _pf(all_ok),
+                "numbers": f"clear only: {test} {_fmt(dv)} vs {ref} {_fmt(rv)} ({_pf(clear_ok)}){scaled}",
+                "with_nonclear": f"all entries: {test} {_fmt(dall)} vs {ref} {_fmt(rall)} ({_pf(all_ok)})",
+                "with_failed_calls": (
+                    f"failed calls counted as misses: clear {test} {_fmt(dvf)} vs {ref} {_fmt(rvf)} ({_pf(clear_ok_f)}); "
+                    f"all {test} {_fmt(dallf)} vs {ref} {_fmt(rallf)} ({_pf(all_ok_f)}); verdict {combined}"
+                ),
                 "distinct": f"{test} {ddist} vs {ref} {rdist} ({_pf(ddist <= rdist)})",
-                "listed_only": f"{test} {dl} vs {ref} {rl} ({_pf(dl <= rl)})",
-                "with_nonclear": f"{test} {dall} vs {ref} {rall} ({_pf(dall <= rall)})",
+                "listed_only": f"{test} {_fmt(dl)} vs {ref} {_fmt(rl)} ({_pf(dl <= rl)})",
+                "strict_merge_view": (
+                    f"clear {test} {_fmt(ds_c)} vs {ref} {_fmt(rs_c)} ({_pf(ds_c <= rs_c)}); "
+                    f"all {test} {_fmt(ds_a)} vs {ref} {_fmt(rs_a)} ({_pf(ds_a <= rs_a)})"
+                ),
             }
             if nums_ws:
                 wd, wr = nums_ws[test][f"{kind}_clear_total_per3"], nums_ws[ref][f"{kind}_clear_total_per3"]
@@ -1461,24 +1626,28 @@ def render_markdown(
         L.append("")
     L.append("## Decision rules")
     L.append("")
-    L.append("Clear entries decide. Typed misses are summed over the repeats (scaled to 3 when a cell has fewer).")
-    L.append("Beside the verdict, for a reader to judge: each distinct entry counted once; the misses on listed")
-    L.append("items only (a food the answer did not list at all is left out); the plates read with the recall")
-    L.append("worksheet's listing (a core item the worksheet marks `n` counts as not listed); and the totals with the")
-    L.append("`clear: false` entries added. None of these four decides a rule.")
+    L.append("Rule 2 needs the expected number of typed repeats (fewer is INCOMPLETE) and zero clear misses in each. Rules")
+    L.append("3 and 4 PASS only when BOTH the clear-only totals and the all-entries totals (clear plus `clear: false`) of")
+    L.append("the test cell are no higher than the ref's; both are printed. Typed misses are summed over the repeats")
+    L.append("(scaled to 3 when a cell has fewer). A failed call is not a flag miss, but its must_flag entries are")
+    L.append("counted as misses in a second line per rule; when that line gives another verdict, the rule is")
+    L.append("INCONCLUSIVE. Beside the verdict, for a reader to judge: each distinct entry counted once; the misses on")
+    L.append("listed items only; the plates read with the recall worksheet's listing; and the strict merge view (one flag")
+    L.append("value on an item that holds several gold foods credits one entry). None of these four decides a rule.")
     L.append("")
-    L.append("| rule | test | verdict | clear misses | distinct entries | listed items only | worksheet listing | with clear:false |")
-    L.append("|---|---|---|---|---|---|---|---|")
+    L.append("| rule | test | verdict | clear entries | all entries | failed calls counted as misses | distinct entries | listed items only | worksheet listing | strict merge view |")
+    L.append("|---|---|---|---|---|---|---|---|---|---|")
     for r in rules:
         if r["rule"] == 2:
             L.append(
-                f"| 2 | {r['what']} | **{r['verdict']}** | {r['numbers']} | | | | failed calls left out (rule 1); "
-                f"their clear pregnancy entries per repeat {r['failed_call_entries_per_repeat']}; counted as misses: {r['strict_with_failed_calls']} |"
+                f"| 2 | {r['what']} | **{r['verdict']}** | {r['numbers']} | | failed calls left out (rule 1); "
+                f"their clear pregnancy entries per repeat {r['failed_call_entries_per_repeat']}; counted as misses: {r['strict_with_failed_calls']} | | | | "
+                f"{r['strict_merge_view']} |"
             )
         else:
             L.append(
-                f"| {r['rule']} | {r['what']} | **{r['verdict']}** | {r['numbers']} | {r['distinct']} | {r['listed_only']} | "
-                f"{r.get('worksheet_listing', '')} | {r['with_nonclear']} |"
+                f"| {r['rule']} | {r['what']} | **{r['verdict']}** | {r['numbers']} | {r['with_nonclear']} | {r['with_failed_calls']} | "
+                f"{r['distinct']} | {r['listed_only']} | {r.get('worksheet_listing', '')} | {r['strict_merge_view']} |"
             )
     L.append("")
     L.append("## Miss counts per cell")
@@ -1511,6 +1680,34 @@ def render_markdown(
                 f"({c.get('alg_clear_miss_unlisted', 0)}, {c.get('alg_clear_miss_unlisted_elsewhere', 0)}) | "
                 f"{c.get('preg_clear_miss_iflisted', 0) + c.get('alg_clear_miss_iflisted', 0) + c.get('preg_nonclear_miss_iflisted', 0) + c.get('alg_nonclear_miss_iflisted', 0)} | "
                 f"{c.get('failed_calls', 0)} |"
+            )
+    L.append("")
+
+    L.append("## Name matching and merge leniency per cell")
+    L.append("")
+    L.append("A model item that shares too few words with any gold food is `outside the gold`: its flags are never")
+    L.append("judged, and the gold food it should have held shows up as `unlisted` (a clear entry of it is an")
+    L.append("`unlisted_miss`). A new model that names foods in its own way can turn real matches into those, so the")
+    L.append("counts are printed here. Check the names before reading a rise in misses as a safety result (`--map-dump`")
+    L.append("prints the mapping).")
+    L.append("")
+    L.append("An item that holds more than one gold food carries its flags for each of them. `hits via a merged item`")
+    L.append("counts the hits credited only that way. In the strict view one flag value on one such item credits one")
+    L.append("gold entry; `extra misses (strict)` are the further entries that lose their hit.")
+    L.append("")
+    L.append("| cell | source | answers | items outside the gold (with flags) | gold entries with no holder | hits via a merged item, clear / not clear | extra misses (strict), clear preg / clear alg |")
+    L.append("|---|---|---|---|---|---|---|")
+    for cell, s_ in summary.items():
+        for src, t in (("typed", s_["typed"]), ("plates", s_["plates"])):
+            if not t or not t["cases"] and not t["counts"]:
+                continue
+            c = t["counts"]
+            unl = c.get("unlisted_entries_typed" if src == "typed" else "unlisted_entries_plate", 0)
+            merged = {cl: c.get(f"preg_{cl}_hit_merged", 0) + c.get(f"alg_{cl}_hit_merged", 0) for cl in ("clear", "nonclear")}
+            L.append(
+                f"| {cell} | {src} | {t['cases']} | {c.get('outside_items', 0)} ({c.get('outside_items_flagged', 0)}) | {unl} | "
+                f"{merged['clear']} / {merged['nonclear']} | "
+                f"{c.get('preg_clear_strict_extra_miss', 0)} / {c.get('alg_clear_strict_extra_miss', 0)} |"
             )
     L.append("")
 
@@ -1551,7 +1748,7 @@ def render_markdown(
 
     L.append("## Failed calls (scored by rule 1, not as flag misses)")
     L.append("")
-    L.append("| cell | run | case | text | finish | clear must_flag entries | flags the truncated text had written |")
+    L.append("| cell | run | case | text | finish or error | clear must_flag entries | flags the truncated text had written |")
     L.append("|---|---|---|---|---|---|---|")
     for cell, data in scored["cells"].items():
         runs = cell_runs(data)
@@ -1559,7 +1756,7 @@ def render_markdown(
             for f in run["failed"]:
                 ents = ", ".join(f"{e['kind']} {e['value']}" for e in f["must_flag"] if e["clear"])
                 L.append(
-                    f"| {cell} | {run['run']} | {f['case']} | {_md_escape(f['input'])} | {f['finish_reason']} | {ents} | "
+                    f"| {cell} | {run['run']} | {f['case']} | {_md_escape(f['input'])} | {_md_escape(str(f['finish_reason'] or f.get('error') or 'none')[:120])} | {ents} | "
                     f"{_md_escape(' ; '.join(f['truncated_flags'])) or 'none'} |"
                 )
     L.append("")
@@ -1820,6 +2017,7 @@ def compact_scored(scored: dict) -> dict:
                         "case": c["case"],
                         "mapping": c["mapping"],
                         "hits": sum(1 for e in c["entries"] if e["outcome"] == "hit"),
+                        "merged_hits": sum(1 for e in c["entries"] if e.get("merged_credit")),
                         "not_hit": [e for e in c["entries"] if e["outcome"] != "hit"],
                         "false_alarms": c["false_alarms"],
                         "extras": [f"{x['food']}: {x['kind']} {x['value']} ({x['where']})" for x in c["extras"]],
@@ -1870,7 +2068,13 @@ def run_scoring(
     missing = set(scored_ws["worksheet_missing"])
     for cell, data in scored_ws["cells"].items():
         nums_ws[cell]["worksheet_missing"] = sorted(r["run"] for r in data["plate_runs"] if r["run"] in missing)
-    rules = evaluate_rules(nums, test=cfg["test"], refs=tuple(cfg["refs"]), nums_ws=nums_ws)
+    rules = evaluate_rules(
+        nums,
+        test=cfg["test"],
+        refs=tuple(cfg["refs"]),
+        nums_ws=nums_ws,
+        expected_repeats=cfg.get("expected_repeats", DEFAULT_EXPECTED_REPEATS),
+    )
     gold = None
     if text_gold is not None or plate_gold is not None:
         gold = {**(text_gold or {}), **(plate_gold or {})}
@@ -1915,7 +2119,12 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Score the safety flags of the EU cells against the gold flag labels.")
     ap.add_argument("--map-dump", action="store_true", help="print the item mapping of every answer and stop")
     ap.add_argument("--out", default=None, help="output stem (default runs/EU-FLAG-SCORING-<date>, or the config's `out`)")
-    ap.add_argument("--config", default=None, help="a JSON file naming the cells, their runs and the rule test (see load_config)")
+    ap.add_argument(
+        "--config",
+        default=None,
+        help="a JSON file naming the cells, their runs, the rule test and `expected_repeats`, the typed repeats rule 2 "
+        "needs (default 3; see load_config)",
+    )
     ap.add_argument("--runs-dir", default=None, help="the directory run names are read from (default runs/)")
     args = ap.parse_args(argv)
     runs_dir = Path(args.runs_dir) if args.runs_dir else RUNS_DIR
@@ -1924,7 +2133,7 @@ def main(argv: list[str] | None = None) -> int:
         cfg["config_path"] = args.config
         cfg.setdefault("skipped_cells", {})
     else:
-        cfg = {"cells": CELLS, "test": DEFAULT_TEST, "refs": list(DEFAULT_REFS)}
+        cfg = {"cells": CELLS, "test": DEFAULT_TEST, "refs": list(DEFAULT_REFS), "expected_repeats": DEFAULT_EXPECTED_REPEATS}
     if args.map_dump:
         map_dump(cfg["cells"], runs_dir)
         return 0
@@ -1938,6 +2147,9 @@ def main(argv: list[str] | None = None) -> int:
     for r in doc["rules"]:
         ref = f" vs {r['ref']}" if "ref" in r else ""
         print(f"rule {r['rule']}{ref}: {r['verdict']}  {r['numbers']}")
+        if "with_nonclear" in r:
+            print(f"    {r['with_nonclear']}")
+            print(f"    {r['with_failed_calls']}")
     print(f"wrote {stem}.json and {stem}.md")
     return 0
 

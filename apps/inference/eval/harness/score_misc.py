@@ -16,6 +16,9 @@ kcal row (`KCAL_OVERLAP`). The report says so.
 Usage, from `apps/inference/eval`:
 
     python3 -m harness.score_misc            # writes runs/EU-MISC-SCORING-2026-10-06.{md,json}
+
+The exit code is 2 when a scored cell holds fewer than `EXPECTED_REPEATS` (3) typed repeats. The report is still
+written, and says INCOMPLETE on its first lines.
 """
 
 from __future__ import annotations
@@ -48,6 +51,8 @@ CELLS = {
 SCORED_CELLS = ("B", "C", "D")
 SLOW_MS = 60_000
 TYPED_CASES_PER_RUN = 91
+#: The decision rule asks for three typed repeats per cell. Fewer is reported as INCOMPLETE, never as a pass.
+EXPECTED_REPEATS = 3
 
 # ---------------------------------------------------------------------------
 # Small numeric helpers
@@ -78,6 +83,14 @@ def median(values: list[float]) -> float | None:
 # ---------------------------------------------------------------------------
 # Loading
 # ---------------------------------------------------------------------------
+
+
+def is_error_record(record: dict) -> bool:
+    """The runner's `{"error": ...}` for a call that raised: it has no `kind`, no answer and no HTTP status.
+
+    It is a failed call. Every scorer counts it as one (an invalid answer, no parsed answer) instead of
+    dropping it or reading it as an old-schema record."""
+    return not record.get("kind") and bool(record.get("error"))
 
 
 def record_of(entry) -> dict:
@@ -125,45 +138,69 @@ def revalidate(record: dict, contract: dict) -> bool | None:
     return not schema_validate.validate(answer, contract["tasks"][task]["jsonSchema"])
 
 
+def total_latency_ms(rec: dict) -> float | None:
+    """What a person waited: every attempt and backoff. Older records hold only the last attempt."""
+    for key in ("total_latency_ms", "latency_ms"):
+        value = rec.get(key)
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            return float(value)
+    return None
+
+
 def call_stats(labelled: list[tuple[str, dict]], contract: dict) -> dict:
-    """Mechanics over labelled records ([(label, record)]), the label being 'r1:t001' or a plate id."""
+    """Mechanics over labelled records ([(label, record)]), the label being 'r1:t001' or a plate id.
+
+    A record with an `error` and no `kind` (a call that raised) counts as a production call that failed: it is in
+    `schema_invalid_ids` and `error_ids`, never silently absent."""
     records = [rec for _, rec in labelled]
     production = [(label, rec) for label, rec in labelled if rec.get("kind") == "production"]
-    statuses = Counter(rec.get("http_status") for _, rec in production)
+    errors = [(label, rec) for label, rec in labelled if is_error_record(rec)]
+    called = production + errors
+    statuses = Counter(rec.get("http_status") for _, rec in called)
     stored_valid = [label for label, rec in production if rec.get("schema_valid") is True]
     disagreements = []
     for label, rec in production:
         recomputed = revalidate(rec, contract)
         if recomputed is not None and recomputed != bool(rec.get("schema_valid")):
             disagreements.append(label)
-    latencies = [r["latency_ms"] / 1000 for r in records if isinstance(r.get("latency_ms"), (int, float))]
+    waits = [w / 1000 for w in (total_latency_ms(r) for r in records) if w is not None]
+    last_attempts = [r["latency_ms"] / 1000 for r in records if isinstance(r.get("latency_ms"), (int, float))]
     costs = [r["cost_usd"] for r in records if isinstance(r.get("cost_usd"), (int, float))]
     return {
         "n": len(records),
         "production_records": len(production),
+        "error_records": len(errors),
+        "error_ids": [label for label, _ in errors],
         "http_status": {str(k): v for k, v in sorted(statuses.items(), key=lambda kv: str(kv[0]))},
         "schema_valid_stored": len(stored_valid),
-        "schema_invalid_ids": [label for label, rec in production if rec.get("schema_valid") is not True],
-        "old_schema_raw_ok": sum(1 for r in records if r.get("kind") != "production" and r.get("raw_ok")),
+        "schema_invalid_ids": [label for label, rec in production if rec.get("schema_valid") is not True]
+        + [label for label, _ in errors],
+        "old_schema_raw_ok": sum(1 for r in records if r.get("kind") != "production" and not is_error_record(r) and r.get("raw_ok")),
         "revalidation_disagreements": disagreements,
         "cost_total": sum(costs),
         "cost_calls": len(costs),
         "cost_mean": mean(costs),
-        "latency_median": median(latencies),
-        "latency_p95": percentile(latencies, 95),
-        "latency_max": max(latencies) if latencies else None,
-        "slow": [(label, round(rec["latency_ms"] / 1000, 1)) for label, rec in labelled
-                 if isinstance(rec.get("latency_ms"), (int, float)) and rec["latency_ms"] > SLOW_MS],
+        "cost_sources": dict(Counter(rec.get("cost_source") or "none" for _, rec in production if isinstance(rec.get("cost_usd"), (int, float)))),
+        # A production call with no cost is not a free call. A failed call has none for a good reason; the ids
+        # let a reader tell that apart from a successful answer that lost its usage block.
+        "cost_null_ids": [label for label, rec in called if not isinstance(rec.get("cost_usd"), (int, float))],
+        "latency_median": median(waits),
+        "latency_p95": percentile(waits, 95),
+        "latency_max": max(waits) if waits else None,
+        "last_attempt_latency_median": median(last_attempts),
+        "last_attempt_latency_p95": percentile(last_attempts, 95),
+        "slow": [(label, round(w / 1000, 1)) for label, rec in labelled
+                 if (w := total_latency_ms(rec)) is not None and w > SLOW_MS],
         "prompt_tokens_mean": mean([r["prompt_tokens"] for r in records if isinstance(r.get("prompt_tokens"), (int, float))]),
         "completion_tokens_mean": mean([r["completion_tokens"] for r in records if isinstance(r.get("completion_tokens"), (int, float))]),
         "reasoning_tokens_mean": mean([r["reasoning_tokens"] for r in records if isinstance(r.get("reasoning_tokens"), (int, float))]),
         "reasoning_tokens_recorded": sum(1 for r in records if isinstance(r.get("reasoning_tokens"), (int, float))),
-        "providers": dict(Counter(rec.get("provider") for _, rec in production)),
+        "providers": dict(Counter(rec.get("provider") for _, rec in called)),
         "models_returned": dict(Counter(r.get("model_returned") or r.get("model") for r in records)),
         "retried": [label for label, rec in labelled if (rec.get("attempts") or 1) > 1],
         "not_stop": {str(k): v for k, v in Counter(
-            rec.get("finish_reason") for _, rec in production if rec.get("finish_reason") != "stop").items()},
-        "not_stop_ids": [label for label, rec in production if rec.get("finish_reason") != "stop"],
+            rec.get("finish_reason") for _, rec in called if rec.get("finish_reason") != "stop").items()},
+        "not_stop_ids": [label for label, rec in called if rec.get("finish_reason") != "stop"],
     }
 
 
@@ -173,9 +210,10 @@ def food_answer_problems(labelled: list[tuple[str, dict]], expect_empty_ids: fro
                 "empty_expected_wrongly_filled": []}
     for label, rec in labelled:
         case_id = label.split(":")[-1]
-        answer = rec.get("answer") if rec.get("kind") == "production" else None
-        foods = rec.get("foods") if rec.get("kind") != "production" else (answer or {}).get("foods")
-        if rec.get("kind") == "production" and answer is None:
+        called = rec.get("kind") == "production" or is_error_record(rec)
+        answer = rec.get("answer") if called else None
+        foods = (answer or {}).get("foods") if called else rec.get("foods")
+        if called and answer is None:
             problems["no_answer"].append(label)
             continue
         if case_id in expect_empty_ids:
@@ -242,19 +280,65 @@ def within_tolerance(model: float | None, reference: float, *, floor: float = 0.
     return abs(model - reference) <= max(abs(reference) * pct, floor)
 
 
+def _number_or_none(value):
+    return value if isinstance(value, (int, float)) and not isinstance(value, bool) else None
+
+
+def combine_items(items: list[dict]) -> dict:
+    """One macros-per-100 g view of the model items that name the same food.
+
+    A model that splits one food into two items (the white and the yolk of an egg, rice and its sauce) gives two
+    per-100 g rows. Taking the first would score half the food. The items are combined into one row, weighted by
+    `estimatedGrams`, which is the same as summing their kcal and grams and dividing again. When an item has no
+    usable grams the plain mean stands in. When any item holds no number for a nutrient, that nutrient is None:
+    a missing value never drops out of the sum.
+
+    Returns {"name", "n_items", "split", "kcal", "carbs", "fiber", "confidence", "weighting"}. With one item the
+    values are that item's own and nothing is averaged."""
+    macros = [(f.get("macrosPer100g") or {}) for f in items]
+    first = items[0] if items else {}
+    out = {"name": " + ".join(str(f.get("name")) for f in items) if items else None, "n_items": len(items),
+           "split": len(items) > 1, "confidence": first.get("confidence") if len(items) == 1 else _lowest_confidence(items),
+           "weighting": "single"}
+    if len(items) == 1:
+        out.update(kcal=macros[0].get("kcal"), carbs=macros[0].get("carbs"), fiber=macros[0].get("fiber"))
+        return out
+    grams = [_number_or_none(f.get("estimatedGrams")) for f in items]
+    weighted = all(g is not None and g > 0 for g in grams)
+    weights = grams if weighted else [1.0] * len(items)
+    out["weighting"] = "grams" if weighted else "mean"
+    for key in ("kcal", "carbs", "fiber"):
+        values = [_number_or_none(m.get(key)) for m in macros]
+        if not items or any(v is None for v in values):
+            out[key] = None
+        else:
+            out[key] = sum(v * w for v, w in zip(values, weights)) / sum(weights)
+    return out
+
+
+def _lowest_confidence(items: list[dict]) -> str | None:
+    """The weakest rating among combined items: a split food is only as sure as its least sure part."""
+    order = {"low": 0, "medium": 1, "high": 2}
+    rated = [f.get("confidence") for f in items if f.get("confidence") in order]
+    return min(rated, key=order.get) if rated else None
+
+
 def kcal_comparisons(label: str, case_id: str, answer: dict | None, kcal_rows: dict[str, dict]) -> list[dict]:
-    """One comparison per mapped kcal row of this typed case. `matched` is False when the model has no such item."""
+    """One comparison per mapped kcal row of this typed case. `matched` is False when the model has no such item.
+
+    Every item that matches the row's pattern is combined (`combine_items`), so a food split in two is scored whole."""
     out = []
     foods = (answer or {}).get("foods") or []
     for row_id, pattern in KCAL_OVERLAP.get(case_id, []):
         row = kcal_rows[row_id]
-        item = next((f for f in foods if re.search(pattern, item_label(f))), None)
-        macros = (item or {}).get("macrosPer100g") or {}
-        kcal, carbs = macros.get("kcal"), macros.get("carbs")
+        items = [f for f in foods if re.search(pattern, item_label(f))]
+        combined = combine_items(items)
+        kcal, carbs = combined.get("kcal"), combined.get("carbs")
         ref_kcal, ref_carbs = row["reference"]["kcal_per_100g"], row["reference"]["carbs_per_100g"]
         out.append({
-            "label": label, "case": case_id, "row": row_id, "item": (item or {}).get("name"),
-            "matched": item is not None, "confidence": (item or {}).get("confidence"),
+            "label": label, "case": case_id, "row": row_id, "item": combined["name"],
+            "matched": bool(items), "split": combined["split"], "n_matched_items": combined["n_items"],
+            "confidence": combined["confidence"],
             "ref_confidence": row["reference_confidence"],
             "ref_kcal": ref_kcal, "kcal": kcal,
             "kcal_err_pct": signed_error_pct(kcal, ref_kcal) if isinstance(kcal, (int, float)) else None,
@@ -267,12 +351,16 @@ def kcal_comparisons(label: str, case_id: str, answer: dict | None, kcal_rows: d
 
 
 def summarise_kcal(rows: list[dict], key: str) -> dict:
-    """key is 'kcal' or 'carbs'. Unmatched items count as not within tolerance and are reported on their own."""
+    """key is 'kcal' or 'carbs'. Unmatched items count as not within tolerance and are reported on their own.
+
+    `n` is the sample size (the rows compared). `split` counts the rows where the model split the food into two
+    or more items and the numbers are a combination of them."""
     matched = [r for r in rows if r["matched"]]
     with_value = [r for r in matched if isinstance(r[key], (int, float))]
     errors = [r[f"{key}_err_pct"] for r in with_value if r[f"{key}_err_pct"] is not None]
     return {
-        "compared": len(rows), "matched": len(matched), "null_value": len(matched) - len(with_value),
+        "n": len(rows), "compared": len(rows), "matched": len(matched), "null_value": len(matched) - len(with_value),
+        "split": sum(1 for r in matched if r.get("split")),
         "within": sum(1 for r in matched if r[f"{key}_ok"]),
         "median_signed_err_pct": median(errors),
         "worst": sorted(
@@ -284,19 +372,23 @@ def summarise_kcal(rows: list[dict], key: str) -> dict:
 def kcal_gold_comparison(label: str, row: dict, answer: dict | None) -> dict:
     """One comparison for a kcal gold row (`k001`..`k034`) that was sent to a model as its own typed case.
 
-    The row names one food. The answer's item is its only item; with several items, the one whose names share a
-    word with the row's `item`; with none, `matched` is False and the row counts as outside tolerance."""
+    The row names one food. The answer's item is its only item; with several items, every item whose names
+    share a word with the row's `item`, combined into one (`combine_items`, so a food split in two is scored
+    whole and `split` is True); with none, `matched` is False and the row counts as outside tolerance."""
     foods = (answer or {}).get("foods") or []
-    item = foods[0] if len(foods) == 1 else None
-    if item is None and foods:
+    if len(foods) == 1:
+        items = list(foods)
+    else:
         words = set(tokens(row["item"]))
-        item = next((f for f in foods if words & set(tokens(item_label(f)))), None)
-    macros = (item or {}).get("macrosPer100g") or {}
-    kcal, carbs = macros.get("kcal"), macros.get("carbs")
+        items = [f for f in foods if words & set(tokens(item_label(f)))]
+    combined = combine_items(items)
+    kcal, carbs = combined.get("kcal"), combined.get("carbs")
     ref_kcal, ref_carbs = row["reference"]["kcal_per_100g"], row["reference"]["carbs_per_100g"]
     return {
-        "label": label, "case": row["id"], "row": row["id"], "input": row["input"], "item": (item or {}).get("name"),
-        "n_items": len(foods), "matched": item is not None, "confidence": (item or {}).get("confidence"),
+        "label": label, "case": row["id"], "row": row["id"], "input": row["input"], "item": combined["name"],
+        "n_items": len(foods), "matched": bool(items), "split": combined["split"], "n_matched_items": combined["n_items"],
+        "combine_weighting": combined["weighting"] if combined["split"] else None,
+        "confidence": combined["confidence"],
         "ref_confidence": row["reference_confidence"],
         "ref_kcal": ref_kcal, "kcal": kcal,
         "kcal_err_pct": signed_error_pct(kcal, ref_kcal) if isinstance(kcal, (int, float)) else None,
@@ -304,7 +396,7 @@ def kcal_gold_comparison(label: str, row: dict, answer: dict | None) -> dict:
         "ref_carbs": ref_carbs, "carbs": carbs,
         "carbs_err_pct": signed_error_pct(carbs, ref_carbs) if isinstance(carbs, (int, float)) else None,
         "carbs_ok": within_tolerance(carbs, ref_carbs, floor=CARB_ABS_FLOOR_G),
-        "fiber": macros.get("fiber"), "ref_fiber": row["reference"].get("fiber_per_100g"),
+        "fiber": combined.get("fiber"), "ref_fiber": row["reference"].get("fiber_per_100g"),
     }
 
 
@@ -564,36 +656,56 @@ def check_recipe_answer(case: dict, answer: dict | None) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def typed_runs(cell_suffix: str) -> tuple[dict[str, dict[str, dict]], list[str]]:
-    """repeat label -> {case id -> record}, and notes on the repeats left out."""
+def typed_runs(cell_suffix: str, expected_ids: set[str] | frozenset[str] | None = None,
+               runs_dir: Path | None = None) -> tuple[dict[str, dict[str, dict]], list[str]]:
+    """repeat label -> {case id -> record}, and notes on the repeats left out.
+
+    A repeat is incomplete only when case ids are missing (`expected_ids`, or the count `TYPED_CASES_PER_RUN`
+    when no ids are given). A record that is an `{"error": ...}` (a call that raised, with no `kind`) is an
+    answer slot like any other: it stays in the repeat and the scorers count it as a failed call. Dropping the
+    whole repeat for it would score a run with errors as a smaller, cleaner one."""
     runs, notes = {}, []
     for repeat in (1, 2, 3):
-        path = RUNS / f"text-{cell_suffix}-r{repeat}" / "results.json"
+        path = (runs_dir or RUNS) / f"text-{cell_suffix}-r{repeat}" / "results.json"
         results = load_results(path)
         if results is None:
             notes.append(f"r{repeat}: no results.json, left out.")
-        elif len(results) != TYPED_CASES_PER_RUN or any(not r.get("kind") for r in results.values()):
-            notes.append(f"r{repeat}: {len(results)} answers, not {TYPED_CASES_PER_RUN}, left out (still running).")
+            continue
+        if expected_ids is not None:
+            missing = sorted(set(expected_ids) - set(results))
+            incomplete = bool(missing)
+            detail = f"{len(missing)} case id(s) missing ({', '.join(missing[:5])}{', ...' if len(missing) > 5 else ''})"
         else:
-            runs[f"r{repeat}"] = results
+            incomplete = len(results) != TYPED_CASES_PER_RUN
+            detail = f"{len(results)} answers, not {TYPED_CASES_PER_RUN}"
+        if incomplete:
+            notes.append(f"r{repeat}: {detail}, left out (still running).")
+            continue
+        runs[f"r{repeat}"] = results
+        failed = [cid for cid, rec in results.items() if is_error_record(rec)]
+        if failed:
+            notes.append(f"r{repeat}: {len(failed)} call(s) failed with an error and are counted as invalid ({', '.join(sorted(failed)[:5])}).")
     return runs, notes
 
 
-def gather(contract: dict) -> dict:
+def gather(contract: dict, runs_dir: Path | None = None) -> dict:
     text_gold = {c["id"]: c for c in load_jsonl(GOLD / "gold_text.jsonl")}
     kcal_rows = {c["id"]: c for c in load_jsonl(GOLD / "gold_kcal_text.jsonl")}
     pantry_gold = {c["id"]: c for c in load_jsonl(GOLD / "gold_pantry.jsonl")}
     recipe_gold = {c["id"]: c for c in load_jsonl(GOLD / "gold_recipes.jsonl")}
     expect_empty = {cid for cid, c in text_gold.items() if c.get("expect_empty")}
-    out: dict = {"cells": {}, "notes": {}}
+    runs_dir = runs_dir or RUNS
+    out: dict = {"cells": {}, "notes": {}, "incomplete": [], "expected_repeats": EXPECTED_REPEATS}
     for letter, (label, suffix, plate_dir) in CELLS.items():
         cell: dict = {"label": label}
-        plates = load_results(RUNS / plate_dir / "results.json")
+        plates = load_results(runs_dir / plate_dir / "results.json")
         plates_labelled = [(f"plate {k}", r) for k, r in sorted((plates or {}).items())]
         cell["plates"] = {**call_stats(plates_labelled, contract), "food": food_answer_problems(plates_labelled)}
         if suffix is not None:
-            runs, notes = typed_runs(suffix)
+            runs, notes = typed_runs(suffix, set(text_gold), runs_dir)
             out["notes"][letter] = notes
+            if len(runs) < EXPECTED_REPEATS:
+                out["incomplete"].append(f"cell {letter} ({label}) scored {len(runs)} of {EXPECTED_REPEATS} typed repeats")
             labelled = [(f"{rep}:{cid}", rec) for rep, res in runs.items() for cid, rec in sorted(res.items())]
             cell["typed"] = {**call_stats(labelled, contract), "repeats": list(runs),
                              "per_repeat_valid": {rep: sum(1 for r in res.values() if r.get("schema_valid") is True)
@@ -615,11 +727,11 @@ def gather(contract: dict) -> dict:
             cell["brands"] = brands
             cell["vague"] = vague
             cell["confidence_mix"] = confidence_mix([rec.get("answer") for res in runs.values() for rec in res.values()])
-            pantry = load_results(RUNS / f"pantry-{suffix}" / "results.json") or {}
+            pantry = load_results(runs_dir / f"pantry-{suffix}" / "results.json") or {}
             cell["pantry_stats"] = call_stats([(k, r) for k, r in sorted(pantry.items())], contract)
             cell["pantry"] = {cid: check_pantry_case(pantry_gold[cid], pantry[cid].get("answer"))
                               for cid in sorted(pantry)}
-            recipes = load_results(RUNS / f"recipe-{suffix}" / "results.json") or {}
+            recipes = load_results(runs_dir / f"recipe-{suffix}" / "results.json") or {}
             cell["recipe_stats"] = call_stats([(k, r) for k, r in sorted(recipes.items())], contract)
             cell["recipes"] = {cid: check_recipe_answer(recipe_gold[cid], recipes[cid].get("answer"))
                                for cid in sorted(recipes)}
@@ -662,11 +774,24 @@ def mechanics_rows(data: dict) -> list[tuple[str, str, dict]]:
     return rows
 
 
+def cost_null_text(s: dict) -> str:
+    ids = s["cost_null_ids"]
+    return "0" if not ids else f"{len(ids)} ({', '.join(ids[:6])}{', ...' if len(ids) > 6 else ''})"
+
+
 def not_stop_text(s: dict) -> str:
     if not s["not_stop_ids"]:
         return "0"
     counts = ", ".join(f"{k}: {v}" for k, v in s["not_stop"].items())
     return f"{counts} ({', '.join(s['not_stop_ids'][:6])})"
+
+
+def completeness_line(data: dict) -> str:
+    """One line that says whether every scored cell holds the expected typed repeats. A short cell is INCOMPLETE."""
+    if data.get("incomplete"):
+        return (f"**Verdict: INCOMPLETE.** The decision rule needs {data['expected_repeats']} typed repeats per cell. "
+                + "; ".join(data["incomplete"]) + ". Read no number below as a result for those cells.")
+    return f"Typed repeats: complete, {data['expected_repeats']} of {data['expected_repeats']} in every scored cell."
 
 
 def render(data: dict) -> str:
@@ -678,8 +803,10 @@ def render(data: dict) -> str:
                "harness price-table estimate, for B, C and D it is `usage.cost` from OpenRouter.")
     out.append("")
     out.append("Typed repeats included: " + "; ".join(
-        f"{cell_name(c)}: {', '.join(data['cells'][c]['typed']['repeats'])} ({data['cells'][c]['typed']['n']} calls)"
+        f"{cell_name(c)}: {', '.join(data['cells'][c]['typed']['repeats']) or 'none'} ({data['cells'][c]['typed']['n']} calls)"
         for c in SCORED_CELLS) + ". " + " ".join(n for c in SCORED_CELLS for n in data["notes"].get(c, [])))
+    out.append("")
+    out.append(completeness_line(data))
     out.append("")
 
     out += ["## 1. HTTP status", "", table(
@@ -694,7 +821,8 @@ def render(data: dict) -> str:
             "answer. A and E hold no `schema_valid` (old schema), their count is `raw_ok`.", "", table(
         ["family", "cell", "calls", "stored valid", "re-validation disagreements", "invalid ids"],
         [[FAMILY_TITLE[f], cell_name(c), s["n"],
-          f"{s['schema_valid_stored']}/{s['production_records']}" if s["production_records"]
+          f"{s['schema_valid_stored']}/{s['production_records'] + s['error_records']}"
+          + (f" ({s['error_records']} call(s) raised an error)" if s["error_records"] else "") if s["production_records"]
           else f"{s['old_schema_raw_ok']}/{s['n']} raw_ok",
           ", ".join(s["revalidation_disagreements"]) or ("0" if s["production_records"] else "n/a"),
           ", ".join(s["schema_invalid_ids"]) or "none"] for f, c, s in mech]), ""]
@@ -714,13 +842,25 @@ def render(data: dict) -> str:
             "Labels are repeat:case. 'No parsed answer' lists calls with no valid JSON (nothing to judge).", "",
             table(["family", "cell", "empty `foods`", "`unreadable` true", "no parsed answer", "no-food cases"], rows), ""]
 
-    out += ["## 4. Cost", "", table(
-        ["family", "cell", "calls", "total cost", "mean per call"],
-        [[FAMILY_TITLE[f], cell_name(c), s["n"], money(s["cost_total"]), money(s["cost_mean"], 5)] for f, c, s in mech]), ""]
+    out += ["## 4. Cost", "",
+            "`calls with cost` is the number of calls that have a cost; the mean is over those calls only, so a call "
+            "with no cost never lowers it. Source `usage` is the cost OpenRouter reported, `price_table` is tokens "
+            "times the config price, used when the reply carried no `usage.cost`. A production call with no cost at "
+            "all is listed under `no cost`; a failed call has none for a good reason, a call that answered does not.",
+            "", table(
+        ["family", "cell", "calls", "calls with cost", "total cost", "mean per costed call", "cost source", "no cost"],
+        [[FAMILY_TITLE[f], cell_name(c), s["n"], s["cost_calls"], money(s["cost_total"]), money(s["cost_mean"], 5),
+          ", ".join(f"{k}: {v}" for k, v in s["cost_sources"].items()) or "n/a",
+          cost_null_text(s)] for f, c, s in mech]), ""]
 
-    out += ["## 5. Latency (seconds, wall clock from bluefin)", "", table(
-        ["family", "cell", "median", "p95", "max", "calls above 60 s"],
+    out += ["## 5. Latency (seconds, wall clock from bluefin)", "",
+            "The first three columns are the wait a person has: every attempt and every backoff sleep of a call "
+            "(`total_latency_ms`). The last attempt alone, the older number, is in the next two columns. A record "
+            "written before `total_latency_ms` existed has only the last attempt, so its wait reads the same in both.",
+            "", table(
+        ["family", "cell", "wait median", "wait p95", "wait max", "last attempt median", "last attempt p95", "calls above 60 s"],
         [[FAMILY_TITLE[f], cell_name(c), fmt(s["latency_median"], 1), fmt(s["latency_p95"], 1), fmt(s["latency_max"], 1),
+          fmt(s["last_attempt_latency_median"], 1), fmt(s["last_attempt_latency_p95"], 1),
           ", ".join(f"{l} ({v} s)" for l, v in s["slow"]) or "none"] for f, c, s in mech]), ""]
 
     out += ["## 6. Tokens per call (means)", "", "Reasoning tokens are the mean over the calls that recorded the field "
@@ -761,10 +901,10 @@ def render_kcal(data: dict) -> list[str]:
             for scope, subset in scopes:
                 s = summarise_kcal(subset, key)
                 share = f" ({100 * s['within'] / s['compared']:.0f}%)" if s["compared"] else ""
-                rows.append([cell_name(letter), scope, s["compared"], s["matched"], f"{s['within']}/{s['compared']}{share}",
+                rows.append([cell_name(letter), scope, s["n"], s["matched"], s["split"], f"{s['within']}/{s['compared']}{share}",
                              fmt(s["median_signed_err_pct"], 1, "%"), s["null_value"]])
         out += [f"### {title}", "", table(
-            ["cell", "scope", "comparisons", "item found", "within tolerance", "median signed error", "null value"], rows), ""]
+            ["cell", "scope", "n", "item found", "split into 2+ items", "within tolerance", "median signed error", "null value"], rows), ""]
     for key in ("kcal", "carbs"):
         rows = []
         for letter in SCORED_CELLS:
@@ -795,7 +935,7 @@ def render_brand(data: dict) -> list[str]:
         mix = cell["confidence_mix"]
         vague_rows.append([cell_name(letter), f"{sum(1 for v in found if v['confidence'] == 'low')}/{len(cell['vague'])}",
                            ", ".join(f"{v['label']} {v['confidence']}" for v in found if v["confidence"] != "low") or "none",
-                           mix["items"], *(f"{100 * mix[k] / mix['items']:.0f}%" for k in ("high", "medium", "low"))])
+                           mix["items"], *(f"{100 * mix[k] / mix['items']:.0f}%" if mix["items"] else "n/a" for k in ("high", "medium", "low"))])
     cal = []
     for letter in SCORED_CELLS:
         c = data["cells"][letter]["kcal"]["calibration"]
@@ -974,9 +1114,13 @@ def render_kcal_gold(data: dict) -> str:
                                   ("without the low reference", [r for r in rr if r["ref_confidence"] != "low"])):
                 s = summarise_kcal(subset, key)
                 share = f" ({100 * s['within'] / s['compared']:.0f}%)" if s["compared"] else ""
-                rows.append([name(c), scope, s["compared"], f"{s['within']}/{s['compared']}{share}",
+                rows.append([name(c), scope, s["n"], s["split"], f"{s['within']}/{s['compared']}{share}",
                              fmt(s["median_signed_err_pct"], 1, "%"), s["null_value"]])
-        out += [f"## {title}", "", table(["cell", "scope", "rows", "within tolerance", "median signed error", "null value"], rows), ""]
+        out += [f"## {title}", "",
+                "`split` counts the rows where the model gave the food as two or more items. Their per 100 g numbers "
+                "are combined, weighted by `estimatedGrams` (the plain mean when an item has no grams), so a split food "
+                "is scored whole.", "",
+                table(["cell", "scope", "n", "split", "within tolerance", "median signed error", "null value"], rows), ""]
     for key in ("kcal", "carbs"):
         rows = []
         for c in cells:
@@ -1004,9 +1148,10 @@ def render_kcal_gold(data: dict) -> str:
         cols = []
         for c in cells:
             r = by_row[c].get(rid)
-            cols.append("n/a" if not r or r["kcal"] is None else f"{r['kcal']:g} ({r['kcal_err_pct']:+.0f}%{'' if r['kcal_ok'] else ', off'})")
+            cols.append("n/a" if not r or r["kcal"] is None else f"{r['kcal']:g} ({r['kcal_err_pct']:+.0f}%{'' if r['kcal_ok'] else ', off'}{', split' if r.get('split') else ''})")
         rows.append([rid, first["input"], f"{first['ref_kcal']:g}", *cols])
-    out += ["## Every row, kcal per 100 g", "", "`off` marks a value outside plus or minus 15 percent.", "",
+    out += ["## Every row, kcal per 100 g", "", "`off` marks a value outside plus or minus 15 percent. `split` marks a row the model gave as two or more items, "
+            "combined as described above.", "",
             table(["row", "typed input", "USDA"] + [name(c) for c in cells], rows), ""]
     if data["typed"]:
         brow, vrow = [], []
@@ -1051,7 +1196,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--typed-run", action="append", metavar="LABEL=DIR[,DIR...]",
                         help="with --kcal-run: typed runs of a cell for the brand and vague-food confidence (repeatable)")
     parser.add_argument("--label", action="append", metavar="LABEL=TEXT", help="with --kcal-run: a cell's long name")
-    parser.add_argument("--runs-dir", type=Path, default=RUNS, help="with --kcal-run: where run names are read from")
+    parser.add_argument("--runs-dir", type=Path, default=RUNS, help="where run names are read from")
     parser.add_argument("--out", type=Path, default=None, help="with --kcal-run: output stem (writes .md and .json)")
     args = parser.parse_args(argv)
     if args.kcal_run:
@@ -1066,7 +1211,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"wrote {md_path}")
         return 0
     contract = load_contract()
-    data = gather(contract)
+    data = gather(contract, args.runs_dir)
     md_path = args.out_dir / f"{REPORT_NAME}.md"
     heading = "## What stands out"
     kept = keep_section(md_path, heading)
@@ -1076,6 +1221,9 @@ def main(argv: list[str] | None = None) -> int:
     (args.out_dir / f"{REPORT_NAME}.json").write_text(
         json.dumps(jsonable(data), indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
     print(f"wrote {md_path}")
+    if data["incomplete"]:
+        print("INCOMPLETE: " + "; ".join(data["incomplete"]) + f" (the rule needs {data['expected_repeats']})")
+        return 2
     return 0
 
 
