@@ -29,6 +29,7 @@ import sys
 from pathlib import Path
 
 from . import approaches as approach_lib
+from . import granularity as granularity_lib
 from . import stats as stats_lib
 
 
@@ -407,6 +408,10 @@ def render_worksheet(results: dict, gold: dict, keys: list[str], results_path: P
         f"   ingredients). Writing `{stats_lib.OVER_DECOMPOSED_MARKER}` inside a gold-item cell",
         "   counts too. It is a named error class, not a recall bonus — mark the gold rows `Y`",
         "   if the parts do cover them, and record the split here so it is counted.",
+        "7. When a gold item is covered only by a reported item that ALSO covers another gold core",
+        f"   item (a merge, the opposite of a split), write `Y {granularity_lib.MERGED_MARKER}` in its cell.",
+        "   It still counts as `Y` for recall. `--granularity` reads it for the strict split recall,",
+        "   which gives credit only to items the approach reported on their own.",
         "",
         f"`python3 -m harness.scorecard --score <this file>` reads the filled rows back and",
         "prints bootstrap 95% CIs; `--compare A B` reports WINNER or UNDECIDED.",
@@ -627,6 +632,22 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--out", type=Path, default=None, help="Output markdown (default: scorecard.md next to results.json)."
     )
+    parser.add_argument(
+        "--granularity",
+        action="store_true",
+        help=(
+            "Write granularity.json next to results.json and print its table: items per plate (from results.json) "
+            "and, when a filled worksheet exists, strict split recall (gold items covered only by their own item). "
+            "The worksheet is written as before."
+        ),
+    )
+    parser.add_argument(
+        "--filled",
+        type=Path,
+        default=None,
+        metavar="FILLED_MD",
+        help="The filled worksheet --granularity reads (default: scorecard-filled.md next to results.json).",
+    )
     parser.add_argument("--stdout", action="store_true", help="Also print the worksheet.")
     parser.add_argument("--json", action="store_true", help="Print the mechanical metrics as JSON and exit.")
     return parser
@@ -666,6 +687,22 @@ def main(argv: list[str] | None = None) -> int:
     if filled is not None and filled.resolve() != out_path.resolve():
         print()
         print("\n".join(render_filled_report(stats_lib.parse_filled_worksheet(filled), args.resamples)))
+
+    if args.granularity:
+        gold_entries = {k: v for k, v in gold.items() if not k.startswith("_")}
+        filled_for_granularity = args.filled or filled
+        report = granularity_lib.granularity_report(
+            {k: v for k, v in results.items() if not k.startswith("_")},
+            gold_entries,
+            keys,
+            filled_for_granularity,
+            args.results,
+        )
+        granularity_path = args.results.parent / "granularity.json"
+        granularity_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+        print()
+        print("\n".join(granularity_lib.render_report(report)))
+        print(f"Wrote {granularity_path}")
 
     if args.stdout:
         print()

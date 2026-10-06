@@ -1,0 +1,56 @@
+{
+  "name": "eu-cell-35-eu-oldprompt",
+  "description": "Eval cell 4 of 4. The control for cell 3: the same model, host, pin and reasoning setting, but the OLD August prompt and smaller schema (the `baseline` approach), so the effect of the prompt change itself is measured. Same 1600 px JPEG q0.85 photo. Costs real money.",
+  "images_dir": "images",
+  "gold": "gold/gold_labels.json",
+  "contract": "generated/vision-contract.json",
+  "image_resize": "production",
+  "out_dir": "runs/eu-cell-35-eu-oldprompt",
+  "providers": {
+    "openrouter_eu": {
+      "base_url": "https://eu.openrouter.ai/api/v1",
+      "api_key_env": "OPENROUTER_API_KEY",
+      "headers": {
+        "HTTP-Referer": "https://sprqvntrs.com/openplate-bench",
+        "X-Title": "openplate eu model eval"
+      },
+      "timeout_seconds": 300,
+      "max_retries": 1,
+      "retry_backoff_base_seconds": 3.0
+    }
+  },
+  "models": {
+    "gemini_35_flash_lite_eu": {
+      "id": "google/gemini-3.5-flash-lite",
+      "provider": "openrouter_eu",
+      "price_per_mtok_in": 0.33,
+      "price_per_mtok_out": 2.75,
+      "use_json_schema": true,
+      "max_tokens": 8192,
+      "usage_include": true,
+      "reasoning": {
+        "effort": "minimal"
+      },
+      "extra_body": {
+        "provider": {
+          "zdr": true,
+          "data_collection": "deny",
+          "only": [
+            "google-vertex/eu"
+          ],
+          "allow_fallbacks": false
+        }
+      }
+    }
+  },
+  "approach_order": [
+    "baseline"
+  ],
+  "approaches": {
+    "baseline": {
+      "type": "single",
+      "model": "gemini_35_flash_lite_eu",
+      "label": "OLD August prompt + schema, 3.5 flash lite, EU host, reasoning minimal"
+    }
+  }
+}

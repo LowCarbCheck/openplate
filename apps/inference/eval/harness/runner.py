@@ -34,6 +34,8 @@ import time
 from pathlib import Path
 
 from . import approaches as approach_lib
+from . import contract as contract_lib
+from . import production
 from . import providers
 
 
@@ -224,6 +226,19 @@ def food_names(foods: list) -> str:
     return ", ".join(names) if names else "(none)"
 
 
+def answer_names(result: dict) -> str:
+    """What a result named: foods for a plate, items for a pantry list, titles for recipes."""
+    names = food_names(result.get("foods") or [])
+    if names != "(none)":
+        return names
+    answer = result.get("answer")
+    if not isinstance(answer, dict):
+        return names
+    items = [str(i["name"]) for i in answer.get("items") or [] if isinstance(i, dict) and "name" in i]
+    titles = [str(r["title"]) for r in answer.get("recipes") or [] if isinstance(r, dict) and "title" in r]
+    return ", ".join(items or titles) or names
+
+
 def write_summary_markdown(all_results: dict, keys: list[str], out_path: Path) -> None:
     lines = ["# Plate identification bench -- food lists by approach", ""]
     for image_id, per_image in all_results.items():
@@ -244,7 +259,7 @@ def write_summary_markdown(all_results: dict, keys: list[str], out_path: Path) -
                         f"| {key} candidate: {vid} | {food_names(cand.get('foods') or [])} |"
                     )
             else:
-                lines.append(f"| {key} | {food_names(result.get('foods') or [])} |")
+                lines.append(f"| {key} | {answer_names(result)} |")
         lines.append("")
     _atomic_write(out_path, "\n".join(lines))
 
@@ -311,6 +326,7 @@ def build_summary(
     failures: list,
     started_at: str,
     wall_t0: float,
+    extra: dict | None = None,
 ) -> tuple[dict, float, dict]:
     per_approach_cost = {key: 0.0 for key in keys}
     total_cost = 0.0
@@ -341,6 +357,8 @@ def build_summary(
         "wall_seconds": round(time.monotonic() - wall_t0, 1),
         "host": host_info(),
     }
+    if extra:
+        summary.update(extra)
     return summary, total_cost, per_approach_cost
 
 
@@ -375,6 +393,7 @@ def run_for_image(
     prior: dict | None = None,
     sink: dict | None = None,
     on_result=None,
+    contract: contract_lib.Contract | None = None,
 ) -> dict:
     """Run every approach for one image, checkpointing through `on_result` as each lands.
 
@@ -402,9 +421,7 @@ def run_for_image(
         return per_image
 
     print(f"[{image_id}] loading image...")
-    image_data_url = providers.image_to_data_url(
-        image_path, max_long_edge=config.get("image_max_long_edge")
-    )
+    image_data_url, image_info = load_image(image_path, config, contract)
 
     models = config.get("models") or {}
     declared = config.get("approaches") or {}
@@ -416,7 +433,14 @@ def run_for_image(
         t0 = time.monotonic()
         try:
             per_image[key] = approach_lib.run_approach(
-                key, approach_cfg, image_data_url, models, clients, fan_out
+                key,
+                approach_cfg,
+                image_data_url,
+                models,
+                clients,
+                fan_out,
+                contract=contract,
+                image_info=image_info,
             )
         except Exception as e:  # noqa: BLE001 - eval harness: record and continue
             print(f"[{image_id}] {key} FAILED: {e}")
@@ -430,6 +454,54 @@ def run_for_image(
             on_result(image_id, key)
 
     return per_image
+
+
+def load_image(
+    image_path: Path, config: dict, contract: contract_lib.Contract | None
+) -> tuple[str, dict | None]:
+    """The photo as a data URL, plus what was done to it.
+
+    `image_resize: "production"` in the config means the app's own resize (longest side 1600 px, JPEG quality
+    0.85, taken from the contract) for EVERY approach in the run, so an old-prompt cell and a new-prompt cell send
+    the same bytes and differ only in the prompt. Without it, the older `image_max_long_edge` knob applies.
+    """
+    if config.get("image_resize") == "production":
+        if contract is None:
+            raise SystemExit("ERROR: image_resize is 'production' but no vision contract was loaded")
+        return production.production_image_data_url(image_path, contract.photo_constraints)
+    return providers.image_to_data_url(image_path, max_long_edge=config.get("image_max_long_edge")), None
+
+
+def run_for_case(
+    case: dict,
+    key: str,
+    config: dict,
+    clients: dict,
+    failures: list,
+    prior: dict | None,
+    sink: dict,
+    on_result,
+    contract: contract_lib.Contract,
+) -> None:
+    """Run one case-based approach on one JSONL case, with the same resume and checkpoint rules as images."""
+    case_id = case["id"]
+    per_case = sink.setdefault(case_id, dict(prior or {}))
+    if key in per_case:
+        print(f"[{case_id}] {key}: already done, skipping (resume)")
+        return
+    approach_cfg = (config.get("approaches") or {})[key]
+    print(f"[{case_id}] {key} ({approach_cfg.get('label') or approach_cfg.get('type')})...")
+    started = time.monotonic()
+    try:
+        per_case[key] = approach_lib.run_case_approach(
+            key, approach_cfg, case, config.get("models") or {}, clients, contract
+        )
+    except Exception as e:  # noqa: BLE001 - eval harness: record and continue
+        print(f"[{case_id}] {key} FAILED: {e}")
+        failures.append({"image_id": case_id, "approach": key, "error": str(e)})
+        per_case[key] = {"error": str(e)}
+    print(f"[{case_id}] {key} done in {time.monotonic() - started:.1f}s")
+    on_result(case_id, key)
 
 
 # ---------------------------------------------------------------------------
@@ -633,9 +705,112 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Resolve config, images and providers, then exit without calling any model.",
+        help=(
+            "Resolve config, images and providers, print the first request body of every approach "
+            "(photo bytes shown as a length), check the production ones against the vision contract, "
+            "then exit without calling any model. Needs no API key."
+        ),
+    )
+    parser.add_argument(
+        "--cases",
+        type=Path,
+        default=None,
+        metavar="JSONL",
+        help=(
+            "JSONL file of cases for the text and recipe approaches (`single_text`: input, lang; "
+            "`recipe`: lang, slot, pantry, remaining_day_block). Overrides an approach's own `cases`."
+        ),
+    )
+    parser.add_argument(
+        "--allow-stale-contract",
+        action="store_true",
+        help=(
+            "Run although the app sources changed since generated/vision-contract.json was written. "
+            "The run records that it did. Default: refuse, and print how to regenerate."
+        ),
     )
     return parser
+
+
+def resolve_cases(
+    approach_cfg: dict, args: argparse.Namespace, eval_root: Path, contract: contract_lib.Contract
+) -> tuple[Path | None, list[dict] | None]:
+    """The cases file of a case-based approach and its parsed cases (None when the file is not there)."""
+    declared = args.cases if args.cases is not None else approach_cfg.get("cases")
+    if declared is None:
+        raise SystemExit(
+            "ERROR: a text or recipe approach needs a cases file: set `cases` on the approach or pass --cases"
+        )
+    path = resolve_path(eval_root, str(declared))
+    kind = "recipe" if approach_cfg.get("type") == "recipe" else "text"
+    if not path.is_file():
+        return path, None
+    return path, production.load_cases(path, kind=kind, languages=contract.languages)
+
+
+def dry_run_report(
+    keys: list[str],
+    config: dict,
+    args: argparse.Namespace,
+    eval_root: Path,
+    images: list[Path],
+    contract: contract_lib.Contract | None,
+) -> int:
+    """Print the first request body of each approach, checked against the contract. Sends nothing.
+
+    Returns 1 when a production approach's body departs from the contract or cannot be built, else 0.
+    """
+    declared = config.get("approaches") or {}
+    models = config.get("models") or {}
+    problems_total = 0
+    first_image: tuple[str, dict | None] | None = None
+    for key in keys:
+        approach_cfg = declared[key]
+        kind = approach_cfg.get("type", "single")
+        model_cfg = models.get(approach_cfg.get("model") or approach_cfg.get("vision_model") or "", {})
+        print()
+        print(f"--- {key} ({kind}) model={model_cfg.get('id')} ---")
+        language = approach_cfg.get("language", "en")
+        try:
+            if approach_lib.approach_unit(approach_cfg) == "image":
+                if first_image is None and images:
+                    first_image = load_image(images[0], config, contract)
+                if first_image is None:
+                    print("no image to build a request from")
+                    continue
+                if first_image[1]:
+                    print(f"image {images[0].name}: {json.dumps(first_image[1])}")
+                body = approach_lib.preview_first_request(
+                    key, approach_cfg, models, contract=contract, image_data_url=first_image[0]
+                )
+            else:
+                path, cases = resolve_cases(approach_cfg, args, eval_root, contract)
+                if cases is None:
+                    print(f"cases file not found yet: {path}. No request body to preview for this approach.")
+                    continue
+                print(f"cases: {len(cases)} in {path}; previewing {cases[0]['id']}")
+                language = cases[0]["lang"]
+                body = approach_lib.preview_first_request(key, approach_cfg, models, contract=contract, case=cases[0])
+        except SystemExit as e:
+            print(f"cannot build the request: {e}")
+            problems_total += 1
+            continue
+        if body is None:
+            print(f"(no request preview for approach type {kind!r})")
+            continue
+        print(production.format_body(body))
+        if kind not in approach_lib.CONTRACT_APPROACH_TYPES or contract is None:
+            continue
+        task_key = production.approach_task(approach_cfg)
+        problems = production.check_request_body(body, contract, model_cfg, task_key, language)
+        if problems:
+            problems_total += len(problems)
+            print("contract check: FAILED")
+            for problem in problems:
+                print(f"  - {problem}")
+        else:
+            print(f"contract check: ok (task {task_key}, language {language}, the body matches the contract)")
+    return 1 if problems_total else 0
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -645,20 +820,46 @@ def main(argv: list[str] | None = None) -> int:
 
     args = build_parser().parse_args(argv)
     config, eval_root = load_config(args.config)
-
-    images_dir = (
-        args.images_dir
-        if args.images_dir is not None
-        else resolve_path(eval_root, config.get("images_dir", "images"))
-    )
-    images = discover_images(images_dir, args.only)
+    declared = config.get("approaches") or {}
 
     keys = approach_keys(config)
     if args.approach:
-        unknown = [k for k in args.approach if k not in keys]
+        unknown = [k for k in args.approach if k not in declared]
         if unknown:
-            raise SystemExit(f"ERROR: unknown approach(es) {unknown}; config has {keys}")
-        keys = [k for k in keys if k in set(args.approach)]
+            raise SystemExit(f"ERROR: unknown approach(es) {unknown}; config declares {sorted(declared)}")
+        # An approach declared but left out of `approach_order` (a text approach whose cases file does not
+        # exist yet, say) can still be named on the command line.
+        keys = [k for k in keys if k in set(args.approach)] + [k for k in args.approach if k not in keys]
+
+    image_keys = [k for k in keys if approach_lib.approach_unit(declared[k]) == "image"]
+    case_keys = [k for k in keys if approach_lib.approach_unit(declared[k]) == "case"]
+
+    contract: contract_lib.Contract | None = None
+    needs_contract = config.get("image_resize") == "production" or any(
+        declared[k].get("type") in approach_lib.CONTRACT_APPROACH_TYPES for k in keys
+    )
+    if needs_contract:
+        contract = contract_lib.load_contract(
+            resolve_path(eval_root, config.get("contract", contract_lib.DEFAULT_CONTRACT_PATH))
+        )
+        contract_lib.assert_fresh(contract, eval_root, allow_stale=args.allow_stale_contract)
+    for k in image_keys:
+        if declared[k].get("type") == "production" and config.get("image_resize") != "production":
+            raise SystemExit(
+                f'ERROR: approach {k!r} is `production` but the config does not set `"image_resize": "production"`. '
+                "The production request carries the app's 1600 px JPEG, so the whole run must send it."
+            )
+
+    images: list[Path] = []
+    if image_keys:
+        images_dir = (
+            args.images_dir
+            if args.images_dir is not None
+            else resolve_path(eval_root, config.get("images_dir", "images"))
+        )
+        images = discover_images(images_dir, args.only)
+    else:
+        images_dir = None
 
     run_name = config.get("name") or args.config.stem
     default_out = config.get("out_dir") or f"runs/{datetime.date.today().isoformat()}-{run_name}"
@@ -678,16 +879,39 @@ def main(argv: list[str] | None = None) -> int:
             print(f"resume: {done} prior image x approach result(s) loaded from {results_path}")
 
     print(f"config: {args.config} (eval root {eval_root})")
-    print(f"images: {len(images)} in {images_dir}: {[p.name for p in images]}")
+    if image_keys:
+        print(f"images: {len(images)} in {images_dir}: {[p.name for p in images]}")
     print(f"approaches: {keys}")
     print(f"output: {out_dir}")
+    if contract is not None:
+        print(f"contract: {contract.path} (freshness: {json.dumps(contract.freshness)})")
 
-    clients = providers.build_clients(config.get("providers") or {})
+    clients = providers.build_clients(config.get("providers") or {}, dry_run=args.dry_run)
     providers.preflight(clients)
 
     if args.dry_run:
-        print("dry run: config, images and providers resolved; no model calls made.")
-        return 0
+        status = dry_run_report(keys, config, args, eval_root, images, contract)
+        print()
+        print(
+            "dry run: config, images and providers resolved; no model calls made."
+            + (" CONTRACT CHECK FAILED." if status else "")
+        )
+        return status
+
+    # Case files are read up front, so a bad line stops the run before the first paid call.
+    case_sets: dict[str, list[dict]] = {}
+    case_files: dict[str, str] = {}
+    for k in case_keys:
+        path, cases = resolve_cases(declared[k], args, eval_root, contract)
+        if cases is None:
+            raise SystemExit(f"ERROR: cases file for approach {k!r} not found: {path}")
+        case_sets[k] = cases
+        case_files[k] = str(path)
+    seen_ids = {p.stem for p in images}
+    for k, cases in case_sets.items():
+        clash = sorted(seen_ids & {c["id"] for c in cases})
+        if clash:
+            raise SystemExit(f"ERROR: case ids {clash} of approach {k!r} are also image ids; rename the cases")
 
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -698,20 +922,43 @@ def main(argv: list[str] | None = None) -> int:
     all_results: dict = {k: dict(v) for k, v in prior_results.items()}
     failures: list = list(prior_failures)
 
+    summary_extra: dict = {}
+    if contract is not None:
+        summary_extra["contract"] = {
+            "path": str(contract.path),
+            "generatedFrom": contract.data.get("generatedFrom"),
+            "freshness": contract.freshness,
+        }
+    if case_files:
+        summary_extra["case_files"] = case_files
+        summary_extra["case_counts"] = {k: len(v) for k, v in case_sets.items()}
+    if config.get("image_resize"):
+        summary_extra["image_resize"] = config["image_resize"]
+
     def summarize() -> tuple[dict, float, dict]:
         return build_summary(
-            all_results, keys, config, args, run_name, images, failures, started_at, wall_t0
+            all_results,
+            keys,
+            config,
+            args,
+            run_name,
+            images,
+            failures,
+            started_at,
+            wall_t0,
+            extra=summary_extra,
         )
 
     def on_result(image_id: str, key: str) -> None:
         summary, _, _ = summarize()
         checkpoint(all_results, keys, out_dir, summary, partial=True)
 
+    image_selected = [k for k in keys if k in image_keys]
     for image_path in images:
         wait_for_memory(args.min_avail_mb)
         run_for_image(
             image_path,
-            keys,
+            image_selected,
             config,
             clients,
             failures,
@@ -719,7 +966,23 @@ def main(argv: list[str] | None = None) -> int:
             prior=prior_results.get(image_path.stem),
             sink=all_results,
             on_result=on_result,
+            contract=contract,
         )
+
+    for k in case_keys:
+        for case in case_sets[k]:
+            wait_for_memory(args.min_avail_mb)
+            run_for_case(
+                case,
+                k,
+                config,
+                clients,
+                failures,
+                prior_results.get(case["id"]),
+                all_results,
+                on_result,
+                contract,
+            )
 
     summary, total_cost, per_approach_cost = summarize()
     checkpoint(all_results, keys, out_dir, summary, partial=False)

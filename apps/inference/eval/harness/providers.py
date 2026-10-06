@@ -27,6 +27,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from dataclasses import dataclass
 from pathlib import Path
 
 from . import schema as plate_schema
@@ -46,6 +47,23 @@ class ProviderHttpError(Exception):
         super().__init__(f"HTTP {status}: {body_text}")
         self.status = status
         self.body_text = body_text
+
+
+@dataclass
+class RawResponse:
+    """One HTTP exchange as it happened: the status and the body text, kept even when the status is an error.
+
+    `ChatClient.post` raises on an error status and returns only the parsed body, which is right for the older
+    approaches. A measurement of the production request has to RECORD a 400 or a 404, not abort on it, so the
+    `production` approach goes through `post_raw` instead. `status` is None when no HTTP answer arrived at all
+    (DNS, TLS, a timeout), and `transport_error` then says why.
+    """
+
+    status: int | None
+    body_text: str
+    latency_ms: float
+    attempts: int
+    transport_error: str | None = None
 
 
 _RESIZE_UNAVAILABLE_WARNED = False
@@ -143,9 +161,10 @@ class ChatClient:
       no_proxy           force proxy bypass (auto-true for loopback hosts)
     """
 
-    def __init__(self, name: str, config: dict):
+    def __init__(self, name: str, config: dict, dry_run: bool = False):
         self.name = name
         self.config = config
+        self.dry_run = dry_run
         base_url = config.get("base_url")
         if not base_url:
             raise ValueError(f"provider {name!r} is missing 'base_url'")
@@ -168,7 +187,9 @@ class ChatClient:
         if api_key_env:
             key = os.environ.get(api_key_env)
             if not key:
-                if self.config.get("api_key_required", True):
+                # A dry run sends nothing, so it needs no key; refusing here would make the preview
+                # impossible on a machine that has none, which is the machine a preview is for.
+                if self.config.get("api_key_required", True) and not self.dry_run:
                     raise SystemExit(
                         f"ERROR: provider {self.name!r} needs {api_key_env} in the "
                         "environment. Source it before running, e.g.:\n"
@@ -225,6 +246,77 @@ class ChatClient:
         assert last_error is not None
         raise last_error
 
+    def post_raw(self, payload: dict) -> RawResponse:
+        """POST and report what came back, whatever the status. Retries 429/5xx and transport errors like `post`.
+
+        Never raises for an HTTP error status and never logs the request headers, so the bearer token cannot
+        reach a result file through here.
+        """
+        data = json.dumps(payload).encode("utf-8")
+        last = RawResponse(status=None, body_text="", latency_ms=0.0, attempts=0, transport_error="no attempt made")
+        for attempt in range(self.max_retries + 1):
+            req = urllib.request.Request(self.url, data=data, headers=self._headers, method="POST")
+            started = time.monotonic()
+            try:
+                with self._opener.open(req, timeout=self.timeout_seconds) as resp:
+                    body = resp.read().decode("utf-8", errors="replace")
+                    return RawResponse(
+                        status=resp.status,
+                        body_text=body,
+                        latency_ms=(time.monotonic() - started) * 1000,
+                        attempts=attempt + 1,
+                    )
+            except urllib.error.HTTPError as e:
+                last = RawResponse(
+                    status=e.code,
+                    body_text=e.read().decode("utf-8", errors="replace"),
+                    latency_ms=(time.monotonic() - started) * 1000,
+                    attempts=attempt + 1,
+                )
+                if (e.code == 429 or e.code >= 500) and attempt < self.max_retries:
+                    time.sleep(self.retry_backoff_base_seconds * (2**attempt))
+                    continue
+                return last
+            except (urllib.error.URLError, socket.timeout, TimeoutError) as e:
+                last = RawResponse(
+                    status=None,
+                    body_text="",
+                    latency_ms=(time.monotonic() - started) * 1000,
+                    attempts=attempt + 1,
+                    transport_error=f"{type(e).__name__}: {e}",
+                )
+                if attempt < self.max_retries:
+                    time.sleep(self.retry_backoff_base_seconds * (2**attempt))
+                    continue
+                return last
+        return last
+
+    @staticmethod
+    def build_payload(
+        model: str,
+        messages: list,
+        temperature: float | None = None,
+        use_json_schema: bool = True,
+        max_tokens: int | None = None,
+        extra_body: dict | None = None,
+        response_format: dict | None = None,
+    ) -> dict:
+        """The request body `chat_once` sends. Pure, so a dry run can print exactly what a real run would send."""
+        payload: dict = {"model": model, "messages": messages}
+        if temperature is not None:
+            payload["temperature"] = temperature
+        if max_tokens is not None:
+            payload["max_tokens"] = max_tokens
+        if extra_body:
+            payload.update(extra_body)
+        if use_json_schema:
+            payload["response_format"] = (
+                response_format
+                if response_format is not None
+                else plate_schema.JSON_SCHEMA_RESPONSE_FORMAT
+            )
+        return payload
+
     def chat_once(
         self,
         model: str,
@@ -244,19 +336,9 @@ class ChatClient:
         json_schema (llama-server builds and some OpenRouter providers 400 on
         strict schemas; the reply is tolerant-parsed either way).
         """
-        payload: dict = {"model": model, "messages": messages}
-        if temperature is not None:
-            payload["temperature"] = temperature
-        if max_tokens is not None:
-            payload["max_tokens"] = max_tokens
-        if extra_body:
-            payload.update(extra_body)
-        if use_json_schema:
-            payload["response_format"] = (
-                response_format
-                if response_format is not None
-                else plate_schema.JSON_SCHEMA_RESPONSE_FORMAT
-            )
+        payload = self.build_payload(
+            model, messages, temperature, use_json_schema, max_tokens, extra_body, response_format
+        )
 
         t0 = time.monotonic()
         try:
@@ -329,6 +411,22 @@ def failed_result(error: str) -> dict:
     }
 
 
+def legacy_extra_body(model_cfg: dict) -> dict | None:
+    """The model entry's `extra_body`, plus `reasoning` and `usage` when the entry sets them.
+
+    The older approaches only knew `extra_body`. The eval cells that compare models set a per-run `reasoning`
+    ({"effort": "minimal"}, or absent) and `"usage_include": true` on the model entry, and the old-prompt control
+    must send them exactly as the production approach does. Entries that set neither are untouched, so every
+    earlier config sends the body it always sent.
+    """
+    extra = dict(model_cfg.get("extra_body") or {})
+    if model_cfg.get("reasoning") is not None:
+        extra["reasoning"] = model_cfg["reasoning"]
+    if model_cfg.get("usage_include"):
+        extra["usage"] = {"include": True}
+    return extra or None
+
+
 def complete_plate_identification(
     client: ChatClient,
     model_cfg: dict,
@@ -352,7 +450,7 @@ def complete_plate_identification(
     use_json_schema = model_cfg.get("use_json_schema", True)
     if max_tokens is None:
         max_tokens = model_cfg.get("max_tokens")
-    extra_body = model_cfg.get("extra_body")
+    extra_body = legacy_extra_body(model_cfg)
     if temperature is None:
         temperature = model_cfg.get("temperature")
 
@@ -420,11 +518,11 @@ def complete_plate_identification(
     return result
 
 
-def build_clients(provider_configs: dict) -> dict:
-    """Instantiate one ChatClient per declared provider (fail fast on bad env)."""
+def build_clients(provider_configs: dict, dry_run: bool = False) -> dict:
+    """Instantiate one ChatClient per declared provider (fail fast on bad env, except in a dry run)."""
     clients: dict = {}
     for name, cfg in (provider_configs or {}).items():
-        clients[name] = ChatClient(name, cfg)
+        clients[name] = ChatClient(name, cfg, dry_run=dry_run)
     return clients
 
 
@@ -432,4 +530,6 @@ def preflight(clients: dict) -> None:
     """Print what each client will talk to -- catches a wrong port early."""
     for name, client in clients.items():
         auth = "bearer" if "Authorization" in client._headers else "none"
+        if auth == "none" and client.dry_run and client.config.get("api_key_env"):
+            auth = f"none (dry run, {client.config['api_key_env']} not needed)"
         print(f"provider {name}: {client.url} (auth: {auth})", file=sys.stderr)

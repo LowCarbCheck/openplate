@@ -1,0 +1,53 @@
+{
+  "name": "eu-cell-38-prod-oldprompt",
+  "description": "Eval cell 1 of 4. Gemini 3.8 Flash on the GLOBAL host with production routing (zdr, data_collection deny, only google-vertex, no fallbacks) and NO reasoning field, so it runs at Gemini's default effort as production does today. The OLD August prompt and smaller schema (the `baseline` approach), on the app's 1600 px JPEG q0.85 photo so the only variable against cell 2 is the prompt. Costs real money.",
+  "images_dir": "images",
+  "gold": "gold/gold_labels.json",
+  "contract": "generated/vision-contract.json",
+  "image_resize": "production",
+  "out_dir": "runs/eu-cell-38-prod-oldprompt",
+  "providers": {
+    "openrouter_global": {
+      "base_url": "https://openrouter.ai/api/v1",
+      "api_key_env": "OPENROUTER_API_KEY",
+      "headers": {
+        "HTTP-Referer": "https://sprqvntrs.com/openplate-bench",
+        "X-Title": "openplate eu model eval"
+      },
+      "timeout_seconds": 300,
+      "max_retries": 1,
+      "retry_backoff_base_seconds": 3.0
+    }
+  },
+  "models": {
+    "gemini_38_flash": {
+      "id": "google/gemini-3.8-flash",
+      "provider": "openrouter_global",
+      "price_per_mtok_in": 0.75,
+      "price_per_mtok_out": 3.75,
+      "use_json_schema": true,
+      "max_tokens": 8192,
+      "usage_include": true,
+      "extra_body": {
+        "provider": {
+          "zdr": true,
+          "data_collection": "deny",
+          "only": [
+            "google-vertex"
+          ],
+          "allow_fallbacks": false
+        }
+      }
+    }
+  },
+  "approach_order": [
+    "baseline"
+  ],
+  "approaches": {
+    "baseline": {
+      "type": "single",
+      "model": "gemini_38_flash",
+      "label": "OLD August prompt + schema, 3.8 flash, global host, no reasoning field"
+    }
+  }
+}

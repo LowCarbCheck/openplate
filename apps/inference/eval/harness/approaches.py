@@ -24,6 +24,7 @@ import time
 
 from . import providers
 from . import approaches_v3
+from . import production
 from . import schema as plate_schema
 
 
@@ -166,6 +167,38 @@ def ensemble_judge(
     # matching the pilot; the candidates are still recorded for inspection.
 
 
+#: Approach types whose unit of work is a corpus image, and those whose unit is a line of a JSONL cases file.
+IMAGE_APPROACH_TYPES = ("single", "ensemble_judge", "single_v3", "ensemble_judge_v3", "production")
+CASE_APPROACH_TYPES = ("single_text", "recipe")
+#: Types that read the vision contract (`generated/vision-contract.json`) and nothing else for prompts or schema.
+CONTRACT_APPROACH_TYPES = ("production", "single_text", "recipe")
+
+
+def approach_unit(approach_cfg: dict) -> str:
+    """`image` or `case`: what one result of this approach is keyed by."""
+    kind = approach_cfg.get("type", "single")
+    if kind in CASE_APPROACH_TYPES:
+        return "case"
+    return "image"
+
+
+def run_case_approach(
+    approach_key: str,
+    approach_cfg: dict,
+    case: dict,
+    models: dict,
+    clients: dict,
+    contract,
+) -> dict:
+    """Dispatch one approach for one JSONL case."""
+    kind = approach_cfg.get("type")
+    if kind == "single_text":
+        return production.run_text_case(approach_cfg, case, models, clients, contract)
+    if kind == "recipe":
+        return production.run_recipe_case(approach_cfg, case, models, clients, contract)
+    raise ValueError(f"approach {approach_key!r} has type {kind!r}, which does not read cases")
+
+
 def run_approach(
     approach_key: str,
     approach_cfg: dict,
@@ -173,9 +206,16 @@ def run_approach(
     models: dict,
     clients: dict,
     fan_out_override: int | None = None,
+    contract=None,
+    image_info: dict | None = None,
 ) -> dict:
     """Dispatch one approach for one image."""
     kind = approach_cfg.get("type", "single")
+
+    if kind == "production":
+        if contract is None:
+            raise ValueError("the production approach needs the vision contract")
+        return production.run_production(approach_cfg, image_data_url, image_info, models, clients, contract)
 
     if kind == "single":
         model_key = approach_cfg["model"]
@@ -220,6 +260,42 @@ def _model(models: dict, key: str) -> dict:
     if "id" not in cfg:
         raise ValueError(f"model {key!r} is missing 'id'")
     return cfg
+
+
+def preview_first_request(
+    approach_key: str,
+    approach_cfg: dict,
+    models: dict,
+    *,
+    contract=None,
+    image_data_url: str | None = None,
+    case: dict | None = None,
+) -> dict | None:
+    """The first request body an approach would send, built without sending it. None when not previewable."""
+    kind = approach_cfg.get("type", "single")
+    if kind == "single":
+        model_cfg = _model(models, approach_cfg["model"])
+        if image_data_url is None:
+            return None
+        messages = providers.build_vision_messages(
+            plate_schema.PLATE_IDENTIFICATION_SYSTEM_PROMPT,
+            plate_schema.PRODUCTION_USER_PROMPT,
+            image_data_url,
+        )
+        return providers.ChatClient.build_payload(
+            model_cfg["id"],
+            messages,
+            model_cfg.get("temperature"),
+            model_cfg.get("use_json_schema", True),
+            model_cfg.get("max_tokens"),
+            providers.legacy_extra_body(model_cfg),
+        )
+    if kind in CONTRACT_APPROACH_TYPES and contract is not None:
+        body, _task, _language = production.preview_request(
+            approach_cfg, models, contract, image_data_url=image_data_url, case=case
+        )
+        return body
+    return None
 
 
 def approach_foods(approach_result: dict) -> list:
