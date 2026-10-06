@@ -49,6 +49,7 @@ eval/
 │   ├── local-cpu.json          # local llama-server run (free; latency + RAM are the cost)
 │   └── local-cpu-v2.json       # round 2: judge-isolation matrix + Qwen3-VL-8B single-shot
 ├── images/                 # the corpus + manifest.json (provenance/licenses)
+├── .gitignore              # runs/*/results.json (a rule never untracks a file that is already tracked)
 ├── gold/gold_labels.json   # hand-authored labels
 ├── models/                 # downloaded GGUFs (gitignored)
 ├── serve/                  # local model registry + serve.sh + smoke test
@@ -246,7 +247,11 @@ body of every approach (photo bytes shown as a length) and checks it against the
 Each call writes one record: HTTP status, raw content, schema-valid yes or no (a strict standard
 library validator: required, types, enums, `additionalProperties`, `anyOf`, nullable), latency in
 ms, prompt, completion and reasoning tokens, `usage.cost`, the provider that answered and the model
-id that answered. A 400 or a 404 is a record, not a crash: a route that cannot serve the strict schema
+id that answered. Latency has three fields. `latency_ms` is the last attempt only. `total_latency_ms`
+covers every attempt and every backoff sleep, which is the wait a person has. `attempt_latencies_ms`
+lists each attempt. `cost_usd` is `usage.cost` when the reply has it (`cost_source: "usage"`). When the
+reply has none, it is tokens times the price in the model entry (`cost_source: "price_table"`). With
+neither, it is null and `cost_source` is null. Null never means free. A 400 or a 404 is a record, not a crash: a route that cannot serve the strict schema
 is a finding. JSON inside a markdown fence is recorded as not schema-valid, because strict mode
 promises bare JSON. `schema_valid_after_tolerant_parse` shows what a forgiving parser would have made
 of it.
@@ -294,6 +299,26 @@ python3 -m harness.runner --config configs/eu-cell-35-eu-oldprompt.json
 
 A run resumes from its `results.json`. `--force` starts over.
 
+A resume skips every record it already holds, including a failed one. To run the failed calls again, add
+`--retry-errors`:
+
+```bash
+python3 -m harness.runner --config configs/eu-cell-35-eu-newprompt.json --retry-errors
+```
+
+The flag re-runs a record only when the call failed in transit: HTTP 429, any 5xx, no HTTP status at all,
+or an `error` with no `kind` (the runner stores `{"error": ...}` when a call raised). It keeps every other
+record. A 400, a 404, an error inside a 200 body and a schema-invalid answer stay as they are, because a
+second call would cost money and return the same reply. The run prints which records it will run again.
+The flag does nothing with `--force`.
+
+Each call is tried `max_retries + 1` times. A provider that does not set `max_retries` gets 4 (the default
+was 3). A 429 waits for its `Retry-After` header when that is longer than the backoff, and never longer
+than 120 seconds. A 429, a 5xx and every transport error (a reset connection, a server that hangs up, a
+cut body, a timeout) are retried the same way. When the last try still fails, the record keeps the status,
+or `http_status: null` and a `transport:` error. The final summary counts every record that carries an
+`error` as a failure, so a run of HTTP 400 answers no longer prints `Failures: 0`.
+
 ### Typed meals, typed pantry lists, recipes
 
 The new-prompt cells also declare `plate_text`, `pantry_text` and `recipe` approaches. They are not in
@@ -334,6 +359,53 @@ This writes the worksheet as before and also `runs/<cell>/granularity.json`, and
 reads `scorecard-filled.md` next to `results.json`, or the file named by `--filled`. Without a filled
 worksheet only the items per plate figures appear.
 
+### Scoring the EU cells
+
+Two scorers read finished `results.json` files. Neither calls a model or reads a key. Each one prints
+what it could not decide, so that a missing repeat or a failed call does not read as a pass.
+
+**Safety flags** (`harness/score_flags.py`) judge decision rules 2 to 4 against the gold flag labels:
+
+```bash
+python3 -m harness.score_flags                                   # the fixed EU cells B, C and D
+python3 -m harness.score_flags --config configs/score-flags-v3.json
+```
+
+`--config` names the cells, their run directories, the test cell, its refs and `expected_repeats`. The
+last key is the number of typed repeats rule 2 needs, 3 when absent. It must be a whole number of at least
+1. A verdict is one of these:
+
+- `PASS` and `FAIL` as before.
+- `INCOMPLETE` (rule 2): the test cell holds fewer or more typed repeats than `expected_repeats`, and no
+  miss decides it already. A miss in a short set is still `FAIL`.
+- `INCONCLUSIVE`: the verdict changes when the clear must_flag entries of failed calls count as misses. A
+  failed call is a call with no answer: an HTTP error, a truncated answer, or an `{"error": ...}` record.
+  A schema-valid answer with an empty `foods` list is an answer, not a failed call.
+
+Rules 3 and 4 pass only when two comparisons both pass: the clear entries alone, and all entries (clear
+plus `clear: false`). Both numbers are printed on the rule row, with a third line that counts failed calls
+as misses. Per cell the report also prints three counts that guard against a new model's naming turning
+into silent misses. The first is the items that matched no gold name. The second is the gold entries that
+no answer item held (a clear one is an `unlisted_miss`). The third is the hits credited only through an
+item that holds more than one gold food. The strict merge view counts one flag value on such an item once.
+It is printed beside the verdict and does not decide.
+
+**Everything else** (`harness/score_misc.py`) covers call mechanics, kcal, brands, pantry and recipes:
+
+```bash
+python3 -m harness.score_misc                                    # the EU cells
+python3 -m harness.score_misc --kcal-run X=v3-kcal-run --out runs/EU-KCAL-SCORING-2026-10-06
+```
+
+A typed repeat is left out only when case ids are missing. A call that raised (`{"error": ...}`) stays in
+and counts as an invalid call with its id in the invalid list. When a scored cell holds fewer than 3
+typed repeats, the report says `Verdict: INCOMPLETE` near the top and the command exits with code 2. The
+report is still written. The latency columns show the wait of a person (total latency) first and the last
+attempt second. The cost table shows how many calls have a cost, the cost source, and every production call
+with no cost. In kcal mode, a model that splits one food into two items is scored on both items together:
+per 100 g values are averaged, weighted by `estimatedGrams` (a plain mean when grams are missing, and
+unknown when any part has no number). The tables show the sample size `n` and how many rows were split.
+
 ### Tests
 
 ```bash
@@ -343,7 +415,9 @@ python3 -m unittest discover -s tests -t .
 They need no network and no key. They cover the strict validator (a valid answer plus answers that
 must fail), the contract reader and its stale check, the production body and per-call record on fake
 HTTP (including two inline cases each for typed meals, typed pantry lists and recipes), the four
-configs, and the granularity scorer on a merged and a split sample.
+configs, and the granularity scorer on a merged and a split sample. They also cover the HTTP client (a
+scripted opener and a fake clock: retries, `Retry-After`, transport errors, latencies), `--retry-errors`,
+and both scorers, including every verdict above.
 
 ## Judge hardening (2026-08-11)
 
@@ -424,7 +498,7 @@ pilot's best.
   "api_key_env": "SOME_KEY",   // omit entirely for local servers (no auth header sent)
   "headers": {},               // e.g. OpenRouter attribution headers
   "timeout_seconds": 600,
-  "max_retries": 2,
+  "max_retries": 2,            // default 4 when absent
   "no_proxy": true             // auto-true for loopback; keeps http_proxy out of the way
 }
 ```
