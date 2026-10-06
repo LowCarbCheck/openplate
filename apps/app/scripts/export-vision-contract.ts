@@ -24,11 +24,13 @@ import {
 
 const CHECK_FLAG = '--check';
 
+/** The committed file, or '' when there is none yet. Any other failure (permissions, a directory) is a real error. */
 function readCommittedOrEmpty(): string {
   try {
     return readCommittedContract();
-  } catch {
-    return '';
+  } catch (error) {
+    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return '';
+    throw error;
   }
 }
 

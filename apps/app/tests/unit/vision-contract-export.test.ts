@@ -20,6 +20,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { SUPPORTED_LANGUAGES } from '../../app/i18n/language-prefs';
+import { MODEL_CATALOG } from '../../app/services/vision/catalog';
 import {
   CONTRACT_SOURCE_FILES,
   CONTRACT_TASK_KEYS,
@@ -29,6 +30,7 @@ import {
   gitBlobSha1,
   readCommittedContract,
   recipeUserTextFromApp,
+  requestSendsReasoning,
   serializeVisionContract,
   tasksFromApp,
   type VisionContract,
@@ -102,6 +104,17 @@ describe('what the contract holds (so the checks above are not vacuous)', () => 
     assert.equal(contract.photoConstraints.maxLongSidePx, 1600);
     assert.equal(contract.photoConstraints.jpegQuality, 0.85);
     assert.equal(contract.photoConstraints.outputMimeType, 'image/jpeg');
+  });
+
+  it('records that the app sends no reasoning field on the managed path', () => {
+    assert.equal(contract.requestLayout.appSendsReasoning, false);
+  });
+
+  it('control: the reasoning check goes red for a model whose catalog entry disables reasoning', () => {
+    const flagged = MODEL_CATALOG.openrouter.find((model) => model.disableReasoning === true);
+    assert.ok(flagged, 'the catalog needs one entry with disableReasoning, or this control is vacuous');
+    assert.equal(requestSendsReasoning({ provider: 'openrouter', modelId: flagged.id }), true);
+    assert.equal(requestSendsReasoning({ provider: 'managed', modelId: flagged.id }), false);
   });
 
   it('rebuilds the recipe user text exactly from its template, so the harness can too', () => {

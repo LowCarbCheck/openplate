@@ -28,6 +28,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import type { AiProviderType } from '#types/enums';
 import { LANGUAGE_LABELS, SUPPORTED_LANGUAGES, type LanguageCode } from '../../app/i18n/language-prefs';
 import { describeRemainingDayForPrompt, type RemainingDay } from '../../app/lib/remaining-day';
 import {
@@ -37,6 +38,7 @@ import {
   MAX_PHOTO_BYTES,
   computeScaledDimensions,
 } from '../../app/lib/photo-constraints';
+import { findCatalogModel } from '../../app/services/vision/catalog';
 import { buildOpenAiCompatibleRequestBody } from '../../app/services/vision/openai-compatible';
 import { buildRecipeProposalUserPrompt } from '../../app/services/vision/recipe-prompt';
 import type { JsonSchemaNode } from '../../app/services/vision/schema';
@@ -62,6 +64,7 @@ export const CONTRACT_SOURCE_FILES: readonly string[] = [
   'apps/app/app/i18n/language-prefs.ts',
   'apps/app/app/lib/photo-constraints.ts',
   'apps/app/app/lib/remaining-day.ts',
+  'apps/app/app/services/vision/catalog.ts',
   'apps/app/app/services/vision/openai-compatible.ts',
   'apps/app/app/services/vision/pantry-prompt.ts',
   'apps/app/app/services/vision/pantry-schema.ts',
@@ -122,6 +125,12 @@ export interface VisionContract {
   requestLayout: {
     markers: Record<string, string>;
     messagesByInputKind: MessageLayouts;
+    /**
+     * Whether the app puts a `reasoning` field on the MANAGED request. It does not: the managed catalog is empty
+     * (the instance names its model, the person never picks one), so no entry sets `disableReasoning`. A harness
+     * that sends `reasoning` anyway is measuring a different request than the app makes.
+     */
+    appSendsReasoning: boolean;
   };
   recipeUserText: RecipeUserTextTemplate;
   tasks: Record<ContractTaskKey, ContractTask>;
@@ -228,6 +237,24 @@ function inputOf(task: {
     jsonSchema: task.jsonSchema,
     schemaName: task.schemaName,
   };
+}
+
+/**
+ * Whether the app sends a `reasoning` field for a provider and model, read off the real request builder with the
+ * flag the real call site derives from the catalog (`services/vision/index.ts`).
+ *
+ * @param options - the provider and the model id the call is made with.
+ * @returns true when the request body carries a `reasoning` key.
+ */
+export function requestSendsReasoning(options: { provider: AiProviderType; modelId: string }): boolean {
+  const body = buildOpenAiCompatibleRequestBody({
+    model: options.modelId,
+    input: { kind: 'text', text: LAYOUT_MARKERS.inputText },
+    task: photoIntakeTask('en'),
+    useStructuredOutput: true,
+    disableReasoning: findCatalogModel(options.provider, options.modelId)?.disableReasoning === true,
+  });
+  return body.reasoning !== undefined;
 }
 
 export function recipeUserTextFromApp(language: LanguageCode): string {
@@ -459,7 +486,13 @@ export function buildVisionContract(sources: VisionContractSources = REAL_SOURCE
     languages: [...SUPPORTED_LANGUAGES],
     languageLabels: { ...LANGUAGE_LABELS },
     photoConstraints: buildPhotoConstraints(),
-    requestLayout: { markers: { ...LAYOUT_MARKERS }, messagesByInputKind: buildMessageLayouts() },
+    requestLayout: {
+      markers: { ...LAYOUT_MARKERS },
+      messagesByInputKind: buildMessageLayouts(),
+      // The managed model is named by the instance at run time, so no id is known here. The managed catalog is
+      // empty, which means any id resolves to no entry and no `disableReasoning`.
+      appSendsReasoning: requestSendsReasoning({ provider: 'managed', modelId: 'any-managed-model' }),
+    },
     recipeUserText: buildRecipeTemplate(),
     tasks: buildTasks(sources),
   };

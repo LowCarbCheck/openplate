@@ -22,13 +22,15 @@
  *     the instance ceilings, so the counters see size and not only count.
  *
  * THE DEFAULTS ARE THE APP'S LARGEST REAL REQUEST (measured in `openplate`'s
- * `app/services/vision/` on 2026-09-30, all six languages): the plate scan,
- * two messages, one image, 9.4 KB of message text and a 2.8 KB
- * `response_format` schema. The text intake is 6.4 KB plus what the person
- * typed, the recipe proposal 4.4 KB plus one line per pantry item. So one
- * image, exactly the app's maximum; four messages, twice its two; and 48 KB of
- * text, room for the schema, the prompt and some 35 KB that a person typed or
- * a pantry listed. A plate scan then estimates at about 4,500 tokens, weight 1.
+ * `app/services/vision/` on 2026-10-06 from the committed vision contract, all
+ * six languages within 3 bytes of each other): the plate scan, two messages,
+ * one image, 12.2 KB of message text (the 2026-09-30 figure was 9.4 KB, before
+ * the food flags grew) and a 2.7 KB `response_format` schema, 14.9 KB in all.
+ * The text intake is 8.4 KB plus what the person typed, the recipe proposal
+ * 4.3 KB plus one line per pantry item. So one image, exactly the app's
+ * maximum; four messages, twice its two; and 48 KB of text, room for the
+ * schema, the prompt and some 33 KB that a person typed or a pantry listed. A
+ * plate scan then estimates at about 5,300 tokens, weight 1.
  *
  * TEXT INCLUDES `response_format`. A JSON schema is input the model reads,
  * and a field the proxy forwards without counting is a field that carries a
@@ -55,7 +57,7 @@ export interface ChatInputPolicy {
 /** The default for `AI_MAX_IMAGE_PARTS`: the app sends one photograph per request. */
 export const DEFAULT_AI_MAX_IMAGE_PARTS = 1;
 
-/** The default for `AI_MAX_TEXT_BYTES`: the app's largest fixed text is 12.2 KB, see the module header. */
+/** The default for `AI_MAX_TEXT_BYTES`: the app's largest fixed text is 14.9 KB, see the module header. */
 export const DEFAULT_AI_MAX_TEXT_BYTES = 48 * 1024;
 
 /** The default for `AI_MAX_MESSAGES`: the app sends a system message and a user message. */
@@ -63,7 +65,7 @@ export const DEFAULT_AI_MAX_MESSAGES = 4;
 
 /**
  * The default for `AI_UNIT_INPUT_TOKENS`. A plate scan estimates at about
- * 4,500 tokens and a text intake at 2,000 to 4,000, so both weigh one unit;
+ * 5,300 tokens and a text intake at 2,000 to 4,000, so both weigh one unit;
  * a request near the 48 KB text bound weighs two.
  */
 export const DEFAULT_AI_UNIT_INPUT_TOKENS = 8192;
