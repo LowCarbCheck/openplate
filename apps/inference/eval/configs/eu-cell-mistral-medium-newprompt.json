@@ -1,0 +1,72 @@
+{
+  "name": "eu-cell-mistral-medium-newprompt",
+  "description": "EU candidate cell. Mistral Medium 3.1 on the EU host (eu.openrouter.ai), pinned to mistral/eu with zdr, data_collection deny and no fallbacks, sending the app's REAL request read from generated/vision-contract.json (v3 prompt). Costs real money.",
+  "images_dir": "images",
+  "gold": "gold/gold_labels.json",
+  "contract": "generated/vision-contract.json",
+  "image_resize": "production",
+  "out_dir": "runs/eu-cell-mistral-medium-newprompt",
+  "providers": {
+    "openrouter_eu": {
+      "base_url": "https://eu.openrouter.ai/api/v1",
+      "api_key_env": "OPENROUTER_API_KEY",
+      "headers": {
+        "HTTP-Referer": "https://sprqvntrs.com/openplate-bench",
+        "X-Title": "openplate eu model eval"
+      },
+      "timeout_seconds": 300,
+      "max_retries": 1,
+      "retry_backoff_base_seconds": 3.0
+    }
+  },
+  "models": {
+    "mistral_medium_31_eu": {
+      "id": "mistralai/mistral-medium-3.1",
+      "provider": "openrouter_eu",
+      "price_per_mtok_in": 0.44,
+      "price_per_mtok_out": 2.2,
+      "use_json_schema": true,
+      "max_tokens": 8192,
+      "usage_include": true,
+      "extra_body": {
+        "provider": {
+          "zdr": true,
+          "data_collection": "deny",
+          "only": [
+            "mistral/eu"
+          ],
+          "allow_fallbacks": false
+        }
+      }
+    }
+  },
+  "approach_order": [
+    "production"
+  ],
+  "approaches": {
+    "production": {
+      "type": "production",
+      "model": "mistral_medium_31_eu",
+      "task": "plate_photo",
+      "language": "en",
+      "label": "the app's real photo request (vision contract), Mistral Medium 3.1, EU host, no reasoning parameter"
+    },
+    "plate_text": {
+      "type": "single_text",
+      "model": "mistral_medium_31_eu",
+      "task": "plate_text",
+      "label": "typed meals, the app's real text request, Mistral Medium 3.1, EU host, no reasoning parameter"
+    },
+    "pantry_text": {
+      "type": "single_text",
+      "model": "mistral_medium_31_eu",
+      "task": "pantry_text",
+      "label": "typed pantry list, the app's real request, Mistral Medium 3.1, EU host, no reasoning parameter"
+    },
+    "recipe": {
+      "type": "recipe",
+      "model": "mistral_medium_31_eu",
+      "label": "recipe proposals, the app's real request, Mistral Medium 3.1, EU host, no reasoning parameter"
+    }
+  }
+}
