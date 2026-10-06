@@ -1,0 +1,50 @@
+{
+  "results": "runs/eu-cell-35-eu-oldprompt/results.json",
+  "filled_worksheet": "runs/eu-cell-35-eu-oldprompt/scorecard-filled.md",
+  "merged_marker": "merged",
+  "dense_plate_min_core": 4,
+  "approaches": {
+    "baseline": {
+      "items_per_plate": {
+        "plates": 50,
+        "items_total": 155,
+        "items_mean": 3.1,
+        "items_median": 3.0,
+        "dense_min_core": 4,
+        "dense_plates": 34,
+        "dense_items_mean": 3.471,
+        "dense_core_mean": 5.706,
+        "dense_items_per_core": 0.608
+      },
+      "strict_split": {
+        "scored": true,
+        "plates": 50,
+        "skipped_plates": [],
+        "core_items": 235,
+        "hits": 179,
+        "merged_hits": 72,
+        "strict_hits": 107,
+        "recall": 0.7617021276595745,
+        "strict_recall": 0.4553191489361702,
+        "merged_share_of_hits": 0.4022346368715084,
+        "strict_recall_ci": {
+          "point": 0.4553191489361702,
+          "lo": 0.35398047998834625,
+          "hi": 0.5625059410646387,
+          "images": 50,
+          "items": 235,
+          "resamples": 10000
+        },
+        "recall_ci": {
+          "point": 0.7617021276595745,
+          "lo": 0.6958333333333333,
+          "hi": 0.8317757009345794,
+          "images": 50,
+          "items": 235,
+          "resamples": 10000
+        }
+      }
+    }
+  },
+  "warnings": []
+}
