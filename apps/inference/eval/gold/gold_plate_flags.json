@@ -1,0 +1,3226 @@
+{
+  "_note": "Flag labels for the visible items of the 50 plates in gold_labels.json, authored 2026-10-06 from direct inspection of images/NN.jpg (downscaled copies), using only the app's own definitions in apps/app/app/services/vision/prompt.ts. Shape per plate: must_flag, may_flag, must_not_flag (each {item, kind, value, clear}; item is a core item of gold_labels.json, byte for byte except that ' <long dash> ' is written ', '), if_listed (flags required ONLY when the model lists that OPTIONAL item; no recall credit), note. An allergen is flagged when it is in 'allergens' OR 'mayContain' (food-cautions.ts). See GOLD-NOTES.md.",
+  "_summary": {
+    "plates": 50,
+    "plates_with_any_must_flag": 44,
+    "plates_with_clear_must_flag": 41,
+    "plates_with_clear_must_flag_ids": [
+      "01",
+      "02",
+      "03",
+      "04",
+      "06",
+      "07",
+      "08",
+      "09",
+      "10",
+      "11",
+      "13",
+      "15",
+      "18",
+      "19",
+      "20",
+      "21",
+      "22",
+      "23",
+      "24",
+      "25",
+      "26",
+      "27",
+      "28",
+      "29",
+      "31",
+      "32",
+      "33",
+      "34",
+      "35",
+      "36",
+      "37",
+      "38",
+      "40",
+      "41",
+      "42",
+      "43",
+      "45",
+      "46",
+      "47",
+      "48",
+      "49"
+    ]
+  },
+  "01": {
+    "must_flag": [
+      {
+        "item": "scrambled eggs",
+        "kind": "allergen",
+        "value": "eggs",
+        "clear": true
+      },
+      {
+        "item": "brown bread slice",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "scrambled eggs",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      },
+      {
+        "item": "scrambled eggs",
+        "kind": "pregnancy",
+        "value": "raw-egg",
+        "clear": true
+      },
+      {
+        "item": "bacon/ham slices",
+        "kind": "pregnancy",
+        "value": "raw-meat",
+        "clear": true
+      },
+      {
+        "item": "frankfurter sausages",
+        "kind": "allergen",
+        "value": "celery",
+        "clear": true
+      },
+      {
+        "item": "frankfurter sausages",
+        "kind": "allergen",
+        "value": "mustard",
+        "clear": true
+      },
+      {
+        "item": "frankfurter sausages",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      },
+      {
+        "item": "frankfurter sausages",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [],
+    "if_listed": [],
+    "note": "Ham looks cooked, so raw-meat is only acceptable. Scrambled eggs look set."
+  },
+  "02": {
+    "must_flag": [
+      {
+        "item": "Yorkshire pudding",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "Yorkshire pudding",
+        "kind": "allergen",
+        "value": "eggs",
+        "clear": true
+      },
+      {
+        "item": "Yorkshire pudding",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "roast meat (lamb/beef) in gravy",
+        "kind": "pregnancy",
+        "value": "raw-meat",
+        "clear": true
+      },
+      {
+        "item": "roast meat (lamb/beef) in gravy",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "roast meat (lamb/beef) in gravy",
+        "kind": "allergen",
+        "value": "celery",
+        "clear": true
+      },
+      {
+        "item": "roast meat (lamb/beef) in gravy",
+        "kind": "allergen",
+        "value": "sulphites",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [],
+    "if_listed": [],
+    "note": "Yorkshire pudding batter is always flour, egg and milk."
+  },
+  "03": {
+    "must_flag": [
+      {
+        "item": "grilled salmon fillets",
+        "kind": "allergen",
+        "value": "fish",
+        "clear": true
+      },
+      {
+        "item": "feta cheese",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "feta cheese",
+        "kind": "pregnancy",
+        "value": "raw-dairy",
+        "clear": true
+      },
+      {
+        "item": "grilled salmon fillets",
+        "kind": "pregnancy",
+        "value": "raw-fish",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [
+      {
+        "item": "grilled salmon fillets",
+        "kind": "pregnancy",
+        "value": "smoked-fish",
+        "clear": true
+      },
+      {
+        "item": "grilled salmon fillets",
+        "kind": "pregnancy",
+        "value": "high-mercury-fish",
+        "clear": true
+      },
+      {
+        "item": "feta cheese",
+        "kind": "pregnancy",
+        "value": "soft-cheese",
+        "clear": true
+      }
+    ],
+    "if_listed": [
+      {
+        "item": "dressing",
+        "kind": "allergen",
+        "value": "mustard",
+        "clear": false
+      }
+    ],
+    "note": "Seared salmon, not smoked; salmon is not in the high-mercury list. Feta is brined, not mould-ripened or blue, so soft-cheese is a false alarm by prompt.ts."
+  },
+  "04": {
+    "must_flag": [
+      {
+        "item": "cheeseburger (beef patty, cheese, tomato, red onion, sauce, bun)",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "cheeseburger (beef patty, cheese, tomato, red onion, sauce, bun)",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      },
+      {
+        "item": "cheeseburger (beef patty, cheese, tomato, red onion, sauce, bun)",
+        "kind": "allergen",
+        "value": "mustard",
+        "clear": false
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "cheeseburger (beef patty, cheese, tomato, red onion, sauce, bun)",
+        "kind": "pregnancy",
+        "value": "raw-meat",
+        "clear": true
+      },
+      {
+        "item": "cheeseburger (beef patty, cheese, tomato, red onion, sauce, bun)",
+        "kind": "allergen",
+        "value": "eggs",
+        "clear": true
+      },
+      {
+        "item": "cheeseburger (beef patty, cheese, tomato, red onion, sauce, bun)",
+        "kind": "allergen",
+        "value": "sesame",
+        "clear": true
+      },
+      {
+        "item": "pickles/gherkins",
+        "kind": "allergen",
+        "value": "mustard",
+        "clear": true
+      },
+      {
+        "item": "thick-cut fries/steak fries",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [],
+    "if_listed": [
+      {
+        "item": "beer in background",
+        "kind": "pregnancy",
+        "value": "alcohol",
+        "clear": true
+      },
+      {
+        "item": "beer in background",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      }
+    ],
+    "note": "Cheese slice is plainly visible. The sauce shows mustard seeds, but it could be a seeded mayo: mustard clear:false. Patty doneness is not visible."
+  },
+  "05": {
+    "must_flag": [
+      {
+        "item": "chicken pieces in creamy sauce with leafy greens (spinach-type)",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": false
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "chicken pieces in creamy sauce with leafy greens (spinach-type)",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "chicken pieces in creamy sauce with leafy greens (spinach-type)",
+        "kind": "allergen",
+        "value": "nuts",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [],
+    "if_listed": [],
+    "note": "The creamy sauce is probably cream or yogurt, but coconut milk is possible."
+  },
+  "06": {
+    "must_flag": [
+      {
+        "item": "sushi rolls (salmon+avocado uramaki, sesame)",
+        "kind": "pregnancy",
+        "value": "raw-fish",
+        "clear": true
+      },
+      {
+        "item": "sushi rolls (salmon+avocado uramaki, sesame)",
+        "kind": "allergen",
+        "value": "fish",
+        "clear": true
+      },
+      {
+        "item": "sushi rolls (salmon+avocado uramaki, sesame)",
+        "kind": "allergen",
+        "value": "sesame",
+        "clear": true
+      },
+      {
+        "item": "tuna nigiri",
+        "kind": "pregnancy",
+        "value": "raw-fish",
+        "clear": true
+      },
+      {
+        "item": "tuna nigiri",
+        "kind": "pregnancy",
+        "value": "high-mercury-fish",
+        "clear": true
+      },
+      {
+        "item": "tuna nigiri",
+        "kind": "allergen",
+        "value": "fish",
+        "clear": true
+      },
+      {
+        "item": "white-fish nigiri (1-2 pcs, e.g. yellowtail/sea bream)",
+        "kind": "pregnancy",
+        "value": "raw-fish",
+        "clear": true
+      },
+      {
+        "item": "white-fish nigiri (1-2 pcs, e.g. yellowtail/sea bream)",
+        "kind": "allergen",
+        "value": "fish",
+        "clear": true
+      },
+      {
+        "item": "soy sauce",
+        "kind": "allergen",
+        "value": "soybeans",
+        "clear": true
+      },
+      {
+        "item": "soy sauce",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": false
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "sushi rolls (salmon+avocado uramaki, sesame)",
+        "kind": "allergen",
+        "value": "soybeans",
+        "clear": true
+      },
+      {
+        "item": "sushi rolls (salmon+avocado uramaki, sesame)",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "wasabi",
+        "kind": "allergen",
+        "value": "mustard",
+        "clear": true
+      },
+      {
+        "item": "pickled ginger",
+        "kind": "allergen",
+        "value": "sulphites",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [],
+    "if_listed": [
+      {
+        "item": "white wine / water glasses in background",
+        "kind": "pregnancy",
+        "value": "alcohol",
+        "clear": false
+      },
+      {
+        "item": "white wine / water glasses in background",
+        "kind": "allergen",
+        "value": "sulphites",
+        "clear": false
+      }
+    ],
+    "note": "Sesame seeds are visible on the uramaki. prompt.ts: high-mercury-fish includes 'tuna generally'. Most soy sauce is brewed with wheat, tamari is not: gluten clear:false."
+  },
+  "07": {
+    "must_flag": [
+      {
+        "item": "spaghetti",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "ground beef/meat tomato sauce",
+        "kind": "allergen",
+        "value": "celery",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [],
+    "if_listed": [],
+    "note": "Wheat spaghetti."
+  },
+  "08": {
+    "must_flag": [
+      {
+        "item": "yogurt",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      },
+      {
+        "item": "granola (oats/puffed grains, nuts)",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "granola (oats/puffed grains, nuts)",
+        "kind": "allergen",
+        "value": "nuts",
+        "clear": true
+      },
+      {
+        "item": "granola (oats/puffed grains, nuts)",
+        "kind": "allergen",
+        "value": "peanuts",
+        "clear": true
+      },
+      {
+        "item": "granola (oats/puffed grains, nuts)",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      },
+      {
+        "item": "granola (oats/puffed grains, nuts)",
+        "kind": "allergen",
+        "value": "sesame",
+        "clear": true
+      },
+      {
+        "item": "granola (oats/puffed grains, nuts)",
+        "kind": "allergen",
+        "value": "soybeans",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [],
+    "if_listed": [
+      {
+        "item": "raisins/dried fruit in granola",
+        "kind": "allergen",
+        "value": "sulphites",
+        "clear": false
+      }
+    ],
+    "note": "Oats are an Annex II cereal. Nut pieces are not clearly visible, so nuts is only acceptable."
+  },
+  "09": {
+    "must_flag": [
+      {
+        "item": "pizza with chicken pieces and cheese",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "pizza with chicken pieces and cheese",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "pizza with chicken pieces and cheese",
+        "kind": "allergen",
+        "value": "soybeans",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [],
+    "if_listed": [
+      {
+        "item": "cola drink at table edge",
+        "kind": "pregnancy",
+        "value": "caffeine",
+        "clear": false
+      }
+    ],
+    "note": ""
+  },
+  "10": {
+    "must_flag": [
+      {
+        "item": "club/toasted sandwich (multi-layer, creamy chicken/seafood filling)",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "club/toasted sandwich (multi-layer, creamy chicken/seafood filling)",
+        "kind": "allergen",
+        "value": "eggs",
+        "clear": true
+      },
+      {
+        "item": "club/toasted sandwich (multi-layer, creamy chicken/seafood filling)",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      },
+      {
+        "item": "club/toasted sandwich (multi-layer, creamy chicken/seafood filling)",
+        "kind": "allergen",
+        "value": "mustard",
+        "clear": true
+      },
+      {
+        "item": "club/toasted sandwich (multi-layer, creamy chicken/seafood filling)",
+        "kind": "allergen",
+        "value": "fish",
+        "clear": true
+      },
+      {
+        "item": "club/toasted sandwich (multi-layer, creamy chicken/seafood filling)",
+        "kind": "allergen",
+        "value": "crustaceans",
+        "clear": true
+      },
+      {
+        "item": "green side salad (rocket/mixed leaves)",
+        "kind": "allergen",
+        "value": "mustard",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [],
+    "if_listed": [
+      {
+        "item": "Pepsi Max bottle",
+        "kind": "pregnancy",
+        "value": "caffeine",
+        "clear": false
+      },
+      {
+        "item": "hot drink cup",
+        "kind": "pregnancy",
+        "value": "caffeine",
+        "clear": false
+      }
+    ],
+    "note": "Trap plate: the poster dishes carry no labels. The filling could be chicken or seafood mayo, so fish, crustaceans and eggs are acceptable."
+  },
+  "11": {
+    "must_flag": [
+      {
+        "item": "breaded fried schnitzel (pork/veal cutlet)",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "breaded fried schnitzel (pork/veal cutlet)",
+        "kind": "allergen",
+        "value": "eggs",
+        "clear": false
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "breaded fried schnitzel (pork/veal cutlet)",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      },
+      {
+        "item": "mixed side salad (lettuce, cherry tomato, red onion, dressing)",
+        "kind": "allergen",
+        "value": "mustard",
+        "clear": true
+      },
+      {
+        "item": "mixed side salad (lettuce, cherry tomato, red onion, dressing)",
+        "kind": "allergen",
+        "value": "eggs",
+        "clear": true
+      },
+      {
+        "item": "thick-cut fries/potato wedges",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [],
+    "if_listed": [],
+    "note": "Breadcrumb coating is visible. A standard breading uses egg, but not every kitchen: clear:false."
+  },
+  "12": {
+    "must_flag": [
+      {
+        "item": "mashed potatoes",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": false
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "bratwurst sausages",
+        "kind": "allergen",
+        "value": "celery",
+        "clear": true
+      },
+      {
+        "item": "bratwurst sausages",
+        "kind": "allergen",
+        "value": "mustard",
+        "clear": true
+      },
+      {
+        "item": "bratwurst sausages",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      },
+      {
+        "item": "bratwurst sausages",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "sauerkraut",
+        "kind": "allergen",
+        "value": "sulphites",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [],
+    "if_listed": [
+      {
+        "item": "mustard/onion-gravy drizzle on the sausages",
+        "kind": "allergen",
+        "value": "mustard",
+        "clear": false
+      }
+    ],
+    "note": "Mash usually has milk or butter. Bratwurst is cooked: no pregnancy flag."
+  },
+  "13": {
+    "must_flag": [
+      {
+        "item": "Käsespätzle (spätzle noodles in melted cheese)",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "Käsespätzle (spätzle noodles in melted cheese)",
+        "kind": "allergen",
+        "value": "eggs",
+        "clear": true
+      },
+      {
+        "item": "Käsespätzle (spätzle noodles in melted cheese)",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "Käsespätzle (spätzle noodles in melted cheese)",
+        "kind": "pregnancy",
+        "value": "raw-dairy",
+        "clear": true
+      },
+      {
+        "item": "fried/caramelised onions",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [],
+    "if_listed": [],
+    "note": "Spaetzle are flour and egg, under melted cheese. Alpine cheeses are often raw-milk, so raw-dairy is acceptable."
+  },
+  "14": {
+    "must_flag": [],
+    "may_flag": [
+      {
+        "item": "beef gulasch/stew in dark gravy",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "beef gulasch/stew in dark gravy",
+        "kind": "allergen",
+        "value": "celery",
+        "clear": true
+      },
+      {
+        "item": "beef gulasch/stew in dark gravy",
+        "kind": "allergen",
+        "value": "sulphites",
+        "clear": true
+      },
+      {
+        "item": "beef gulasch/stew in dark gravy",
+        "kind": "pregnancy",
+        "value": "alcohol",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [],
+    "if_listed": [],
+    "note": "Nothing flaggable without doubt."
+  },
+  "15": {
+    "must_flag": [
+      {
+        "item": "pretzel (Brezel)",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "sweet mustard",
+        "kind": "allergen",
+        "value": "mustard",
+        "clear": true
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "Weisswurst sausages in hot water",
+        "kind": "allergen",
+        "value": "celery",
+        "clear": true
+      },
+      {
+        "item": "Weisswurst sausages in hot water",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [],
+    "if_listed": [
+      {
+        "item": "wheat beer (Weissbier) glass",
+        "kind": "pregnancy",
+        "value": "alcohol",
+        "clear": true
+      },
+      {
+        "item": "wheat beer (Weissbier) glass",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      }
+    ],
+    "note": "The beer is optional in the core labels, but if the model lists it, alcohol and gluten are required."
+  },
+  "16": {
+    "must_flag": [],
+    "may_flag": [
+      {
+        "item": "döner/gyros sliced meat",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "döner/gyros sliced meat",
+        "kind": "allergen",
+        "value": "soybeans",
+        "clear": true
+      },
+      {
+        "item": "döner/gyros sliced meat",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      },
+      {
+        "item": "döner/gyros sliced meat",
+        "kind": "allergen",
+        "value": "mustard",
+        "clear": true
+      },
+      {
+        "item": "döner/gyros sliced meat",
+        "kind": "allergen",
+        "value": "celery",
+        "clear": true
+      },
+      {
+        "item": "döner/gyros sliced meat",
+        "kind": "allergen",
+        "value": "eggs",
+        "clear": true
+      },
+      {
+        "item": "tomato sauce over the meat",
+        "kind": "allergen",
+        "value": "celery",
+        "clear": true
+      },
+      {
+        "item": "French fries",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "side salad (lettuce, tomato, cucumber, red onion) with dressing",
+        "kind": "allergen",
+        "value": "mustard",
+        "clear": true
+      },
+      {
+        "item": "side salad (lettuce, tomato, cucumber, red onion) with dressing",
+        "kind": "allergen",
+        "value": "eggs",
+        "clear": true
+      },
+      {
+        "item": "side salad (lettuce, tomato, cucumber, red onion) with dressing",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [],
+    "if_listed": [
+      {
+        "item": "glass of beer",
+        "kind": "pregnancy",
+        "value": "alcohol",
+        "clear": true
+      },
+      {
+        "item": "glass of beer",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "beer bottle",
+        "kind": "pregnancy",
+        "value": "alcohol",
+        "clear": true
+      },
+      {
+        "item": "beer bottle",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      }
+    ],
+    "note": "Doener meat recipes vary; nothing on the food is certain."
+  },
+  "17": {
+    "must_flag": [],
+    "may_flag": [
+      {
+        "item": "currywurst (sausage)",
+        "kind": "allergen",
+        "value": "celery",
+        "clear": true
+      },
+      {
+        "item": "currywurst (sausage)",
+        "kind": "allergen",
+        "value": "mustard",
+        "clear": true
+      },
+      {
+        "item": "currywurst (sausage)",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "currywurst (sausage)",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      },
+      {
+        "item": "currywurst (sausage)",
+        "kind": "allergen",
+        "value": "sulphites",
+        "clear": true
+      },
+      {
+        "item": "curry ketchup sauce",
+        "kind": "allergen",
+        "value": "celery",
+        "clear": true
+      },
+      {
+        "item": "curry ketchup sauce",
+        "kind": "allergen",
+        "value": "mustard",
+        "clear": true
+      },
+      {
+        "item": "curry ketchup sauce",
+        "kind": "allergen",
+        "value": "sulphites",
+        "clear": true
+      },
+      {
+        "item": "curry powder",
+        "kind": "allergen",
+        "value": "celery",
+        "clear": true
+      },
+      {
+        "item": "curry powder",
+        "kind": "allergen",
+        "value": "mustard",
+        "clear": true
+      },
+      {
+        "item": "French fries",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [],
+    "if_listed": [],
+    "note": "Curry powder blends often hold celery seed and mustard, but not always."
+  },
+  "18": {
+    "must_flag": [
+      {
+        "item": "Maultaschen (filled pasta pockets with meat filling)",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "Maultaschen (filled pasta pockets with meat filling)",
+        "kind": "allergen",
+        "value": "eggs",
+        "clear": false
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "Maultaschen (filled pasta pockets with meat filling)",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      },
+      {
+        "item": "Maultaschen (filled pasta pockets with meat filling)",
+        "kind": "allergen",
+        "value": "celery",
+        "clear": true
+      },
+      {
+        "item": "potato salad",
+        "kind": "allergen",
+        "value": "mustard",
+        "clear": true
+      },
+      {
+        "item": "potato salad",
+        "kind": "allergen",
+        "value": "celery",
+        "clear": true
+      },
+      {
+        "item": "potato salad",
+        "kind": "allergen",
+        "value": "eggs",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [],
+    "if_listed": [],
+    "note": "Maultaschen dough and filling usually hold egg: clear:false."
+  },
+  "19": {
+    "must_flag": [
+      {
+        "item": "tzatziki/garlic yogurt sauce",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      },
+      {
+        "item": "mayonnaise",
+        "kind": "allergen",
+        "value": "eggs",
+        "clear": true
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "mayonnaise",
+        "kind": "pregnancy",
+        "value": "raw-egg",
+        "clear": true
+      },
+      {
+        "item": "mayonnaise",
+        "kind": "allergen",
+        "value": "mustard",
+        "clear": true
+      },
+      {
+        "item": "gyros/döner sliced meat",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "gyros/döner sliced meat",
+        "kind": "allergen",
+        "value": "soybeans",
+        "clear": true
+      },
+      {
+        "item": "gyros/döner sliced meat",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      },
+      {
+        "item": "gyros/döner sliced meat",
+        "kind": "allergen",
+        "value": "mustard",
+        "clear": true
+      },
+      {
+        "item": "gyros/döner sliced meat",
+        "kind": "allergen",
+        "value": "celery",
+        "clear": true
+      },
+      {
+        "item": "sliced sausage in curry/shashlik sauce",
+        "kind": "allergen",
+        "value": "celery",
+        "clear": true
+      },
+      {
+        "item": "sliced sausage in curry/shashlik sauce",
+        "kind": "allergen",
+        "value": "mustard",
+        "clear": true
+      },
+      {
+        "item": "French fries",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [],
+    "if_listed": [],
+    "note": "Snack-bar mayonnaise is made with pasteurised egg, so raw-egg is only acceptable."
+  },
+  "20": {
+    "must_flag": [
+      {
+        "item": "ramen noodles",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "sliced chashu pork",
+        "kind": "allergen",
+        "value": "soybeans",
+        "clear": false
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "clear (shio) broth",
+        "kind": "allergen",
+        "value": "fish",
+        "clear": true
+      },
+      {
+        "item": "clear (shio) broth",
+        "kind": "allergen",
+        "value": "soybeans",
+        "clear": true
+      },
+      {
+        "item": "clear (shio) broth",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "clear (shio) broth",
+        "kind": "allergen",
+        "value": "sesame",
+        "clear": true
+      },
+      {
+        "item": "clear (shio) broth",
+        "kind": "allergen",
+        "value": "molluscs",
+        "clear": true
+      },
+      {
+        "item": "clear (shio) broth",
+        "kind": "allergen",
+        "value": "crustaceans",
+        "clear": true
+      },
+      {
+        "item": "ramen noodles",
+        "kind": "allergen",
+        "value": "eggs",
+        "clear": true
+      },
+      {
+        "item": "sliced chashu pork",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "sliced chashu pork",
+        "kind": "allergen",
+        "value": "sesame",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [],
+    "if_listed": [],
+    "note": "Ramen noodles are wheat. Chashu is braised in soy sauce, usually."
+  },
+  "21": {
+    "must_flag": [
+      {
+        "item": "bean sprouts",
+        "kind": "pregnancy",
+        "value": "raw-sprouts",
+        "clear": true
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "pho noodle soup (rice noodles in beef broth)",
+        "kind": "allergen",
+        "value": "fish",
+        "clear": true
+      },
+      {
+        "item": "sliced beef and beef meatballs",
+        "kind": "pregnancy",
+        "value": "raw-meat",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [],
+    "if_listed": [
+      {
+        "item": "hoisin/chilli sauce dish",
+        "kind": "allergen",
+        "value": "soybeans",
+        "clear": false
+      },
+      {
+        "item": "hoisin/chilli sauce dish",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": false
+      },
+      {
+        "item": "hoisin/chilli sauce dish",
+        "kind": "allergen",
+        "value": "sesame",
+        "clear": false
+      },
+      {
+        "item": "iced drink glass",
+        "kind": "pregnancy",
+        "value": "caffeine",
+        "clear": false
+      }
+    ],
+    "note": "Raw mung bean sprouts on the side plate, meant to go in raw. Pho broth often holds fish sauce. Rare beef slices are common in pho, so raw-meat is acceptable."
+  },
+  "22": {
+    "must_flag": [
+      {
+        "item": "grated cheese",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "grated cheese",
+        "kind": "pregnancy",
+        "value": "raw-dairy",
+        "clear": true
+      },
+      {
+        "item": "soft corn tortilla tacos with seasoned ground beef",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [],
+    "if_listed": [
+      {
+        "item": "glass of cola",
+        "kind": "pregnancy",
+        "value": "caffeine",
+        "clear": false
+      }
+    ],
+    "note": ""
+  },
+  "23": {
+    "must_flag": [
+      {
+        "item": "burrito (flour tortilla)",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "shredded cheddar/jack cheese",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "green chile sauce",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "green chile sauce",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      },
+      {
+        "item": "burrito (flour tortilla)",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [],
+    "if_listed": [],
+    "note": ""
+  },
+  "24": {
+    "must_flag": [
+      {
+        "item": "battered fried fish fillet",
+        "kind": "allergen",
+        "value": "fish",
+        "clear": true
+      },
+      {
+        "item": "battered fried fish fillet",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "tartar sauce",
+        "kind": "allergen",
+        "value": "eggs",
+        "clear": true
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "battered fried fish fillet",
+        "kind": "allergen",
+        "value": "eggs",
+        "clear": true
+      },
+      {
+        "item": "battered fried fish fillet",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      },
+      {
+        "item": "tartar sauce",
+        "kind": "allergen",
+        "value": "mustard",
+        "clear": true
+      },
+      {
+        "item": "tartar sauce",
+        "kind": "pregnancy",
+        "value": "raw-egg",
+        "clear": true
+      },
+      {
+        "item": "chips/thick-cut fries",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [
+      {
+        "item": "battered fried fish fillet",
+        "kind": "pregnancy",
+        "value": "raw-fish",
+        "clear": true
+      }
+    ],
+    "if_listed": [],
+    "note": "Tartar sauce is mayonnaise based."
+  },
+  "25": {
+    "must_flag": [
+      {
+        "item": "pancakes with icing sugar",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "pancakes with icing sugar",
+        "kind": "allergen",
+        "value": "eggs",
+        "clear": true
+      },
+      {
+        "item": "pancakes with icing sugar",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      },
+      {
+        "item": "fried egg (sunny side up)",
+        "kind": "allergen",
+        "value": "eggs",
+        "clear": true
+      },
+      {
+        "item": "fried egg (sunny side up)",
+        "kind": "pregnancy",
+        "value": "raw-egg",
+        "clear": true
+      },
+      {
+        "item": "toast slices",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "breakfast sausages",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "breakfast sausages",
+        "kind": "allergen",
+        "value": "sulphites",
+        "clear": true
+      },
+      {
+        "item": "breakfast sausages",
+        "kind": "allergen",
+        "value": "celery",
+        "clear": true
+      },
+      {
+        "item": "breakfast sausages",
+        "kind": "allergen",
+        "value": "mustard",
+        "clear": true
+      },
+      {
+        "item": "breakfast sausages",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      },
+      {
+        "item": "hash brown/potato croquettes",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "toast slices",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      },
+      {
+        "item": "toast slices",
+        "kind": "allergen",
+        "value": "soybeans",
+        "clear": true
+      },
+      {
+        "item": "pancakes with icing sugar",
+        "kind": "allergen",
+        "value": "soybeans",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [],
+    "if_listed": [
+      {
+        "item": "butter packet",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      }
+    ],
+    "note": "The sunny side up yolk is visibly runny: prompt.ts raw-egg 'raw or lightly cooked egg'."
+  },
+  "26": {
+    "must_flag": [
+      {
+        "item": "chapati/roti",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "curd/raita",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "dal (lentil curry)",
+        "kind": "allergen",
+        "value": "mustard",
+        "clear": true
+      },
+      {
+        "item": "kofta/dumpling curry in orange gravy",
+        "kind": "allergen",
+        "value": "nuts",
+        "clear": true
+      },
+      {
+        "item": "kofta/dumpling curry in orange gravy",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      },
+      {
+        "item": "kofta/dumpling curry in orange gravy",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "paneer or fish curry in pale gravy",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      },
+      {
+        "item": "paneer or fish curry in pale gravy",
+        "kind": "allergen",
+        "value": "fish",
+        "clear": true
+      },
+      {
+        "item": "paneer or fish curry in pale gravy",
+        "kind": "allergen",
+        "value": "nuts",
+        "clear": true
+      },
+      {
+        "item": "brinjal/eggplant curry",
+        "kind": "allergen",
+        "value": "nuts",
+        "clear": true
+      },
+      {
+        "item": "brinjal/eggplant curry",
+        "kind": "allergen",
+        "value": "peanuts",
+        "clear": true
+      },
+      {
+        "item": "brinjal/eggplant curry",
+        "kind": "allergen",
+        "value": "sesame",
+        "clear": true
+      },
+      {
+        "item": "rice pilaf/vegetable fried rice",
+        "kind": "allergen",
+        "value": "nuts",
+        "clear": true
+      },
+      {
+        "item": "rice pilaf/vegetable fried rice",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      },
+      {
+        "item": "papad (papadum)",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [],
+    "if_listed": [],
+    "note": "prompt.ts: 'a curry that could hold nuts: when you cannot tell, flag it'. Nuts on the curries is acceptable, not required on a photo."
+  },
+  "27": {
+    "must_flag": [
+      {
+        "item": "stir-fried chicken pieces in brown sauce",
+        "kind": "allergen",
+        "value": "nuts",
+        "clear": true
+      },
+      {
+        "item": "stir-fried chicken pieces in brown sauce",
+        "kind": "allergen",
+        "value": "soybeans",
+        "clear": false
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "stir-fried chicken pieces in brown sauce",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "stir-fried chicken pieces in brown sauce",
+        "kind": "allergen",
+        "value": "molluscs",
+        "clear": true
+      },
+      {
+        "item": "stir-fried chicken pieces in brown sauce",
+        "kind": "allergen",
+        "value": "peanuts",
+        "clear": true
+      },
+      {
+        "item": "stir-fried chicken pieces in brown sauce",
+        "kind": "allergen",
+        "value": "sesame",
+        "clear": true
+      },
+      {
+        "item": "stir-fried chicken pieces in brown sauce",
+        "kind": "allergen",
+        "value": "fish",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [],
+    "if_listed": [],
+    "note": "Whole cashews are plainly visible in the dish (cashew chicken), though the core labels do not name them. Cashews are an Annex II nut. The brown sauce is likely soy and oyster sauce."
+  },
+  "28": {
+    "must_flag": [
+      {
+        "item": "grilled flatbread",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "yellow bulgur or couscous",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "hummus/creamy white dip",
+        "kind": "allergen",
+        "value": "sesame",
+        "clear": false
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "falafel balls",
+        "kind": "allergen",
+        "value": "sesame",
+        "clear": true
+      },
+      {
+        "item": "falafel balls",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "hummus/creamy white dip",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      },
+      {
+        "item": "grilled flatbread",
+        "kind": "allergen",
+        "value": "sesame",
+        "clear": true
+      },
+      {
+        "item": "grilled flatbread",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [],
+    "if_listed": [
+      {
+        "item": "sesame seeds",
+        "kind": "allergen",
+        "value": "sesame",
+        "clear": true
+      }
+    ],
+    "note": "Bulgur and couscous are both wheat. The white dip could be hummus or a yogurt dip: sesame clear:false."
+  },
+  "29": {
+    "must_flag": [
+      {
+        "item": "salami slices",
+        "kind": "pregnancy",
+        "value": "raw-meat",
+        "clear": true
+      },
+      {
+        "item": "cheese cubes",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "cheese cubes",
+        "kind": "pregnancy",
+        "value": "raw-dairy",
+        "clear": true
+      },
+      {
+        "item": "pickled gherkin slices",
+        "kind": "allergen",
+        "value": "mustard",
+        "clear": true
+      },
+      {
+        "item": "pickled gherkin slices",
+        "kind": "allergen",
+        "value": "sulphites",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [
+      {
+        "item": "cheese cubes",
+        "kind": "pregnancy",
+        "value": "soft-cheese",
+        "clear": true
+      }
+    ],
+    "if_listed": [
+      {
+        "item": "glass of Weissbier",
+        "kind": "pregnancy",
+        "value": "alcohol",
+        "clear": true
+      },
+      {
+        "item": "glass of Weissbier",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "creamy dip/cream cheese with the pickles",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      }
+    ],
+    "note": "Salami is cured raw meat. The cheese is a firm cubed cheese, not mould-ripened or blue."
+  },
+  "30": {
+    "must_flag": [
+      {
+        "item": "baked/roasted potato with browned cheese topping",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": false
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "grilled beef steak",
+        "kind": "pregnancy",
+        "value": "raw-meat",
+        "clear": true
+      },
+      {
+        "item": "grilled sausage",
+        "kind": "allergen",
+        "value": "celery",
+        "clear": true
+      },
+      {
+        "item": "grilled sausage",
+        "kind": "allergen",
+        "value": "mustard",
+        "clear": true
+      },
+      {
+        "item": "grilled sausage",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "mixed leaf salad",
+        "kind": "allergen",
+        "value": "mustard",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [],
+    "if_listed": [],
+    "note": "The topping looks like cheese. The steak's interior is not visible, so raw-meat is acceptable, not required."
+  },
+  "31": {
+    "must_flag": [
+      {
+        "item": "buttered bread slices (dark/whole-grain)",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "buttered bread slices (dark/whole-grain)",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "thick brown meat soup/stew broth",
+        "kind": "allergen",
+        "value": "celery",
+        "clear": true
+      },
+      {
+        "item": "thick brown meat soup/stew broth",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "thick brown meat soup/stew broth",
+        "kind": "allergen",
+        "value": "sulphites",
+        "clear": true
+      },
+      {
+        "item": "thick brown meat soup/stew broth",
+        "kind": "pregnancy",
+        "value": "alcohol",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [],
+    "if_listed": [],
+    "note": "Butter is visible on the bread."
+  },
+  "32": {
+    "must_flag": [
+      {
+        "item": "salami/cured meat slices",
+        "kind": "pregnancy",
+        "value": "raw-meat",
+        "clear": true
+      },
+      {
+        "item": "cheese slices",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      },
+      {
+        "item": "pan-fried spiced hard-boiled egg halves",
+        "kind": "allergen",
+        "value": "eggs",
+        "clear": true
+      },
+      {
+        "item": "hummus dip",
+        "kind": "allergen",
+        "value": "sesame",
+        "clear": false
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "cheese slices",
+        "kind": "pregnancy",
+        "value": "raw-dairy",
+        "clear": true
+      },
+      {
+        "item": "salami/cured meat slices",
+        "kind": "allergen",
+        "value": "mustard",
+        "clear": true
+      },
+      {
+        "item": "salami/cured meat slices",
+        "kind": "allergen",
+        "value": "celery",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [
+      {
+        "item": "pan-fried spiced hard-boiled egg halves",
+        "kind": "pregnancy",
+        "value": "raw-egg",
+        "clear": true
+      }
+    ],
+    "if_listed": [
+      {
+        "item": "herb crackers",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "herb crackers",
+        "kind": "allergen",
+        "value": "sesame",
+        "clear": false
+      }
+    ],
+    "note": "The egg yolks are set: raw-egg is a false alarm. The dip looks like hummus, not certain."
+  },
+  "33": {
+    "must_flag": [
+      {
+        "item": "oatmeal/oat porridge",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "peanut butter",
+        "kind": "allergen",
+        "value": "peanuts",
+        "clear": true
+      },
+      {
+        "item": "milk",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "raisins",
+        "kind": "allergen",
+        "value": "sulphites",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [],
+    "if_listed": [],
+    "note": "Oats are an Annex II cereal."
+  },
+  "34": {
+    "must_flag": [
+      {
+        "item": "waffles",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "waffles",
+        "kind": "allergen",
+        "value": "eggs",
+        "clear": true
+      },
+      {
+        "item": "waffles",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      },
+      {
+        "item": "whipped cream",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "waffles",
+        "kind": "allergen",
+        "value": "soybeans",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [],
+    "if_listed": [],
+    "note": ""
+  },
+  "35": {
+    "must_flag": [
+      {
+        "item": "white garlic-yogurt sauce (tzatziki) with oregano",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "gyros/döner sliced meat",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "gyros/döner sliced meat",
+        "kind": "allergen",
+        "value": "soybeans",
+        "clear": true
+      },
+      {
+        "item": "gyros/döner sliced meat",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      },
+      {
+        "item": "gyros/döner sliced meat",
+        "kind": "allergen",
+        "value": "mustard",
+        "clear": true
+      },
+      {
+        "item": "gyros/döner sliced meat",
+        "kind": "allergen",
+        "value": "celery",
+        "clear": true
+      },
+      {
+        "item": "French fries",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [],
+    "if_listed": [
+      {
+        "item": "flatbread in basket at right edge",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "pickled green chili pepper",
+        "kind": "allergen",
+        "value": "sulphites",
+        "clear": false
+      }
+    ],
+    "note": ""
+  },
+  "36": {
+    "must_flag": [
+      {
+        "item": "whole prawns (langostinos)",
+        "kind": "allergen",
+        "value": "crustaceans",
+        "clear": true
+      },
+      {
+        "item": "mantis shrimp (galeras)",
+        "kind": "allergen",
+        "value": "crustaceans",
+        "clear": true
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "saffron/paella rice",
+        "kind": "allergen",
+        "value": "molluscs",
+        "clear": true
+      },
+      {
+        "item": "saffron/paella rice",
+        "kind": "allergen",
+        "value": "fish",
+        "clear": true
+      },
+      {
+        "item": "saffron/paella rice",
+        "kind": "allergen",
+        "value": "crustaceans",
+        "clear": true
+      },
+      {
+        "item": "saffron/paella rice",
+        "kind": "allergen",
+        "value": "celery",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [
+      {
+        "item": "whole prawns (langostinos)",
+        "kind": "pregnancy",
+        "value": "raw-fish",
+        "clear": true
+      },
+      {
+        "item": "mantis shrimp (galeras)",
+        "kind": "pregnancy",
+        "value": "raw-fish",
+        "clear": true
+      }
+    ],
+    "if_listed": [],
+    "note": "Cooked shellfish, so raw-fish is a false alarm."
+  },
+  "37": {
+    "must_flag": [
+      {
+        "item": "pierogi/boiled dumplings (potato-cheese filling)",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "pierogi/boiled dumplings (potato-cheese filling)",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "pierogi/boiled dumplings (potato-cheese filling)",
+        "kind": "allergen",
+        "value": "eggs",
+        "clear": true
+      },
+      {
+        "item": "fried caramelised onion topping",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [],
+    "if_listed": [
+      {
+        "item": "radish/beet sprouts garnish",
+        "kind": "pregnancy",
+        "value": "raw-sprouts",
+        "clear": false
+      }
+    ],
+    "note": "Pierogi ruskie: wheat dough, potato and curd cheese filling. The garnish is microgreens, close to sprouts."
+  },
+  "38": {
+    "must_flag": [
+      {
+        "item": "beefburger in sesame bun (bitten; lettuce, tomato, onion visible)",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "beefburger in sesame bun (bitten; lettuce, tomato, onion visible)",
+        "kind": "allergen",
+        "value": "sesame",
+        "clear": true
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "beefburger in sesame bun (bitten; lettuce, tomato, onion visible)",
+        "kind": "pregnancy",
+        "value": "raw-meat",
+        "clear": true
+      },
+      {
+        "item": "beefburger in sesame bun (bitten; lettuce, tomato, onion visible)",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      },
+      {
+        "item": "beefburger in sesame bun (bitten; lettuce, tomato, onion visible)",
+        "kind": "allergen",
+        "value": "eggs",
+        "clear": true
+      },
+      {
+        "item": "beefburger in sesame bun (bitten; lettuce, tomato, onion visible)",
+        "kind": "allergen",
+        "value": "mustard",
+        "clear": true
+      },
+      {
+        "item": "French fries",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [],
+    "if_listed": [
+      {
+        "item": "cheese slice in burger",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      }
+    ],
+    "note": "Sesame seeds are plainly visible on the bun."
+  },
+  "39": {
+    "must_flag": [],
+    "may_flag": [
+      {
+        "item": "sausage pieces",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "sausage pieces",
+        "kind": "allergen",
+        "value": "sulphites",
+        "clear": true
+      },
+      {
+        "item": "sausage pieces",
+        "kind": "allergen",
+        "value": "celery",
+        "clear": true
+      },
+      {
+        "item": "sausage pieces",
+        "kind": "allergen",
+        "value": "mustard",
+        "clear": true
+      },
+      {
+        "item": "sausage pieces",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [],
+    "if_listed": [
+      {
+        "item": "egg-yolk smears",
+        "kind": "allergen",
+        "value": "eggs",
+        "clear": true
+      },
+      {
+        "item": "egg-yolk smears",
+        "kind": "pregnancy",
+        "value": "raw-egg",
+        "clear": false
+      }
+    ],
+    "note": "Nothing flaggable without doubt on the remaining food."
+  },
+  "40": {
+    "must_flag": [
+      {
+        "item": "liver pieces in gravy",
+        "kind": "pregnancy",
+        "value": "liver-retinol",
+        "clear": true
+      },
+      {
+        "item": "fried egg (remnant, yolk visible)",
+        "kind": "allergen",
+        "value": "eggs",
+        "clear": true
+      },
+      {
+        "item": "fried egg (remnant, yolk visible)",
+        "kind": "pregnancy",
+        "value": "raw-egg",
+        "clear": false
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "liver pieces in gravy",
+        "kind": "pregnancy",
+        "value": "raw-meat",
+        "clear": true
+      },
+      {
+        "item": "liver pieces in gravy",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "liver pieces in gravy",
+        "kind": "allergen",
+        "value": "celery",
+        "clear": true
+      },
+      {
+        "item": "sausage",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "sausage",
+        "kind": "allergen",
+        "value": "sulphites",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [],
+    "if_listed": [],
+    "note": "Liver is the clearest liver-retinol plate in the set. The yolk remnant looks runny, but it is half eaten: clear:false."
+  },
+  "41": {
+    "must_flag": [
+      {
+        "item": "battered fried fish (cod), partly eaten",
+        "kind": "allergen",
+        "value": "fish",
+        "clear": true
+      },
+      {
+        "item": "battered fried fish (cod), partly eaten",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "tartar sauce / mayonnaise dollop",
+        "kind": "allergen",
+        "value": "eggs",
+        "clear": true
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "tartar sauce / mayonnaise dollop",
+        "kind": "allergen",
+        "value": "mustard",
+        "clear": true
+      },
+      {
+        "item": "tartar sauce / mayonnaise dollop",
+        "kind": "pregnancy",
+        "value": "raw-egg",
+        "clear": true
+      },
+      {
+        "item": "battered fried fish (cod), partly eaten",
+        "kind": "allergen",
+        "value": "eggs",
+        "clear": true
+      },
+      {
+        "item": "battered fried fish (cod), partly eaten",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [
+      {
+        "item": "battered fried fish (cod), partly eaten",
+        "kind": "pregnancy",
+        "value": "raw-fish",
+        "clear": true
+      }
+    ],
+    "if_listed": [],
+    "note": "gold_labels.json writes this core item with a long dash before partly eaten; this file writes a comma instead, and the checker maps one to the other (see GOLD-NOTES.md)."
+  },
+  "42": {
+    "must_flag": [
+      {
+        "item": "breaded fried fish fillet",
+        "kind": "allergen",
+        "value": "fish",
+        "clear": true
+      },
+      {
+        "item": "breaded fried fish fillet",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "sour cream / remoulade dollop",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": false
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "sour cream / remoulade dollop",
+        "kind": "allergen",
+        "value": "eggs",
+        "clear": true
+      },
+      {
+        "item": "sour cream / remoulade dollop",
+        "kind": "allergen",
+        "value": "mustard",
+        "clear": true
+      },
+      {
+        "item": "meatballs in brown gravy",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "meatballs in brown gravy",
+        "kind": "allergen",
+        "value": "eggs",
+        "clear": true
+      },
+      {
+        "item": "meatballs in brown gravy",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      },
+      {
+        "item": "meatballs in brown gravy",
+        "kind": "allergen",
+        "value": "celery",
+        "clear": true
+      },
+      {
+        "item": "meatballs in brown gravy",
+        "kind": "allergen",
+        "value": "mustard",
+        "clear": true
+      },
+      {
+        "item": "chickpea-and-cauliflower curry",
+        "kind": "allergen",
+        "value": "nuts",
+        "clear": true
+      },
+      {
+        "item": "chickpea-and-cauliflower curry",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      },
+      {
+        "item": "chickpea-and-cauliflower curry",
+        "kind": "allergen",
+        "value": "mustard",
+        "clear": true
+      },
+      {
+        "item": "red cabbage and sweetcorn salad",
+        "kind": "allergen",
+        "value": "mustard",
+        "clear": true
+      },
+      {
+        "item": "red cabbage and sweetcorn salad",
+        "kind": "allergen",
+        "value": "eggs",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [
+      {
+        "item": "breaded fried fish fillet",
+        "kind": "pregnancy",
+        "value": "raw-fish",
+        "clear": true
+      }
+    ],
+    "if_listed": [],
+    "note": "The dollop looks like sour cream or cream cheese, but could be remoulade."
+  },
+  "43": {
+    "must_flag": [
+      {
+        "item": "breaded croquettes/fish cakes topped with mayonnaise-aioli",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "breaded croquettes/fish cakes topped with mayonnaise-aioli",
+        "kind": "allergen",
+        "value": "eggs",
+        "clear": true
+      },
+      {
+        "item": "cheese-topped quiche/gratin square",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      },
+      {
+        "item": "cheese-topped quiche/gratin square",
+        "kind": "allergen",
+        "value": "eggs",
+        "clear": false
+      },
+      {
+        "item": "creamy soup (bowl, with bacon bits)",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": false
+      },
+      {
+        "item": "bread roll with butter",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "bread roll with butter",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "breaded croquettes/fish cakes topped with mayonnaise-aioli",
+        "kind": "allergen",
+        "value": "fish",
+        "clear": true
+      },
+      {
+        "item": "breaded croquettes/fish cakes topped with mayonnaise-aioli",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      },
+      {
+        "item": "breaded croquettes/fish cakes topped with mayonnaise-aioli",
+        "kind": "allergen",
+        "value": "mustard",
+        "clear": true
+      },
+      {
+        "item": "creamy meat-and-vegetable stew",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      },
+      {
+        "item": "creamy meat-and-vegetable stew",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "creamy meat-and-vegetable stew",
+        "kind": "allergen",
+        "value": "celery",
+        "clear": true
+      },
+      {
+        "item": "creamy soup (bowl, with bacon bits)",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "creamy soup (bowl, with bacon bits)",
+        "kind": "allergen",
+        "value": "celery",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [],
+    "if_listed": [],
+    "note": "Mayonnaise topping and butter are visible."
+  },
+  "44": {
+    "must_flag": [],
+    "may_flag": [
+      {
+        "item": "stewed meat in onion gravy",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "stewed meat in onion gravy",
+        "kind": "allergen",
+        "value": "celery",
+        "clear": true
+      },
+      {
+        "item": "mashed cassava/potato purée",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      },
+      {
+        "item": "green salad (lettuce, grated carrot, coriander)",
+        "kind": "allergen",
+        "value": "mustard",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [],
+    "if_listed": [],
+    "note": "Nothing flaggable without doubt."
+  },
+  "45": {
+    "must_flag": [
+      {
+        "item": "sliced raw fish (hoe/sashimi) on shredded radish",
+        "kind": "pregnancy",
+        "value": "raw-fish",
+        "clear": true
+      },
+      {
+        "item": "sliced raw fish (hoe/sashimi) on shredded radish",
+        "kind": "allergen",
+        "value": "fish",
+        "clear": true
+      },
+      {
+        "item": "steamed egg (gyeranjjim) in stone pot",
+        "kind": "allergen",
+        "value": "eggs",
+        "clear": true
+      },
+      {
+        "item": "grilled mackerel/fish",
+        "kind": "allergen",
+        "value": "fish",
+        "clear": true
+      },
+      {
+        "item": "japchae (glass noodles with vegetables)",
+        "kind": "allergen",
+        "value": "soybeans",
+        "clear": false
+      },
+      {
+        "item": "japchae (glass noodles with vegetables)",
+        "kind": "allergen",
+        "value": "sesame",
+        "clear": false
+      },
+      {
+        "item": "vegetable fritters/jeon platter",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": false
+      },
+      {
+        "item": "vegetable fritters/jeon platter",
+        "kind": "allergen",
+        "value": "eggs",
+        "clear": false
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "kimchi",
+        "kind": "allergen",
+        "value": "fish",
+        "clear": true
+      },
+      {
+        "item": "kimchi",
+        "kind": "allergen",
+        "value": "crustaceans",
+        "clear": true
+      },
+      {
+        "item": "stir-fried beef in a hot stone pot",
+        "kind": "allergen",
+        "value": "soybeans",
+        "clear": true
+      },
+      {
+        "item": "stir-fried beef in a hot stone pot",
+        "kind": "allergen",
+        "value": "sesame",
+        "clear": true
+      },
+      {
+        "item": "stir-fried beef in a hot stone pot",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "glazed spicy braised ribs/pork",
+        "kind": "allergen",
+        "value": "soybeans",
+        "clear": true
+      },
+      {
+        "item": "glazed spicy braised ribs/pork",
+        "kind": "allergen",
+        "value": "sesame",
+        "clear": true
+      },
+      {
+        "item": "glazed spicy braised ribs/pork",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "japchae (glass noodles with vegetables)",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [
+      {
+        "item": "steamed egg (gyeranjjim) in stone pot",
+        "kind": "pregnancy",
+        "value": "raw-egg",
+        "clear": true
+      },
+      {
+        "item": "grilled mackerel/fish",
+        "kind": "pregnancy",
+        "value": "high-mercury-fish",
+        "clear": false
+      }
+    ],
+    "if_listed": [
+      {
+        "item": "tofu slices",
+        "kind": "allergen",
+        "value": "soybeans",
+        "clear": true
+      },
+      {
+        "item": "seasoned peanuts/beans",
+        "kind": "allergen",
+        "value": "peanuts",
+        "clear": false
+      },
+      {
+        "item": "chili paste and soy dipping bowls",
+        "kind": "allergen",
+        "value": "soybeans",
+        "clear": false
+      }
+    ],
+    "note": "Gyeranjjim is a fully steamed custard. Korean grilled mackerel is chub mackerel, not king mackerel, but the species is not certain from a photo: clear:false."
+  },
+  "46": {
+    "must_flag": [
+      {
+        "item": "fried beancurd-skin rolls (tofu skin rolls)",
+        "kind": "allergen",
+        "value": "soybeans",
+        "clear": true
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "honeycomb beef tripe in curry sauce",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      },
+      {
+        "item": "honeycomb beef tripe in curry sauce",
+        "kind": "allergen",
+        "value": "crustaceans",
+        "clear": true
+      },
+      {
+        "item": "honeycomb beef tripe in curry sauce",
+        "kind": "allergen",
+        "value": "celery",
+        "clear": true
+      },
+      {
+        "item": "honeycomb beef tripe in curry sauce",
+        "kind": "allergen",
+        "value": "mustard",
+        "clear": true
+      },
+      {
+        "item": "honeycomb beef tripe in curry sauce",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "fried beancurd-skin rolls (tofu skin rolls)",
+        "kind": "allergen",
+        "value": "crustaceans",
+        "clear": true
+      },
+      {
+        "item": "fried beancurd-skin rolls (tofu skin rolls)",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "fried beancurd-skin rolls (tofu skin rolls)",
+        "kind": "allergen",
+        "value": "sesame",
+        "clear": true
+      },
+      {
+        "item": "white boiled tripe/omasum slices in broth",
+        "kind": "allergen",
+        "value": "soybeans",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [
+      {
+        "item": "honeycomb beef tripe in curry sauce",
+        "kind": "pregnancy",
+        "value": "liver-retinol",
+        "clear": true
+      },
+      {
+        "item": "white boiled tripe/omasum slices in broth",
+        "kind": "pregnancy",
+        "value": "liver-retinol",
+        "clear": true
+      }
+    ],
+    "if_listed": [],
+    "note": "Tofu skin is soybean. Tripe is stomach, not liver: liver-retinol on offal that is not liver is a false alarm."
+  },
+  "47": {
+    "must_flag": [
+      {
+        "item": "avocado toast/bagel halves with poached eggs",
+        "kind": "allergen",
+        "value": "eggs",
+        "clear": true
+      },
+      {
+        "item": "avocado toast/bagel halves with poached eggs",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "avocado toast/bagel halves with poached eggs",
+        "kind": "pregnancy",
+        "value": "raw-egg",
+        "clear": false
+      },
+      {
+        "item": "eggs benedict with hollandaise on avocado toast",
+        "kind": "allergen",
+        "value": "eggs",
+        "clear": true
+      },
+      {
+        "item": "eggs benedict with hollandaise on avocado toast",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "eggs benedict with hollandaise on avocado toast",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      },
+      {
+        "item": "eggs benedict with hollandaise on avocado toast",
+        "kind": "pregnancy",
+        "value": "raw-egg",
+        "clear": true
+      },
+      {
+        "item": "yogurt bowl with granola, kiwi slices and berry compote",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      },
+      {
+        "item": "yogurt bowl with granola, kiwi slices and berry compote",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "seeded bagel (dark, sesame-topped)",
+        "kind": "allergen",
+        "value": "sesame",
+        "clear": true
+      },
+      {
+        "item": "seeded bagel (dark, sesame-topped)",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "cherry tomato salad with balsamic drizzle",
+        "kind": "allergen",
+        "value": "sulphites",
+        "clear": false
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "avocado toast/bagel halves with poached eggs",
+        "kind": "allergen",
+        "value": "sesame",
+        "clear": true
+      },
+      {
+        "item": "yogurt bowl with granola, kiwi slices and berry compote",
+        "kind": "allergen",
+        "value": "nuts",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [],
+    "if_listed": [
+      {
+        "item": "iced coffee",
+        "kind": "pregnancy",
+        "value": "caffeine",
+        "clear": true
+      },
+      {
+        "item": "iced coffee",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": false
+      },
+      {
+        "item": "white wine glass",
+        "kind": "pregnancy",
+        "value": "alcohol",
+        "clear": true
+      },
+      {
+        "item": "white wine glass",
+        "kind": "allergen",
+        "value": "sulphites",
+        "clear": true
+      },
+      {
+        "item": "beetroot latte",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": false
+      },
+      {
+        "item": "microgreens/sprout garnish",
+        "kind": "pregnancy",
+        "value": "raw-sprouts",
+        "clear": false
+      }
+    ],
+    "note": "Hollandaise is barely cooked yolk and butter: raw-egg and milk. A poached egg is usually runny but the yolk is not visible here: clear:false. Balsamic usually holds sulphites. The white tufts at the plate edges look like alfalfa sprouts."
+  },
+  "48": {
+    "must_flag": [
+      {
+        "item": "cucumber sandwich (white bread triangle)",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "samosas (small fried triangles)",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "slice of white/vanilla cake with icing, partly eaten",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "slice of white/vanilla cake with icing, partly eaten",
+        "kind": "allergen",
+        "value": "eggs",
+        "clear": true
+      },
+      {
+        "item": "slice of white/vanilla cake with icing, partly eaten",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": false
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "cucumber sandwich (white bread triangle)",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      },
+      {
+        "item": "cucumber sandwich (white bread triangle)",
+        "kind": "allergen",
+        "value": "eggs",
+        "clear": true
+      },
+      {
+        "item": "samosas (small fried triangles)",
+        "kind": "allergen",
+        "value": "peanuts",
+        "clear": true
+      },
+      {
+        "item": "samosas (small fried triangles)",
+        "kind": "allergen",
+        "value": "nuts",
+        "clear": true
+      },
+      {
+        "item": "samosas (small fried triangles)",
+        "kind": "allergen",
+        "value": "mustard",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [],
+    "if_listed": [],
+    "note": "Sponge cake is flour and egg; butter or milk is usual, not certain."
+  },
+  "49": {
+    "must_flag": [
+      {
+        "item": "spaghetti (plain, buttered)",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "bread bun",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      }
+    ],
+    "may_flag": [
+      {
+        "item": "grilled steak/pork chop in brown sauce",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "grilled steak/pork chop in brown sauce",
+        "kind": "allergen",
+        "value": "soybeans",
+        "clear": true
+      },
+      {
+        "item": "grilled steak/pork chop in brown sauce",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      },
+      {
+        "item": "grilled steak/pork chop in brown sauce",
+        "kind": "allergen",
+        "value": "celery",
+        "clear": true
+      },
+      {
+        "item": "sausage/frankfurter",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "sausage/frankfurter",
+        "kind": "allergen",
+        "value": "soybeans",
+        "clear": true
+      },
+      {
+        "item": "sausage/frankfurter",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      },
+      {
+        "item": "red cabbage soup (borscht-style, bowl)",
+        "kind": "allergen",
+        "value": "celery",
+        "clear": true
+      },
+      {
+        "item": "red cabbage soup (borscht-style, bowl)",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      },
+      {
+        "item": "bread bun",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      },
+      {
+        "item": "bread bun",
+        "kind": "allergen",
+        "value": "eggs",
+        "clear": true
+      },
+      {
+        "item": "spaghetti (plain, buttered)",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [],
+    "if_listed": [],
+    "note": ""
+  },
+  "50": {
+    "must_flag": [],
+    "may_flag": [
+      {
+        "item": "döner kebab sliced meat",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "döner kebab sliced meat",
+        "kind": "allergen",
+        "value": "soybeans",
+        "clear": true
+      },
+      {
+        "item": "döner kebab sliced meat",
+        "kind": "allergen",
+        "value": "milk",
+        "clear": true
+      },
+      {
+        "item": "döner kebab sliced meat",
+        "kind": "allergen",
+        "value": "mustard",
+        "clear": true
+      },
+      {
+        "item": "döner kebab sliced meat",
+        "kind": "allergen",
+        "value": "celery",
+        "clear": true
+      },
+      {
+        "item": "tomato/chili sauce over the meat",
+        "kind": "allergen",
+        "value": "celery",
+        "clear": true
+      },
+      {
+        "item": "pickled gherkin and pepperoncini",
+        "kind": "allergen",
+        "value": "mustard",
+        "clear": true
+      },
+      {
+        "item": "pickled gherkin and pepperoncini",
+        "kind": "allergen",
+        "value": "sulphites",
+        "clear": true
+      },
+      {
+        "item": "French fries",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      }
+    ],
+    "must_not_flag": [],
+    "if_listed": [
+      {
+        "item": "glass of beer",
+        "kind": "pregnancy",
+        "value": "alcohol",
+        "clear": true
+      },
+      {
+        "item": "glass of beer",
+        "kind": "allergen",
+        "value": "gluten",
+        "clear": true
+      },
+      {
+        "item": "Pepsi cup",
+        "kind": "pregnancy",
+        "value": "caffeine",
+        "clear": false
+      }
+    ],
+    "note": "Nothing on the food is certain. The beer and the Pepsi are optional items."
+  }
+}
