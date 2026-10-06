@@ -1,0 +1,6 @@
+# Claude Code agent worktrees (transient)
+.claude/worktrees/
+
+# Agent scratch memory. A lesson that applies to every change goes into
+# CLAUDE.md or an AGENTS.md as one line, never into git from here.
+.claude/agent-memory/
