@@ -181,7 +181,9 @@ class ChatClient:
     # -- setup ------------------------------------------------------------
 
     def _build_headers(self) -> dict:
-        headers = {"Content-Type": "application/json"}
+        # The EU host sits behind Cloudflare, which refuses Python's default urllib
+        # User-Agent with error 1010. A plain named agent passes. A config may override it.
+        headers = {"Content-Type": "application/json", "User-Agent": "openplate-eval/1.0"}
         headers.update(self.config.get("headers") or {})
         api_key_env = self.config.get("api_key_env")
         if api_key_env:

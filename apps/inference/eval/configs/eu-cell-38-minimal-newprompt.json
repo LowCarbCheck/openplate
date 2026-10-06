@@ -1,0 +1,75 @@
+{
+  "name": "eu-cell-38-minimal-newprompt",
+  "description": "Eval cell 5. Gemini 3.8 Flash on the global host with the production routing and reasoning effort minimal, the app's REAL request from the contract. The no-reasoning twin of the 3.5 EU cell. Costs real money.",
+  "images_dir": "images",
+  "gold": "gold/gold_labels.json",
+  "contract": "generated/vision-contract.json",
+  "image_resize": "production",
+  "out_dir": "runs/eu-cell-38-minimal-newprompt",
+  "providers": {
+    "openrouter_global": {
+      "base_url": "https://openrouter.ai/api/v1",
+      "api_key_env": "OPENROUTER_API_KEY",
+      "headers": {
+        "HTTP-Referer": "https://sprqvntrs.com/openplate-bench",
+        "X-Title": "openplate eu model eval"
+      },
+      "timeout_seconds": 300,
+      "max_retries": 1,
+      "retry_backoff_base_seconds": 3.0
+    }
+  },
+  "models": {
+    "gemini_38_flash": {
+      "id": "google/gemini-3.8-flash",
+      "provider": "openrouter_global",
+      "price_per_mtok_in": 0.75,
+      "price_per_mtok_out": 3.75,
+      "use_json_schema": true,
+      "max_tokens": 8192,
+      "usage_include": true,
+      "extra_body": {
+        "provider": {
+          "zdr": true,
+          "data_collection": "deny",
+          "only": [
+            "google-vertex"
+          ],
+          "allow_fallbacks": false
+        }
+      },
+      "reasoning": {
+        "effort": "minimal"
+      }
+    }
+  },
+  "approach_order": [
+    "production"
+  ],
+  "approaches": {
+    "production": {
+      "type": "production",
+      "model": "gemini_38_flash",
+      "task": "plate_photo",
+      "language": "en",
+      "label": "the app's real photo request (vision contract), 3.8 flash, global host, reasoning minimal"
+    },
+    "plate_text": {
+      "type": "single_text",
+      "model": "gemini_38_flash",
+      "task": "plate_text",
+      "label": "typed meals, the app's real text request, 3.8 flash, global host, reasoning minimal"
+    },
+    "pantry_text": {
+      "type": "single_text",
+      "model": "gemini_38_flash",
+      "task": "pantry_text",
+      "label": "typed pantry list, the app's real request, 3.8 flash, global host, reasoning minimal"
+    },
+    "recipe": {
+      "type": "recipe",
+      "model": "gemini_38_flash",
+      "label": "recipe proposals, the app's real request, 3.8 flash, global host, reasoning minimal"
+    }
+  }
+}
