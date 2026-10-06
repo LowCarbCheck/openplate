@@ -1,0 +1,75 @@
+{
+  "name": "eu-cell-31-lite-newprompt",
+  "description": "EU candidate cell. Gemini 3.1 Flash Lite on the EU host (eu.openrouter.ai), pinned to google-vertex/eu with zdr, data_collection deny and no fallbacks, sending the app's REAL request read from generated/vision-contract.json (v3 prompt). Price from the eu.openrouter.ai models endpoint 2026-10-06. Costs real money.",
+  "images_dir": "images",
+  "gold": "gold/gold_labels.json",
+  "contract": "generated/vision-contract.json",
+  "image_resize": "production",
+  "out_dir": "runs/eu-cell-31-lite-newprompt",
+  "providers": {
+    "openrouter_eu": {
+      "base_url": "https://eu.openrouter.ai/api/v1",
+      "api_key_env": "OPENROUTER_API_KEY",
+      "headers": {
+        "HTTP-Referer": "https://sprqvntrs.com/openplate-bench",
+        "X-Title": "openplate eu model eval"
+      },
+      "timeout_seconds": 300,
+      "max_retries": 1,
+      "retry_backoff_base_seconds": 3.0
+    }
+  },
+  "models": {
+    "gemini_31_flash_lite_eu": {
+      "id": "google/gemini-3.1-flash-lite",
+      "provider": "openrouter_eu",
+      "price_per_mtok_in": 0.275,
+      "price_per_mtok_out": 1.65,
+      "use_json_schema": true,
+      "max_tokens": 8192,
+      "usage_include": true,
+      "reasoning": {
+        "effort": "minimal"
+      },
+      "extra_body": {
+        "provider": {
+          "zdr": true,
+          "data_collection": "deny",
+          "only": [
+            "google-vertex/eu"
+          ],
+          "allow_fallbacks": false
+        }
+      }
+    }
+  },
+  "approach_order": [
+    "production"
+  ],
+  "approaches": {
+    "production": {
+      "type": "production",
+      "model": "gemini_31_flash_lite_eu",
+      "task": "plate_photo",
+      "language": "en",
+      "label": "the app's real photo request (vision contract), Gemini 3.1 Flash Lite, EU host, reasoning minimal"
+    },
+    "plate_text": {
+      "type": "single_text",
+      "model": "gemini_31_flash_lite_eu",
+      "task": "plate_text",
+      "label": "typed meals, the app's real text request, Gemini 3.1 Flash Lite, EU host, reasoning minimal"
+    },
+    "pantry_text": {
+      "type": "single_text",
+      "model": "gemini_31_flash_lite_eu",
+      "task": "pantry_text",
+      "label": "typed pantry list, the app's real request, Gemini 3.1 Flash Lite, EU host, reasoning minimal"
+    },
+    "recipe": {
+      "type": "recipe",
+      "model": "gemini_31_flash_lite_eu",
+      "label": "recipe proposals, the app's real request, Gemini 3.1 Flash Lite, EU host, reasoning minimal"
+    }
+  }
+}
