@@ -463,6 +463,13 @@ fish for pregnant women (with swordfish, shark and marlin); orange roughy is on
 the FDA and EPA "choices to avoid" list. Tilefish is on that list only from the
 Gulf of Mexico, so h022 is `clear: false`.
 
+**h007 (pike quenelles): kept, 3.8 misses it too.** In the v4 round (2026-10-06)
+3.8 minimal with the v4 prompt left out `high-mercury-fish` on h007 in all three
+repeats, and every other cell did the same (12 of 12 repeats). The label stays,
+because the EU advice names pike. The case is a knowledge edge case. The round
+report `runs/EU-CANDIDATES-V4-SCORING-2026-10-06.md` shows the per repeat counts
+with and without it.
+
 ### Coverage per allergen
 
 | Allergen | Cases (clear) | Not clear | Hidden in the name |
