@@ -82,28 +82,43 @@ Difference is first minus second, in recall points. The marginal verdict is UNDE
 | C2 vs D3 | 3.8 minimal v2 minus 3.5 v3 | 85.1 vs 83.4 | +1.7 [-2.7, +6.3] | includes 0 |
 | C3 vs D2 | 3.8 minimal v3 minus 3.5 v2 | 84.7 vs 77.9 | +6.8 [+0.8, +13.3] | excludes 0 |
 
+The rows above use the committed worksheets, which credit three generic D3 labels. Section 3 makes the strict
+reading primary for the decision pair: D3 82.1 % (193/235), C3 minus D3 +2.6 [-3.1, +8.7].
+
 The v3 line was meant to leave item recall alone. On 3.8 it did (-0.4). On 3.5 it did not stay level: D3 is
 5.5 points above D2, and the paired interval excludes 0. Section 4 asks whether the flag text caused that, or
 whether it is run-to-run variance.
 
 ## 3. The decision rule, rule 5 (upper bound of the CI of 3.8 minus 3.5 at most 8 points)
 
-| pair | difference [95 % CI] | upper bound | rule 5 |
-|---|---|---|---|
-| C3 minus D3 (planned pair, both on v3) | +1.3 [-4.8, +7.8] | +7.8 | **PASS**, by 0.2 points |
-| A minus D3 (production reference against the candidate) | -4.3 [-9.7, +1.3] | +1.3 | **PASS** |
+**The strict reading is primary.** Adjudication rule 1 of `2026-08-12-50img-SCORING.md` gives a generic label
+no credit. Three D3 hits broke it: plate 20 "greens" for the mizuna topping, plate 28 "spicy sauce" for the
+herb chilli oil, and plate 43 "savory minced meat scramble" for the creamy meat stew (cell D's "egg and bacon
+scramble" for the same stew is a miss). The strict reading counts all three as misses. D3 recall is then
+**82.1 % (193/235), 95 % CI [74.9, 89.0]**.
 
-**The C3 minus D3 pass sits on the edge, and three calls decide it.** Three D3 hits are lenient readings of
-the precedents (section 5): 20 "greens" for the mizuna topping, 28 "spicy sauce" for the herb chilli oil, and
-43 "minced meat scramble" for the creamy meat stew. Reversing any one of them gives an upper bound of +7.9 to
-+8.1. Reversing 20 or 43 alone turns rule 5 into FAIL. With all three reversed (D3 193/235, 82.1 %), C3 minus
-D3 is +2.6 [-3.1, +8.7], FAIL. With C3's lenient feta call on 03 also reversed (C3 198/235), it is +2.1
-[-3.6, +8.3], FAIL. A minus D3 passes under every variant (strict: -3.0 [-8.2, +2.2]).
+| reading | pair | difference [95 % CI] | upper bound | rule 5 |
+|---|---|---|---|---|
+| **strict (primary)** | C3 minus D3 (planned pair, both on v3) | **+2.6 [-3.1, +8.7]** | +8.7 | **FAIL**, by 0.7 points |
+| lenient (second line) | C3 minus D3, the three calls credited | +1.3 [-4.8, +7.8] | +7.8 | PASS, by 0.2 points |
+| strict | A minus D3 (production reference against the candidate) | -3.0 [-8.2, +2.2] | +2.2 | PASS |
+| lenient | A minus D3 | -4.3 [-9.7, +1.3] | +1.3 | PASS |
+
+**How the strict numbers were computed.** A copy of the D3 worksheet (`v3-eu-cell-35-eu-newprompt/scorecard-filled.md`)
+was made outside the repo with the three rows set to `n` and the plate totals set to 3/4 (20), 5/8 (28) and 6/7
+(43). Then `python3 -m harness.scorecard --score` and `--compare` ran on it against the C3 and A worksheets. That is
+the same method as every other row of this file: the paired percentile bootstrap over plates of `harness/stats.py`,
+10 000 resamples, seed 20260813. The committed worksheet and `results.json` are unchanged; the copy is not committed.
+
+**Rule 5 for the decision pair: FAIL on the strict reading.** The lenient pass sat 0.2 points under the line, and
+any one of the three calls moves it: reversing one alone gives an upper bound of +7.9 to +8.1, and reversing 20 or
+43 alone already fails. With C3's lenient feta call on 03 also reversed (C3 198/235), C3 minus D3 is +2.1
+[-3.6, +8.3], still FAIL. A minus D3 passes under every variant.
 
 **The repeat decides more than the prompt.** The pairs that mix the runs disagree: C2 minus D3 is +1.7
 [-2.7, +6.3] (PASS), C3 minus D2 is +6.8 [+0.8, +13.3] (FAIL), and the v2 scoring had C2 minus D2 at +7.2
 [+2.8, +12.1] (FAIL). The 3.8 cells barely moved between runs (85.1, 84.7), the 3.5 cells moved by 5.5 points.
-So the v3 PASS is a property of this one 3.5 run as much as of the prompt.
+So the lenient v3 PASS was a property of this one 3.5 run as much as of the prompt.
 
 **Rule 6 (hallucinations): PASS** for the plates, 0 in D3 and C3. **Rule 1 (plate part): PASS**, D3 is 50/50
 schema-valid with 0 `unreadable` false alarms.
@@ -156,15 +171,15 @@ Earlier verdicts for identical names were kept. The effect column says which cel
 |---|---|---|---|
 | 03 | C3 "Greek salad with avocado" names no feta; feta is part of the determinate dish | rule 1 consolidation, as A, B, C, C2, B2 "Greek salad" | C3 +1 (lenient) |
 | 13 | D3 "käsespätzle" names no onions | literal | D3 1/2 |
-| 20 | D3 "ramen noodle soup with pork and greens": "greens" is the only leafy topping, "pork" in ramen is the chashu | like "fresh herbs" for Thai basil (21), "salad topping" for lettuce (23) | D3 +1 (lenient) |
+| 20 | D3 "ramen noodle soup with pork and greens": "greens" is the only leafy topping, "pork" in ramen is the chashu | like "fresh herbs" for Thai basil (21), "salad topping" for lettuce (23) | D3 +1 (lenient); a miss in the strict reading (section 3) |
 | 28 | D3 "falafel bowl with bulgur, lentils, and hummus" names four rows | enumeration precedent (30, 45) | D3 +3 |
-| 28 | D3 "flatbread with spicy sauce" for the green herb chilli oil | like D2 "spicy chili dipping sauce" (form, not kind) | D3 +1 (lenient) |
+| 28 | D3 "flatbread with spicy sauce" for the green herb chilli oil | like D2 "spicy chili dipping sauce" (form, not kind) | D3 +1 (lenient); a miss in the strict reading (section 3) |
 | 28 | C3 lists "falafel and mezze salad bowl" five times, one per bowl (the portion hints name five positions) | not an error class; one falafel row | C3 3/8 |
 | 32 | C3 "mixed vegetable crudites" names nothing | rule 1, as "vegetable sticks" | C3 5/8 |
 | 33 | D3 one item "cooked oatmeal with milk, peanut butter, honey, raisins, and cinnamon" covers all five rows | consolidation, `Y merged` | D3 5/5 |
 | 34 | C3 "strawberry topping" credits one row, the strawberries, not the syrup | one token, one row, as "waffle with strawberries" | C3 3/4 (strict) |
 | 40 | D3 "beef stew and liver", C3 "Steak and beef liver in gravy" name the liver | names the organ, rule 2 satisfied | both +1 |
-| 43 | D3 "savory minced meat scramble" for the creamy meat stew: kind right (photo: minced meat in a creamy sauce), form wrong | rule 2, form error is a hit; the earlier misses ("egg and bacon scramble", "pasta salad with ham") were kind errors | D3 +1 (lenient) |
+| 43 | D3 "savory minced meat scramble" for the creamy meat stew: kind right (photo: minced meat in a creamy sauce), form wrong | rule 2, form error is a hit; the earlier misses ("egg and bacon scramble", "pasta salad with ham") were kind errors | D3 +1 (lenient); a miss in the strict reading (section 3), as cell D's "egg and bacon scramble" |
 | 43 | C3 "pasta or potato salad with bacon bits" is the C2, B2 misread | as before | C3 miss |
 | 45 | D3 "seasoned grilled fish" cannot take the glazed pork; C3 "Spicy grilled deodeok or pork" goes to the pork row | D2 call; hedge precedent (C) | D3 7/8, C3 8/8 |
 | 47 | C3 "Acai smoothie bowl with kiwi and granola" is the yogurt bowl; D3 "acai bowl with fruit" is not | D's miss was for naming neither granola nor kiwi | C3 hit, D3 miss |
@@ -172,8 +187,9 @@ Earlier verdicts for identical names were kept. The effect column says which cel
 
 ## 6. What is UNDECIDED, and what this does not measure
 
-- **UNDECIDED: 3.8 against 3.5 on v3** (C3 vs D3, +1.3 [-4.8, +7.8]). Rule 5 passes on this run by 0.2
-  points and fails under the strict reading of three D3 calls.
+- **Rule 5 FAIL: 3.8 against 3.5 on v3** (C3 vs D3, strict +2.6 [-3.1, +8.7], upper bound 0.7 points over
+  the line). The marginal `--compare` verdict stays UNDECIDED. The lenient reading, which credits three
+  generic D3 labels against adjudication rule 1, gives +1.3 [-4.8, +7.8] and a pass by 0.2 points.
 - **UNDECIDED: the v3 line on 3.8** (C3 vs C2, -0.4 [-4.8, +4.0]). On 3.5 the paired interval excludes 0
   (+5.5 [+0.5, +10.9]), but the plates that moved involve no flag food (section 4).
 - **One repeat only.** Each cell answered each plate once. The 3.5 cell moved 5.5 points between two runs

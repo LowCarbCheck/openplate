@@ -29,19 +29,33 @@ Legend for a model item: `P[...]` pregnancy, `A[...]` allergens, `M[...]` mayCon
 
 ## Reading (written by hand, kept when the file is written again)
 
-- **In-sample caveat.** The v3 prompt (`prompt.ts` blob cc374d3e, commit a5e7690f) names foods that are exact gold
-  cases: pate on toast, tuna sauce, foie gras, brie. The typed fixes of D against D3 (t050, t080, t084, t045) are
-  therefore partly taught to the test. A fresh held-out typed set is needed before the typed PASS of rule 2 counts
-  as a property of the prompt.
-- **Rule 2 PASS.** D3 has no clear typed pregnancy miss in any of the three repeats. One D3 typed call failed (r3
-  t039, truncated JSON, rule 1); it holds no clear pregnancy entry.
+- **In-sample caveat: rule 2 was taught to the test.** The v3 prompt (`prompt.ts` blob cc374d3e, commit a5e7690f)
+  names, by word, a food of every clear pregnancy entry in the gold: all 42 typed cases with a clear pregnancy entry
+  (49 entries) and all 8 plates with one (11 entries) name a food the v3 prompt names. Only t016, t035,
+  t036, t046 and t055 are unnamed by v3, all `clear: false`, and t035 and t036 appear in the production text prompt
+  as its own examples. So the typed fixes of D against D3 (t050, t080, t084, t045) and the zero misses below show
+  that 3.5 matches words it was shown, not that it applies a category. Rule 2 therefore needs the held-out typed set
+  (`gold/gold_text_holdout.jsonl`, 36 cases that neither the v3 nor the v4 prompt names, `gold/GOLD-NOTES.md`
+  section 10) before it counts.
+- **Rule 1 FAIL for D3.** Rule 1 asks for zero schema-invalid answers. D3's typed call r3 t039 "Käsespätzle mit
+  Röstzwiebeln" is invalid (truncated JSON, `finish_reason` error), and plate run r2 plate 23 also ended with
+  `finish_reason` error (both in "Failed calls" below).
+- **Rule 2 PASS on the taught set only.** D3 has no clear typed pregnancy miss in any of the three repeats. The
+  failed call t039 holds no clear pregnancy entry.
 - **Rule 3 FAIL rests on one plate run.** Both D3 misses are in plate run r2 and both are items the answer did not
   list: plate 45 the hoe (raw fish; the answer lists a mackerel, a braised fish and kimchi, no raw fish) and plate 47
   the eggs Benedict (raw egg; it lists only the avocado toast with poached egg, which carries raw-egg). These are
   recall failures, not flags left off a listed food: with listed items only, rule 3 passes (0.0 against 0.0).
-- **Rule 4 FAIL holds on listed items too.** Typed t085 "Una tapa de altramuces y una caña" lists the lupini beans
-  without lupin in r1 and r2 (r3 had it). Plate misses add 1, 4 and 0 per run. Listed only: D3 2.33 against B 1.0
-  and against C3 0.5.
+- **"Elsewhere" flags count as misses per item.** The scorer judges each gold item. When the answer did not list
+  the item, the flag is a miss even when it sits on another item of the same plate. That is the case for 4 of D3's
+  unlisted plate allergen misses and for 1 of its 2 pregnancy misses (plate 47: the avocado toast with poached egg
+  carries raw-egg). The meal-level reading counts those as caught: allergens D3 2.33 against B 1.0, still FAIL
+  through t085; pregnancy D3 0.33 against B 0.0, still FAIL through the hoe on plate 45.
+- **Rule 4 FAIL holds on listed items too, and the typed part rests on one case.** Typed t085 "Una tapa de
+  altramuces y una caña" lists the lupini beans without lupin in r1 and r2 (r3 had it). It is D3's only typed
+  allergen miss, so rule 4 typed rests on t085 alone. Plate misses add 1, 4 and 0 per run. Listed only: D3 2.33
+  against B 1.0 and against C3 0.5. The holdout set adds 14 cases with a non-obvious allergen (snails, squid,
+  piccalilli, tahini, seitan, bulgur, teriyaki, natto, anchovies, shrimp paste and others).
 - **Arguable label.** Plate 29 (r1): the creamy dip with the pickles is gold `milk` (if_listed, clear). Photo 29 shows
   a white dollop that may be mayonnaise; the answer gave eggs and mustard. Without it D3 plate run r1 has 0 clear
   allergen misses and rule 4 stays FAIL (typed lupin alone fails it).
