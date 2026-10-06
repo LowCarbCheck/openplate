@@ -175,7 +175,7 @@ These are the judgment calls. Each is marked `clear: false` or placed in
 | --- | --- | --- |
 | t006, t057 | Frischkaese and cream cheese: must_not soft-cheese and raw-dairy | soft-cheese is "mould-ripened or blue soft cheese"; fresh cheese is neither. German Frischkaese is made from pasteurised milk. A model that applies "a cheese that could be raw-milk" may still flag it; that counts as a false alarm, not a miss. |
 | t016 | carbonara raw-egg, clear:false | the egg is set only by the heat of the pasta ("lightly cooked") |
-| t017 | cola caffeine, clear:false | caffeine is defined as "coffee, strong tea, energy drinks"; cola is not named |
+| t017 | cola caffeine, clear:false | caffeine is defined as "coffee, strong tea, energy drinks"; cola is not named in the production prompt. The v3 prompt names cola under caffeine, so by v3's own words t017 is clear now. The file keeps clear:false until a full re-score (see "Proposals not applied" below). |
 | t018 | Leberkaese liver-retinol in may_flag | Bavarian Leberkaese has no liver; Stuttgarter Leberkaese must have some |
 | t035, t036, t071 | "some cheese" raw-dairy, "a steak" raw-meat, "some curry" nuts, all clear:false | the text prompt names these three as its own examples of "when you cannot tell, flag it" |
 | t040 | gravlax: smoked-fish OR raw-fish | schema.ts files gravlax under smoked-fish, the prompt text does not |
@@ -183,12 +183,28 @@ These are the judgment calls. Each is marked `clear: false` or placed in
 | t080 | foie gras mi-cuit raw-meat, clear:false | half-cooked and pate-like |
 | t088 | Turkish tea caffeine, clear:false | "strong tea" is a judgment |
 | t077 | kombucha: alcohol and caffeine both only acceptable | traces only |
-| t008, t050 | Leberwurst and chicken liver pate | the raw-meat definition names "pate", so it is clear for pate (t050) and acceptable for Leberwurst (t008), which is a cooked spread |
+| t008, t050 | Leberwurst and chicken liver pate | the raw-meat definition names "pate", so it is clear for pate (t050) and acceptable for Leberwurst (t008), which is a cooked spread. v3 widened both lists: it names "liver sausage or Leberwurst" under liver-retinol and "meat or liver pate and liver spreads" under raw-meat. t008 raw-meat stays in may_flag: Leberwurst is cooked, and moving it to must_flag (clear:false) would change a label after the scoring. |
 | plate 03 | feta: must_not soft-cheese | brined, not mould-ripened or blue |
 | plate 40 | raw-egg on the egg remnant, clear:false | the yolk looks runny but the egg is half eaten |
 | plate 45 | must_not high-mercury-fish on the mackerel, clear:false | Korean grilled mackerel is chub mackerel, not king mackerel, but a photo cannot prove the species |
 | plate 47 | raw-egg clear on the hollandaise, clear:false on the poached eggs | hollandaise is barely cooked yolk; the poached yolks are not visible |
 | plates 06, 20, 27, 45 | soy sauce gluten, chashu and stir-fry soybeans, japchae soybeans and sesame, all clear:false | standard recipes, but not certain from a photo |
+
+### Proposals not applied
+
+The scoring reviews proposed these label changes. None is applied. **The rule:
+a gold label changes only together with a full re-score of every cell, never
+after a decision was read from the scores.** A label moved after the fact can
+move a verdict, and nobody could tell the fix from the tuning.
+
+| Where | Today | Proposal | State |
+| --- | --- | --- | --- |
+| plate 47 | yogurt bowl `milk`, must_flag, clear | clear:false | not applied |
+| plate 42 | sour cream `milk`, must_flag, clear:false | may_flag | not applied |
+| plate 32 | herb crackers `sesame`, if_listed, clear:false | may_flag | not applied |
+| t068 | coconut yogurt `nuts`, must_not_flag | accept `nuts` in mayContain | not applied |
+| t060 | baked cheesecake `gluten`, must_flag, clear | clear:false | not applied |
+| t017 | cola `caffeine`, must_flag, clear:false | clear, as v3 names cola | not applied |
 
 ## 5. The kcal set
 
@@ -204,6 +220,15 @@ These are the judgment calls. Each is marked `clear: false` or placed in
   farmed salmon, and the two drinks (stated in ml, not grams). Low: mozzarella,
   because the USDA row is low-moisture mozzarella and the person likely means
   fresh mozzarella. The values themselves are exact for the cited food.
+- k030 mozzarella: the USDA row is whole-milk mozzarella at 299 kcal; fresh
+  mozzarella as sold in the EU has about 250 kcal. Cells B and C answered with the
+  fresh cheese and missed by 15 to 16 percent for that reason. Without k030 the
+  kcal counts are B 33 of 33, C 32 of 33, D 32 of 33
+  (`runs/EU-KCAL-SCORING-2026-10-06.md`).
+- k016 cheddar: the carbs reference (3.37 g, SR Legacy) has medium confidence.
+  European food tables list well under 1 g, and every cell answered 1.3 g. The
+  row's `note` says so. Its `reference_confidence` stays high, because that one
+  field covers the row and the kcal value (403) is exact.
 - The check is per 100 g within 15 percent (`tolerance_pct`), as the decision
   rule lists it. It is reported, never blocking.
 - No BLS values are used: BLS is not freely downloadable, and LCC was not

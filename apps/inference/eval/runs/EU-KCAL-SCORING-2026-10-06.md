@@ -157,10 +157,18 @@ Vague foods (t034 'a bar', t035 'some cheese', t071 'some curry') should be `low
   The median signed error is 0.0 percent in every cell, because most answers repeat the USDA figure exactly (B 29,
   C 27, D 25 of 34). The misses are small: k030 mozzarella (B -16, C -15 percent, a low-confidence US reference),
   k012 boiled potatoes (C -16 percent), k005 cooked pasta (D -17 percent).
+- **k030 mozzarella is a reference problem, not a model error.** The reference is USDA "Cheese, mozzarella, whole
+  milk" at 299 kcal per 100 g, a low-moisture US cheese. Fresh mozzarella as sold in the EU has about 250 kcal, and
+  the gold row carries `reference_confidence: low` for that reason. B (250) and C (253) answer with the fresh cheese
+  and miss by 16 and 15 percent because of it. Without k030: B 33 of 33, C 32 of 33, D 32 of 33 (the "without the
+  low reference" rows above); D's 280 was inside the band, so D loses a pass when k030 goes.
 - **Carbs miss where the model gives net carbs.** Within tolerance: B 31, C 27, D 30 of 34. k029 walnuts at 7.0 g
   is USDA total 13.71 g minus 6.7 g fibre; k014 almonds (C 5.4 g) and k019 raw broccoli (C and D 2.7 g) are below
   even the net figure. k016 cheddar at 1.3 g misses in every cell against the SR Legacy 3.37 g. European food tables
   list well under 1 g for cheddar, so that row may be a reference problem, not a model error (not checked here).
+  The k016 carbs reference is marked medium confidence in the `note` of its gold row and in `gold/GOLD-NOTES.md`
+  section 5; its `reference_confidence` stays `high`, because the kcal value (403) is exact and that field also
+  sorts the kcal rows above.
 - **Confidence calibration on kcal cannot fail here.** Every item of every cell is rated `high`, and no kcal value
   is more than 25 percent off, so there is no wrong `high` to count.
 - **Brand confidence: 3.5 lite rates every brand `high`, the v3 prompt does not change that.** D and D3 rate all 15
