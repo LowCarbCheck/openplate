@@ -7,6 +7,8 @@ change moves the minor.
 
 ## [Unreleased]
 
+## [0.36.0] - 2026-10-06
+
 ### Changed
 
 - **The managed tier now asks the model for minimal reasoning effort.** One edit in `ai-tiers.json`. Core writes `reasoning.effort` `minimal` on every forwarded managed request and drops a caller's `reasoning.max_tokens`, because OpenRouter takes an effort or a token budget, not both. Measured on Gemini 3.8 Flash with the v4 prompt: the same plate recall at about half the cost and half the latency (ADR 0025 in `apps/app/.adr`). An instance that runs without a tier file is not affected. There is no migration.
