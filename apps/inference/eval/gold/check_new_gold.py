@@ -20,6 +20,9 @@ What it checks:
     translations.ts of this tree, plus every --prompt), and no word of the
     prompts' flag lines may hide inside an input word, except the adjudicated
     false matches in COMPOUND_FALSE_MATCHES;
+  - the optional `aliases` field of a case: keys are core items, lists are not
+    empty, entries are non-empty names (or a component object), no name twice
+    and none that is the name of another core item;
   - every flag value is inside the app's vocabulary (constants below);
   - every flag names an item of its case (core, or optional for if_listed);
   - no entry is both required and forbidden, or both acceptable and forbidden;
@@ -160,6 +163,48 @@ def effective_clear(entry, case_clear):
     return entry.get("clear", case_clear)
 
 
+def alias_forms(entry):
+    """(name, is_component) of one alias entry, or None when the entry has no usable shape."""
+    if isinstance(entry, str):
+        return entry, False
+    if isinstance(entry, dict) and set(entry) == {"name", "component"} and isinstance(entry["name"], str) and entry["component"] is True:
+        return entry["name"], True
+    return None
+
+
+def check_aliases(where, aliases, core, rep):
+    """The optional `aliases` field: {core item: [alternative name, ...]}. An alias is the name of the same food in
+    another spelling or language (GOLD-NOTES.md, the alias rule). An entry is a string, or {"name": ..., "component":
+    true} for a part of a combined item ("bread" of "cheese on bread"). Keys are core names, lists are not empty, no
+    name is empty, and no name sits twice, so one name never stands for two foods of a case."""
+    if not isinstance(aliases, dict) or not aliases:
+        rep.fail(where, "aliases must be a non-empty object {core item: [names]}")
+        return
+    owner = {}
+    core_names = {c.casefold(): c for c in core}
+    for item, entries in aliases.items():
+        if item not in core:
+            rep.fail(where, f"aliases key {item!r} is not a core item of this case")
+        if not isinstance(entries, list) or not entries:
+            rep.fail(where, f"aliases for {item!r} must be a non-empty list")
+            continue
+        for entry in entries:
+            parsed = alias_forms(entry)
+            if parsed is None:
+                rep.fail(where, f"alias entry {entry!r} for {item!r} must be a string or {{\"name\": ..., \"component\": true}}")
+                continue
+            name, _component = parsed
+            if not re.search(r"[^\W\d_]", name):
+                rep.fail(where, f"alias {name!r} for {item!r} holds no letter")
+                continue
+            key = name.strip().casefold()
+            if key in core_names and core_names[key] != item:
+                rep.fail(where, f"alias {name!r} for {item!r} is the name of another core item, {core_names[key]!r}")
+            if key in owner:
+                rep.fail(where, f"alias {name!r} is listed twice ({owner[key]!r} and {item!r})")
+            owner[key] = item
+
+
 def check_text(path, rep, ids):
     rows = read_jsonl(path, rep)
     must_cov = {("pregnancy", v): set() for v in PREGNANCY_CATEGORIES}
@@ -216,6 +261,8 @@ def check_text(path, rep, ids):
                         rep.fail(where, f"{opt} names {k!r}, which is not in core")
                     if opt == "expect_confidence" and v not in CONFIDENCE:
                         rep.fail(where, f"expect_confidence {v!r} not in {CONFIDENCE}")
+        if "aliases" in row:
+            check_aliases(where, row["aliases"], core, rep)
         cclear = row.get("clear", False)
         must = check_flag_list(where + " must_flag", row.get("must_flag", []), core, rep, cclear, False)
         may = check_flag_list(where + " may_flag", row.get("may_flag", []), core, rep, cclear, False)

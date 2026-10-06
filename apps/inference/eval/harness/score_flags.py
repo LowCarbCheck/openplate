@@ -798,10 +798,65 @@ def food_names(food: dict) -> list[str]:
     return names
 
 
-def map_items(case_id: str, gold_items: list[str], foods: list[dict]) -> tuple[dict[str, list[int]], list[int]]:
-    """Gold item -> indices of the model items that hold it; plus the indices that hold no gold item."""
+def _alias_tokens(name: str) -> tuple[str, ...]:
+    """The words of a name in order, folded, with the same synonym and plural cuts as `name_tokens` but no word
+    dropped, so an alias can be found as a run of words inside a longer model name."""
+    out = []
+    for word in re.findall(r"[a-z0-9]+", _fold(name or "")):
+        word = SYNONYMS.get(word, word)
+        word = _singular(word)
+        out.append(SYNONYMS.get(word, word))
+    return tuple(out)
+
+
+def _contains_run(words: tuple[str, ...], run: tuple[str, ...]) -> bool:
+    n = len(run)
+    return n > 0 and any(words[i : i + n] == run for i in range(len(words) - n + 1))
+
+
+def parse_aliases(raw: dict | None, gold_items: list[str]) -> dict[str, dict[str, list]]:
+    """The `aliases` field of a gold case, ready to match: per gold item, `same` (a run of words that names the
+    same food) and `component` (the full name of a part of a combination, as a set of words).
+
+    A list entry is a string (same food) or `{"name": ..., "component": true}` (a part of the combined item).
+    A key that is not a gold item of the case is ignored here; `gold/check_new_gold.py` refuses it."""
+    out: dict[str, dict[str, list]] = {}
+    for item, entries in (raw or {}).items():
+        if item not in gold_items:
+            continue
+        same, component = [], []
+        for entry in entries:
+            if isinstance(entry, dict):
+                if entry.get("component"):
+                    tokens = name_tokens(entry["name"])
+                    if tokens:
+                        component.append(tokens)
+                    continue
+                entry = entry["name"]
+            run = _alias_tokens(entry)
+            if run:
+                same.append(run)
+        out[item] = {"same": same, "component": component}
+    return out
+
+
+def map_items_ex(case_id: str, gold_items: list[str], foods: list[dict], aliases: dict | None = None) -> dict:
+    """Gold item -> the model items that hold it, in the order: override, alias, word overlap.
+
+    An override decides alone. Otherwise a model item holds a gold item when its name (or its English
+    translation) carries one of the gold item's aliases as a run of whole words, or when the word overlap says so;
+    the two add up, so an alias never removes a holder. A model item that is the full name of a component alias
+    (a part of a combined gold item, for example the bread of "cheese on bread") is a component holder of that
+    item, unless it already holds the item.
+
+    Returns `holders` (gold item -> indices), `via_alias` (gold item -> the indices that hold it only through an
+    alias), `components` (gold item -> component indices) and `unmatched` (held by no gold item, as holder or
+    component)."""
     gold_tokens = {g: gold_name_tokens(g) for g in gold_items}
+    parsed = parse_aliases(aliases, gold_items)
     holders: dict[str, list[int]] = {g: [] for g in gold_items}
+    via_alias: dict[str, list[int]] = {g: [] for g in gold_items}
+    components: dict[str, list[int]] = {g: [] for g in gold_items}
     unmatched: list[int] = []
     for idx, food in enumerate(foods):
         names = food_names(food)
@@ -811,16 +866,33 @@ def map_items(case_id: str, gold_items: list[str], foods: list[dict]) -> tuple[d
             if key in OVERRIDES:
                 forced = OVERRIDES[key]
                 break
+        comp_held: list[str] = []
         if forced is not None:
             held = [g for g in forced if g in holders]
         else:
             mt = name_tokens(*names)
-            held = [g for g in gold_items if holds(mt, gold_tokens[g])]
+            by_overlap = {g for g in gold_items if holds(mt, gold_tokens[g])}
+            runs = [_alias_tokens(n) for n in names]
+            by_alias = {g for g, a in parsed.items() if any(_contains_run(r, run) for run in a["same"] for r in runs)}
+            held = [g for g in gold_items if g in by_overlap or g in by_alias]
+            for g in held:
+                if g not in by_overlap:
+                    via_alias[g].append(idx)
+            name_sets = [name_tokens(n) for n in names]
+            comp_held = [g for g, a in parsed.items() if g not in held and any(ns in a["component"] for ns in name_sets)]
         for g in held:
             holders[g].append(idx)
-        if not held:
+        for g in comp_held:
+            components[g].append(idx)
+        if not held and not comp_held:
             unmatched.append(idx)
-    return holders, unmatched
+    return {"holders": holders, "via_alias": via_alias, "components": components, "unmatched": unmatched}
+
+
+def map_items(case_id: str, gold_items: list[str], foods: list[dict], aliases: dict | None = None) -> tuple[dict[str, list[int]], list[int]]:
+    """Gold item -> indices of the model items that hold it; plus the indices that hold no gold item."""
+    m = map_items_ex(case_id, gold_items, foods, aliases)
+    return m["holders"], m["unmatched"]
 
 
 # ---------------------------------------------------------------------------
@@ -881,6 +953,24 @@ def _present(kind: str, value: str, fl: dict[str, set[str]]) -> str | None:
     return None
 
 
+def _outcome(kind: str, values: list[str], foods: list[dict], idxs: list[int]) -> str:
+    """'hit', 'demoted' (an allergen only in mayContain) or 'miss' for one entry, read on the given model items."""
+    places = set()
+    for i in idxs:
+        fl = food_flags(foods[i])
+        for v in values:
+            where = _present(kind, v, fl)
+            if where:
+                places.add(where)
+    if kind == "pregnancy":
+        return "hit" if places else "miss"
+    if "allergens" in places:
+        return "hit"
+    if "mayContain" in places:
+        return "demoted"
+    return "miss"
+
+
 def _describe(food: dict) -> dict:
     fl = food_flags(food)
     return {
@@ -921,13 +1011,20 @@ def score_case(case: dict, foods: list[dict], *, plate: bool, listed: dict[str, 
     core = list(case["core"])
     optional = list(case.get("optional", []))
     gold_items = core + optional
-    holders, unmatched = map_items(cid, gold_items, foods)
+    mapped = map_items_ex(cid, gold_items, foods, case.get("aliases"))
+    holders, unmatched = mapped["holders"], mapped["unmatched"]
+    via_alias, components = mapped["via_alias"], mapped["components"]
     if listed is not None:
         for g in core:
             if listed.get(g) is False:
                 holders[g] = []
-        held_any = {i for ix in holders.values() for i in ix}
+                via_alias[g] = []
+                components[g] = []
+        held_any = {i for ix in holders.values() for i in ix} | {i for ix in components.values() for i in ix}
         unmatched = [i for i in range(len(foods)) if i not in held_any]
+    # Every model item that stands for a gold item: its holders, then the parts of a combination. Without
+    # `aliases` the two are the same lists.
+    everyone = {g: holders[g] + [i for i in components[g] if i not in holders[g]] for g in gold_items}
     case_clear = case.get("clear", False)
 
     def eff_clear(entry):
@@ -965,7 +1062,8 @@ def score_case(case: dict, foods: list[dict], *, plate: bool, listed: dict[str, 
         for e in case.get(lst, []):
             item = e["item"]
             idxs = holders.get(item, [])
-            if lst == "if_listed" and not idxs:
+            seen = everyone.get(item, [])
+            if lst == "if_listed" and not seen:
                 continue  # required only when the model lists that optional item
             values = entry_values(e)
             rec = {
@@ -974,39 +1072,29 @@ def score_case(case: dict, foods: list[dict], *, plate: bool, listed: dict[str, 
                 "kind": e["kind"],
                 "value": entry_label(e),
                 "clear": bool(eff_clear(e)),
-                "holders": [_describe(foods[i]) for i in idxs],
+                "holders": [_describe(foods[i]) for i in seen],
                 "merged_credit": False,
                 "strict_miss": False,
             }
-            if not idxs:
+            if not seen:
                 rec["outcome"] = "unlisted_miss" if rec["clear"] else "unlisted_unscored"
                 rec["elsewhere"] = all_flags_in_answer(e["kind"], values)
             else:
-                places = set()
-                for i in idxs:
-                    fl = food_flags(foods[i])
-                    for v in values:
-                        where = _present(e["kind"], v, fl)
-                        if where:
-                            places.add(where)
-                if e["kind"] == "pregnancy":
-                    rec["outcome"] = "hit" if places else "miss"
-                elif "allergens" in places:
-                    rec["outcome"] = "hit"
-                elif "mayContain" in places:
-                    rec["outcome"] = "demoted"
-                else:
-                    rec["outcome"] = "miss"
+                rec["outcome"] = _outcome(e["kind"], values, foods, seen)
                 if rec["outcome"] == "hit":
                     _credit_merge(rec, e, idxs, foods, held_count, claimed)
+                    # A hit the plain word overlap would not have made: say which rule made it.
+                    plain = [i for i in idxs if i not in via_alias[item]]
+                    if _outcome(e["kind"], values, foods, plain) != "hit":
+                        rec["credit"] = "alias" if _outcome(e["kind"], values, foods, idxs) == "hit" else "component"
             rec["strict_outcome"] = "miss" if rec.get("strict_miss") else rec["outcome"]
             entries.append(rec)
 
     false_alarms = []
     for e in case.get("must_not_flag", []):
         item = e["item"]
-        for i in holders.get(item, []):
-            others = [g for g, ix in holders.items() if i in ix and g != item]
+        for i in everyone.get(item, []):
+            others = [g for g, ix in everyone.items() if i in ix and g != item]
             fl = food_flags(foods[i])
             for v in entry_values(e):
                 where = _present(e["kind"], v, fl)
@@ -1027,7 +1115,7 @@ def score_case(case: dict, foods: list[dict], *, plate: bool, listed: dict[str, 
 
     extras = []
     for i, food in enumerate(foods):
-        held = [g for g, ix in holders.items() if i in ix]
+        held = [g for g, ix in everyone.items() if i in ix]
         if not held:
             continue
         fl = food_flags(food)
@@ -1048,7 +1136,7 @@ def score_case(case: dict, foods: list[dict], *, plate: bool, listed: dict[str, 
         "case": cid,
         "plate": plate,
         "input": case.get("input", ""),
-        "mapping": {g: [foods[i].get("name") for i in ix] for g, ix in holders.items()},
+        "mapping": {g: [foods[i].get("name") for i in ix] for g, ix in everyone.items()},
         "entries": entries,
         "false_alarms": false_alarms,
         "extras": extras,
@@ -1177,6 +1265,9 @@ def tally(scored_runs: list[dict]) -> dict:
                     distinct[f"{k}_{cl}_miss"].add(key)
                     misses.append({**e, "case": c["case"], "input": c["input"], "plate": c["plate"]})
                 elif e["outcome"] == "hit":
+                    if e.get("credit"):
+                        t[f"credit_{e['credit']}"] += 1
+                        t[f"{k}_{cl}_credit_{e['credit']}"] += 1
                     if e.get("merged_credit"):
                         t[f"{k}_{cl}_hit_merged"] += 1
                         t[f"{k}_{cl}_hit_merged_{src}"] += 1
@@ -1294,7 +1385,10 @@ def score_holdout_runs(names: list[str], holdout_gold: dict, runs_dir: Path) -> 
             scored.append({"run": run_display(name), **score_run(res, holdout_gold, plate=False)})
         except (ValueError, KeyError, TypeError, AttributeError) as exc:
             left_out.append({"run": run_display(name), "reason": f"unreadable records: {type(exc).__name__}: {exc}"})
-    return {"listed": len(names), "runs": scored, "left_out": left_out, "cases": len(holdout_gold)}
+    out = {"listed": len(names), "runs": scored, "left_out": left_out, "cases": len(holdout_gold)}
+    if any(case.get("aliases") for case in holdout_gold.values()):
+        out["aliases"] = True
+    return out
 
 
 def cell_runs(data: dict) -> list[dict]:
@@ -1648,6 +1742,21 @@ def summarise_holdout(scored: dict, expected_repeats: int) -> dict:
             "false_alarms": t["false_alarms"],
             "per_repeat_distinct": per_distinct,
         }
+        if h.get("aliases"):
+            cells[cell]["alias_credits_per_repeat"] = [r.get("credit_alias", 0) for r in per]
+            cells[cell]["component_credits_per_repeat"] = [r.get("credit_component", 0) for r in per]
+            credited: dict[tuple, dict] = {}
+            for r in runs:
+                for c in r["cases"]:
+                    for e in c["entries"]:
+                        if e.get("credit"):
+                            row = credited.setdefault(
+                                (c["case"], e["item"], e["kind"], e["value"], e["credit"]),
+                                {"case": c["case"], "item": e["item"], "kind": e["kind"], "value": e["value"], "via": e["credit"], "clear": e["clear"], "holders": [], "runs": []},
+                            )
+                            row["runs"].append(r["run"])
+                            row["holders"] = sorted({*row["holders"], *(x["name"] for x in e["holders"])})
+            cells[cell]["credited"] = sorted(credited.values(), key=lambda x: (x["case"], x["item"], x["kind"], x["value"]))
     return cells
 
 
@@ -1824,6 +1933,13 @@ def render_holdout(scored: dict, holdout: dict, rule2: dict | None, gold_name: s
     L.append("the words cannot place shows up as an item outside the gold and the gold item it should have held as one")
     L.append("no model item held. A run is scored only when it is finished; a missing or partial run is INCOMPLETE. Each cell needs")
     L.append(f"{expected} finished repeat(s).")
+    has_aliases = any("alias_credits_per_repeat" in h for h in holdout.values())
+    if has_aliases:
+        L.append("")
+        L.append("The gold file also carries `aliases` (`gold/GOLD-NOTES.md`, the alias rule): other names, spellings and")
+        L.append("translations of the same food, which hold a gold item beside the word overlap. A part of a combined item (the")
+        L.append("bread of \"cheese on bread\") is a component alias: a flag on that part counts for the combined gold item. The")
+        L.append("table below the numbers counts the hits that only an alias or a component made, so the effect stays visible.")
     L.append("")
     L.append("| cell | label | runs listed | scored | status | runs left out |")
     L.append("|---|---|---|---|---|---|")
@@ -1854,6 +1970,31 @@ def render_holdout(scored: dict, holdout: dict, rule2: dict | None, gold_name: s
             f"{outside} | {h['unlisted_entries_per_repeat']} |"
         )
     L.append("")
+    if has_aliases:
+        L.append("### Hits credited through aliases and components")
+        L.append("")
+        L.append("A hit counts here when the same answer scored without aliases would not have it: an `alias` hit sits on a")
+        L.append("model item that holds the gold item only through an alias, a `component` hit sits on a part of a combined item.")
+        L.append("One entry per scored repeat.")
+        L.append("")
+        L.append("| cell | repeats | hits through an alias | hits through a component |")
+        L.append("|---|---|---|---|")
+        for cell, h in holdout.items():
+            L.append(f"| {cell} | {h['scored']} | {h['alias_credits_per_repeat']} | {h['component_credits_per_repeat']} |")
+        L.append("")
+        for cell, h in holdout.items():
+            if not h["credited"]:
+                continue
+            L.append(f"#### Cell {cell}: credited entries")
+            L.append("")
+            L.append("| case | gold item | flag | clear | via | model item(s) | repeats |")
+            L.append("|---|---|---|---|---|---|---|")
+            for c in h["credited"]:
+                L.append(
+                    f"| {c['case']} | {_md_escape(c['item'])} | {c['kind']} {c['value']} | {'yes' if c['clear'] else 'no'} | {c['via']} | "
+                    f"{_md_escape(', '.join(c['holders']))} | {len(c['runs'])} |"
+                )
+            L.append("")
     L.append("### Items outside the gold, per holdout cell (mapping gaps)")
     L.append("")
     L.append("A model item that shares too few words with any gold food of its case. Its flags are not judged. Read the")
@@ -2171,6 +2312,18 @@ def render_markdown(
     if cfg.get("compare"):
         L.extend(render_comparisons(scored, summary, cfg["compare"]))
 
+    credited_cells = {c: s["typed"]["counts"] for c, s in summary.items() if s["typed"]["counts"].get("credit_alias") or s["typed"]["counts"].get("credit_component")}
+    if credited_cells:
+        L.append("## Hits credited through aliases and components (typed set)")
+        L.append("")
+        L.append("Hits of the typed repeats that only an alias or a component of the gold case made (see `gold/GOLD-NOTES.md`).")
+        L.append("")
+        L.append("| cell | hits through an alias | hits through a component |")
+        L.append("|---|---|---|")
+        for cell, cnt in credited_cells.items():
+            L.append(f"| {cell} | {cnt.get('credit_alias', 0)} | {cnt.get('credit_component', 0)} |")
+        L.append("")
+
     k = len(sanity_cells)
     names = ", ".join(sanity_cells[:-1]) + " and " + sanity_cells[-1] if k > 1 else sanity_cells[0]
     L.append("## Sanity: gold labels every cell contradicts the same way")
@@ -2345,12 +2498,14 @@ def map_dump(cells: dict = CELLS, runs_dir: Path = RUNS_DIR, cfg: dict | None = 
                     continue
                 ans = answer_of(res[cid])
                 foods = ans.get("foods") or []
-                holders, unmatched = map_items(cid, case["core"] + case.get("optional", []), foods)
+                mapped = map_items_ex(cid, case["core"] + case.get("optional", []), foods, case.get("aliases"))
+                holders, unmatched = mapped["holders"], mapped["unmatched"]
                 parts = []
                 for g, ix in holders.items():
                     tag = "" if g in case["core"] else " (opt)"
-                    if ix or g in case["core"]:
-                        parts.append(f"{g}{tag} <- {[foods[i].get('name') for i in ix]}")
+                    comp = [foods[i].get("name") for i in mapped["components"][g]]
+                    if ix or g in case["core"] or comp:
+                        parts.append(f"{g}{tag} <- {[foods[i].get('name') for i in ix]}" + (f" + component {comp}" if comp else ""))
                 um = [foods[i].get("name") for i in unmatched]
                 print(f"{cell} {run_display(name)} {cid}: " + " | ".join(parts) + (f" || UNMATCHED {um}" if um else ""))
 
@@ -2376,6 +2531,10 @@ def compact_scored(scored: dict) -> dict:
                         "outside_gold": c["outside_gold"],
                     }
                 )
+                for via in ("alias", "component"):
+                    n = sum(1 for e in c["entries"] if e.get("credit") == via)
+                    if n:
+                        cases[-1][f"{via}_hits"] = n
             runs.append({"run": run["run"], "cases": cases, "failed": run["failed"]})
         out["cells"][cell] = {"label": data["label"], "runs": runs}
     return out

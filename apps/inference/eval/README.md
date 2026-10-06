@@ -444,7 +444,12 @@ pregnancy misses per repeat, allergen misses, false alarms on `must_not_flag`, f
 outside the gold with the gold items no model item held (the mapping gaps), and rule 2 for the test cell.
 Nothing in the block enters the typed numbers, the plates, or rules 3 and 4. The gold items match by word
 overlap with the `core` names of the holdout file; no override is written for a holdout case, so read the
-mapping gaps before you read a miss as a safety result. With holdout keys in the file, `expected_repeats`
+mapping gaps before you read a miss as a safety result. A typed gold case may carry `aliases` (a map from a core
+item to other names of the same food, see `gold/GOLD-NOTES.md`, "Aliases"). The scorer checks them with the word
+overlap for the main typed set and the holdout; an alias only adds a holder. A `{"name": ..., "component": true}`
+alias names a part of a combined item ("Brot" for "cheese on bread"): a flag on that part counts for the combined
+item. The report counts per cell the hits that only an alias or a component made, so the effect stays visible;
+a gold file with no `aliases` reports exactly as before. With holdout keys in the file, `expected_repeats`
 counts the holdout repeats and `expected_text_repeats` (default: `expected_repeats`) counts the repeats of
 the main typed runs. A test cell with holdout runs and no `text` runs gets rule 2 on the holdout only. Rules 3
 and 4 turn from `PASS` to `INCOMPLETE` when the test cell or the ref lists runs that were not scored. A file

@@ -79,6 +79,49 @@ gold items into one (the mustard into the bratwurst, the toppings into a pad
 thai), score the flag at case level: the flag counts when it is on the item that
 now holds that food. The notes name the cases where this is likely.
 
+### Aliases (`aliases`, typed cases only)
+
+A typed case may carry `aliases`: an object from a core item to a list of other
+names that the scorer treats as the same item. The word overlap alone cannot
+know that "Kasseler" and "Kassler" are one cured pork, or that a rutabaga is a
+swede, so the gold says it.
+
+**The rule.** An alias is a name for the SAME food in another spelling, another
+language or another word for it (synonym, regional name). It is never a name for
+a different food. It is never a name chosen because a model used it to dodge a
+flag: a model's wrong dish (a cappuccino for a decaf latte), a model's wrong
+reading, or a vaguer word that hides the food does not become an alias. Test
+before you add one: would a person who knows both words say they mean one food?
+If the answer needs "it was close enough", the answer is no. The scorer finds an
+alias as a run of whole words inside the model's item name or its English
+translation, so write the full word, not a stem.
+
+Entry shapes in the list:
+
+- a string: another name for the whole item ("Kasseler" for "Kassler (cured,
+  smoked and cooked pork)");
+- `{"name": "Brot", "component": true}`: the full name of one PART of a
+  combination ("cheese on bread", "bread with cream cheese and sunflower
+  sprouts"). When a model lists that part as an item of its own, a flag on it
+  counts for the combined gold item, so gluten on "Brot" satisfies gluten on
+  "Leerdammer cheese on bread". The part must be the whole name of the model
+  item ("Brot", "Vollkornbrot", "bread"); "Brot mit Butter" is another item. A
+  flag the gold forbids on the item (`must_not_flag`) is also judged on the
+  part.
+
+What the scorer does with them is in the README (the held-out typed set): an
+alias adds a holder and never removes one, and the report counts, per cell, the
+hits that only an alias or a component made. `check_new_gold.py` refuses a key
+that is not a core item, an empty list, an empty or letterless name, a name
+listed twice, and a name that is another core item's name.
+
+The holdout carries aliases for: h004 (swede, rutabaga, neeps, turnip mash
+as the Scots call it, and tatties), h011 (Seelachsschnitzel, Seelachs, saithe,
+coley and pollock, one fish under four names), h014 (tamago kake gohan, natto as
+fermented soybeans), h018 and h033 (the bread as a component), h021 (tabbouleh
+spellings) and h034 (Kasseler, Kassler). h035 has none: "cappuccino" is no name
+of a decaf latte.
+
 Two core names in `gold_labels.json` (plates 41 and 48) hold a long dash. The
 new files must not hold one, so they write ", " where `gold_labels.json` writes
 " <long dash> ". The checker applies the same mapping (`norm_item`).
@@ -97,6 +140,8 @@ new files must not hold one, so they write ", " where `gold_labels.json` writes
   the generic food and puts the brand in `brand`.
 - `focus` (holdout only): which part of section 10 a case serves, a list of
   `pregnancy`, `allergen` and `control`. A scorer ignores it.
+- `aliases` (optional): other names for a core item, and the parts of a combined
+  item; see "Aliases" above.
 
 ## 3. Coverage (proves the minimums)
 
