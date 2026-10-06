@@ -89,7 +89,8 @@
     "test:integration": "node --import tsx --test --test-concurrency=1 'tests/integration/**/*.test.ts'",
     "test:unit": "node --import tsx --test 'tests/unit/**/*.test.ts' 'tests/unit/**/*.test.tsx'",
     "translate:ui": "tsx ./scripts/translate-ui.ts",
-    "typecheck": "react-router typegen && tsc"
+    "typecheck": "react-router typegen && tsc",
+    "vision:export-contract": "tsx ./scripts/export-vision-contract.ts"
   },
   "engines": {
     "node": ">=24"

@@ -155,6 +155,15 @@ describe('a path with the rule `none` runs nothing of its own', () => {
     }
   });
 
+  it('the vision contract exporter has no browser reach, and its neighbours in scripts/ still run everything', () => {
+    for (const path of ['scripts/export-vision-contract.ts', 'scripts/lib/vision-contract.ts']) {
+      assert.deepEqual(someSpecs(selectSpecs([path], SPECS)), SMOKE_ONLY, path);
+    }
+    for (const path of ['scripts/e2e-select.ts', 'scripts/lib/translate.ts', 'scripts/export-vision-contract.sh']) {
+      assert.equal(selectSpecs([path], SPECS).kind, 'all', path);
+    }
+  });
+
   it('control: a source path next to the docs does select more than the smoke set', () => {
     const specs = someSpecs(selectSpecs(['README.md', 'app/routes/trends.tsx'], SPECS));
     assert.ok(specs.length > SMOKE_ONLY.length);

@@ -58,6 +58,12 @@ export const PATH_RULES: ReadonlyArray<PathRule> = [
       /^(package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|playwright\.config\.ts|vite\.config\.ts|react-router\.config\.ts|server\.ts|tsconfig[^/]*\.json|Dockerfile[^/]*)$/,
     area: 'all',
   },
+  // The vision contract exporter and its builder read the prompt builders and write a JSON file for the eval
+  // harness; no browser reaches either. Above the wide `scripts/` rule so editing them does not run every spec.
+  // The committed output lives in apps/inference/eval/generated, which the selector is never given (it only
+  // reads paths under apps/app), so a changed contract file maps to no area from here. The drift test
+  // `tests/unit/vision-contract-export.test.ts` is what guards it.
+  { pattern: /^scripts\/(export-vision-contract|lib\/vision-contract)\.ts$/, area: 'none' },
   { pattern: /^(scripts|\.githooks|server|public)\//, area: 'all' },
   // The shared frame of the app: the root, the route table, the entries, the stylesheet, the
   // primitives and the translations are read by every screen.
