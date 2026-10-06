@@ -11,6 +11,19 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+## [0.66.0] - 2026-10-06
+
+### Changed
+
+- **The photo prompt now lists every food on a plate as its own item.** The old prompt told the model to prefer six items or fewer, so a whole plate often came back as one dish name such as "sushi platter" or "full breakfast". It now names every food it can tell apart, up to 12 items, and merges only a sauce into its dish or a single dish eaten as one, such as a burger or a sandwich. Measured on the eval plates with Gemini 3.8 Flash, plate recall rises from 84.7 to 88.5 (see ADR-0025). ([e2c1f302](https://github.com/LowCarbCheck/openplate/commit/e2c1f302), [d47d09a7](https://github.com/LowCarbCheck/openplate/commit/d47d09a7))
+- **The photo prompt now rates its confidence by what the photo shows.** A packaged or branded product with no legible nutrition panel is rated "medium" at most, so it no longer comes back "high" on a guess. The model names the generic food, sets the brand to null and never recalls a brand's figures from memory. The typed meal prompt carries the same rule. ([e2c1f302](https://github.com/LowCarbCheck/openplate/commit/e2c1f302), [d47d09a7](https://github.com/LowCarbCheck/openplate/commit/d47d09a7))
+- **The pregnancy flags now name the foods behind each category.** Each category lists the common foods that belong to it, for example matjes, gravlax, carbonara, Mett, Leberwurst and cheese fondue, so a flag is no longer lost inside a composed dish such as liver pate on toast. A sauce, a spread or a filling flags the whole dish. ([a5e7690f](https://github.com/LowCarbCheck/openplate/commit/a5e7690f), [d47d09a7](https://github.com/LowCarbCheck/openplate/commit/d47d09a7))
+- **The prompts now flag uncertain egg, alcohol and meat, and share one pregnancy line.** A restaurant or deli mayonnaise or aioli counts as raw egg unless it clearly comes from a sealed jar. Alcohol that is not cooked off, such as tiramisu, liqueur chocolates or a wine sauce, and alcohol-free beer and wine are flagged. A pink burger counts as raw meat. The photo prompt and the typed prompt now use the same pregnancy line, so the two cannot drift apart. ([d47d09a7](https://github.com/LowCarbCheck/openplate/commit/d47d09a7))
+
+### Docs
+
+- **A script now exports the vision request as a contract for the eval.** `pnpm vision:export-contract` writes the real prompts and schemas in all six languages to `apps/inference/eval/generated/vision-contract.json`, so the eval harness measures the request the app sends. A unit test fails the push when the committed file is out of date. ([505420a8](https://github.com/LowCarbCheck/openplate/commit/505420a8))
+
 ## [0.65.1] - 2026-10-05
 
 ### Fixed

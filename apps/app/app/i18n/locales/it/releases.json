@@ -1,4 +1,13 @@
 {
+  "v0_66_0": {
+    "date": "2026-10-06",
+    "changed": {
+      "01": "Il prompt per le foto ora elenca ogni alimento presente nel piatto come voce separata.",
+      "02": "Il prompt per le foto ora valuta il proprio livello di confidenza in base a ciò che mostra la foto.",
+      "03": "I contrassegni per la gravidanza ora indicano i singoli alimenti associati a ciascuna categoria.",
+      "04": "I prompt ora segnalano uova, alcolici e carne incerti, e condividono un'unica riga per la gravidanza."
+    }
+  },
   "v0_65_1": {
     "date": "2026-10-05",
     "fixed": {
@@ -14,19 +23,6 @@
     "fixed": {
       "01": "Se una carta viene rifiutata durante un passaggio a un livello superiore, ora viene indicato chiaramente.",
       "02": "Un digiuno in corso non sposta più l'intestazione quando compare il relativo riquadro."
-    }
-  },
-  "v0_64_0": {
-    "date": "2026-10-05",
-    "added": {
-      "01": "La pagina del piano ora elenca i livelli venduti da un servizio di piani, e chi ha sottoscritto un abbonamento può passare da uno all'altro.",
-      "02": "Sopra i riquadri di pagamento, la pagina dell'ordine ora indica cosa accade ai tuoi dati.",
-      "03": "Un piano ora può escludere una funzionalità, e l'app la mostra nello stesso modo ovunque.",
-      "04": "Un link a un livello proveniente dal sito web ora seleziona quel livello nella pagina del piano."
-    },
-    "changed": {
-      "01": "Un giorno esaurito di scansioni IA ora rimanda ai piani, se disponibili.",
-      "02": "Una funzionalità rifiutata ora mostra la stessa nota invece di un errore."
     }
   }
 }

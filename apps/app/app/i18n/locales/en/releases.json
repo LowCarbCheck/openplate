@@ -1,4 +1,13 @@
 {
+  "v0_66_0": {
+    "date": "2026-10-06",
+    "changed": {
+      "01": "The photo prompt now lists every food on a plate as its own item.",
+      "02": "The photo prompt now rates its confidence by what the photo shows.",
+      "03": "The pregnancy flags now name the foods behind each category.",
+      "04": "The prompts now flag uncertain egg, alcohol and meat, and share one pregnancy line."
+    }
+  },
   "v0_65_1": {
     "date": "2026-10-05",
     "fixed": {
@@ -14,19 +23,6 @@
     "fixed": {
       "01": "A declined card on an upgrade now says so.",
       "02": "A running fast no longer moves the header when its chip arrives."
-    }
-  },
-  "v0_64_0": {
-    "date": "2026-10-05",
-    "added": {
-      "01": "The plan page now lists the tiers a plan service sells, and a subscriber can switch between them.",
-      "02": "The order page now says what happens to your data above the payment boxes.",
-      "03": "A plan can now leave out a feature, and the app shows it the same way everywhere.",
-      "04": "A tier link from the website now picks that tier on the plan page."
-    },
-    "changed": {
-      "01": "A spent day of AI scans now points at the plans where there are any.",
-      "02": "A refused feature now shows the same note instead of an error."
     }
   }
 }

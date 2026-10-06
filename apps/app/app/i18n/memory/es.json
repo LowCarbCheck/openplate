@@ -2106,6 +2106,13 @@
     "at": "2026-09-14",
     "es": "He olvidado mi contraseña"
   },
+  "17488ed3ff12f3af": {
+    "en": "The prompts now flag uncertain egg, alcohol and meat, and share one pregnancy line.",
+    "path": "releases:v0_66_0.changed.04",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-06",
+    "es": "Los prompts ahora señalan dudas sobre huevo, alcohol y carne, y comparten una misma línea para el embarazo."
+  },
   "174c82ddbfedc662": {
     "en": "Entries to add",
     "path": "common:settings.data.yazio.preview.entries",
@@ -7510,6 +7517,13 @@
     "at": "2026-09-14",
     "es": "Volver a tus estudios"
   },
+  "593db8937112675e": {
+    "en": "The photo prompt now rates its confidence by what the photo shows.",
+    "path": "releases:v0_66_0.changed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-06",
+    "es": "El prompt para fotos ahora califica su nivel de certeza según lo que se observa en la foto."
+  },
   "59519f32d55c6b83": {
     "en": "Next day",
     "path": "common:diary.nav.nextDay",
@@ -7593,6 +7607,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Esa pasarela necesita una invitación nueva"
+  },
+  "5a80f1002217f446": {
+    "en": "The pregnancy flags now name the foods behind each category.",
+    "path": "releases:v0_66_0.changed.03",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-06",
+    "es": "Los avisos de embarazo ahora indican los alimentos que corresponden a cada categoría."
   },
   "5a81c0e18bc7cbff": {
     "en": "A saved meal shows the whole name you gave it.",
@@ -10218,6 +10239,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Guardar la hora de inicio"
+  },
+  "787a7adcc056e8e8": {
+    "en": "The photo prompt now lists every food on a plate as its own item.",
+    "path": "releases:v0_66_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-06",
+    "es": "El prompt para fotos ahora desglosa cada alimento del plato como un elemento independiente."
   },
   "7883bad83b1f544a": {
     "en": "Save the fast",

@@ -1,4 +1,13 @@
 {
+  "v0_66_0": {
+    "date": "2026-10-06",
+    "changed": {
+      "01": "Der Foto-Prompt führt jetzt jedes Lebensmittel auf einem Teller als eigenen Eintrag auf.",
+      "02": "Der Foto-Prompt bewertet seine Konfidenz jetzt danach, was das Foto zeigt.",
+      "03": "Die Schwangerschaftshinweise benennen jetzt die Lebensmittel hinter jeder Kategorie.",
+      "04": "Die Prompts markieren jetzt unsicheres Ei, unsicheren Alkohol sowie unsicheres Fleisch und teilen sich eine gemeinsame Schwangerschaftszeile."
+    }
+  },
   "v0_65_1": {
     "date": "2026-10-05",
     "fixed": {
@@ -14,19 +23,6 @@
     "fixed": {
       "01": "Wird eine Karte bei einem Upgrade abgelehnt, weist das System nun darauf hin.",
       "02": "Ein laufendes Fasten verschiebt den Header nicht mehr, wenn sein Chip erscheint."
-    }
-  },
-  "v0_64_0": {
-    "date": "2026-10-05",
-    "added": {
-      "01": "Die Tarifseite listet nun die Stufen auf, die ein Tarifdienst anbietet, und Abonnenten können zwischen ihnen wechseln.",
-      "02": "Die Bestellseite gibt nun über den Zahlungsfeldern an, was mit deinen Daten geschieht.",
-      "03": "Ein Tarif kann ein Feature nun weglassen, und die App stellt dies überall einheitlich dar.",
-      "04": "Ein Stufen-Link von der Website wählt diese Stufe nun auf der Tarifseite aus."
-    },
-    "changed": {
-      "01": "Ein aufgebrauchter Tag an KI-Scans verweist nun auf die Tarife, sofern welche vorhanden sind.",
-      "02": "Ein verweigertes Feature zeigt nun denselben Hinweis statt eines Fehlers an."
     }
   }
 }

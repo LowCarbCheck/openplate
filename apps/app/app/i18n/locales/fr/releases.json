@@ -1,4 +1,13 @@
 {
+  "v0_66_0": {
+    "date": "2026-10-06",
+    "changed": {
+      "01": "L'invite de photo liste désormais chaque aliment d'une assiette comme un élément distinct.",
+      "02": "L'invite de photo évalue désormais son niveau de confiance selon ce que montre la photo.",
+      "03": "Les indicateurs de grossesse nomment désormais les aliments qui correspondent à chaque catégorie.",
+      "04": "Les invites signalent désormais les doutes sur les œufs, l'alcool et la viande, et partagent une seule ligne pour la grossesse."
+    }
+  },
   "v0_65_1": {
     "date": "2026-10-05",
     "fixed": {
@@ -14,19 +23,6 @@
     "fixed": {
       "01": "Le refus d'une carte lors d'un passage à un niveau supérieur est désormais explicitement indiqué.",
       "02": "Un jeûne en cours ne déplace plus l'en-tête quand son badge apparaît."
-    }
-  },
-  "v0_64_0": {
-    "date": "2026-10-05",
-    "added": {
-      "01": "La page des forfaits liste désormais les niveaux vendus par un service de forfaits, et un abonné peut passer de l'un à l'autre.",
-      "02": "La page de commande indique désormais ce qu'il advient de tes données au-dessus des zones de paiement.",
-      "03": "Un forfait peut désormais exclure une fonctionnalité, et l'application l'affiche de la même manière partout.",
-      "04": "Un lien de niveau depuis le site web sélectionne désormais ce niveau sur la page des forfaits."
-    },
-    "changed": {
-      "01": "Une journée épuisée d'analyses par IA renvoie désormais vers les forfaits s'il en existe.",
-      "02": "Une fonctionnalité refusée affiche désormais la même note au lieu d'une erreur."
     }
   }
 }

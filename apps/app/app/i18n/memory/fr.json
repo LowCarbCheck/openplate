@@ -2106,6 +2106,13 @@
     "at": "2026-09-14",
     "fr": "J'ai oublié mon mot de passe"
   },
+  "17488ed3ff12f3af": {
+    "en": "The prompts now flag uncertain egg, alcohol and meat, and share one pregnancy line.",
+    "path": "releases:v0_66_0.changed.04",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-06",
+    "fr": "Les invites signalent désormais les doutes sur les œufs, l'alcool et la viande, et partagent une seule ligne pour la grossesse."
+  },
   "174c82ddbfedc662": {
     "en": "Entries to add",
     "path": "common:settings.data.yazio.preview.entries",
@@ -7510,6 +7517,13 @@
     "at": "2026-09-14",
     "fr": "Retour à tes études"
   },
+  "593db8937112675e": {
+    "en": "The photo prompt now rates its confidence by what the photo shows.",
+    "path": "releases:v0_66_0.changed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-06",
+    "fr": "L'invite de photo évalue désormais son niveau de confiance selon ce que montre la photo."
+  },
   "59519f32d55c6b83": {
     "en": "Next day",
     "path": "common:diary.nav.nextDay",
@@ -7593,6 +7607,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Cette passerelle demande une nouvelle invitation"
+  },
+  "5a80f1002217f446": {
+    "en": "The pregnancy flags now name the foods behind each category.",
+    "path": "releases:v0_66_0.changed.03",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-06",
+    "fr": "Les indicateurs de grossesse nomment désormais les aliments qui correspondent à chaque catégorie."
   },
   "5a81c0e18bc7cbff": {
     "en": "A saved meal shows the whole name you gave it.",
@@ -10218,6 +10239,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Enregistrer l'heure de début"
+  },
+  "787a7adcc056e8e8": {
+    "en": "The photo prompt now lists every food on a plate as its own item.",
+    "path": "releases:v0_66_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-06",
+    "fr": "L'invite de photo liste désormais chaque aliment d'une assiette comme un élément distinct."
   },
   "7883bad83b1f544a": {
     "en": "Save the fast",

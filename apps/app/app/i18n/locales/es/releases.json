@@ -1,4 +1,13 @@
 {
+  "v0_66_0": {
+    "date": "2026-10-06",
+    "changed": {
+      "01": "El prompt para fotos ahora desglosa cada alimento del plato como un elemento independiente.",
+      "02": "El prompt para fotos ahora califica su nivel de certeza según lo que se observa en la foto.",
+      "03": "Los avisos de embarazo ahora indican los alimentos que corresponden a cada categoría.",
+      "04": "Los prompts ahora señalan dudas sobre huevo, alcohol y carne, y comparten una misma línea para el embarazo."
+    }
+  },
   "v0_65_1": {
     "date": "2026-10-05",
     "fixed": {
@@ -14,19 +23,6 @@
     "fixed": {
       "01": "Si se rechaza una tarjeta al mejorar el plan, ahora se indica con claridad.",
       "02": "Un ayuno en curso ya no desplaza la cabecera cuando aparece su etiqueta."
-    }
-  },
-  "v0_64_0": {
-    "date": "2026-10-05",
-    "added": {
-      "01": "La página del plan ahora enumera los niveles que vende un servicio de planes, y un suscriptor puede cambiar entre ellos.",
-      "02": "La página del pedido ahora indica qué ocurre con tus datos encima de las casillas de pago.",
-      "03": "Un plan ahora puede omitir una función, y la aplicación la muestra de la misma forma en todas partes.",
-      "04": "Un enlace a un nivel desde el sitio web ahora selecciona ese nivel en la página del plan."
-    },
-    "changed": {
-      "01": "Un día agotado de escaneos de IA ahora remite a los planes, si los hay.",
-      "02": "Una función rechazada ahora muestra la misma nota en lugar de un error."
     }
   }
 }
