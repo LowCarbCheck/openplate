@@ -7,7 +7,10 @@ Stdlib only. No model call, no key: every answer is read from a run's `results.j
     python3 -m harness.score_flags --config configs/score-flags-v3.json   # cells, runs and rules from a file
 
 A config file names the cells, their run directories, the rule test and `expected_repeats`, the typed repeats rule 2
-needs (default 3; see `load_config`). A run name is a
+needs (default 3; see `load_config`). A cell may also list `holdout` runs: typed runs of a second gold file
+(`typed_gold_holdout`, default `gold/gold_text_holdout.jsonl`), scored in their own "Holdout" block with rule 2
+evaluated on them for the test cell. A run that is missing, unreadable or still being written (`_partial` in its
+`results.json`, or fewer answers than the gold) is never scored: the report names it as INCOMPLETE. A run name is a
 directory under `--runs-dir` (default `runs/`); a relative path with `..` reaches another worktree, an absolute
 path works too. A cell may list several plate runs (repeats); a plate run is used only when it holds every plate.
 Without `--config` the scorer runs the fixed EU cells B, C and D, as before.
@@ -114,6 +117,9 @@ DEFAULT_TEST = "D"
 DEFAULT_REFS = ("B", "C")
 #: Typed repeats the decision rule asks for. Rule 2 is INCOMPLETE with fewer.
 DEFAULT_EXPECTED_REPEATS = 3
+#: The typed gold of the main set and of the held-out set, relative to the eval root (a config may name others).
+DEFAULT_TYPED_GOLD = "gold/gold_text.jsonl"
+DEFAULT_TYPED_GOLD_HOLDOUT = "gold/gold_text_holdout.jsonl"
 
 
 def plate_names(spec: dict) -> list[str]:
@@ -122,6 +128,11 @@ def plate_names(spec: dict) -> list[str]:
     if not plates:
         return []
     return [plates] if isinstance(plates, str) else list(plates)
+
+
+def gold_path(name: str) -> Path:
+    """A gold file named in a config: relative to the eval root, or absolute."""
+    return EVAL_ROOT / Path(name).expanduser()
 
 
 def run_path(runs_dir: Path, name: str) -> Path:
@@ -146,17 +157,29 @@ def load_config(path: Path) -> dict:
          "skipped": {"run name": "why"},
          "sanity_cells": ["B", "C3", "D3"], "category_cells": [...], "compare": [["D", "D3"], ["C", "C3"]]}
 
-    A cell needs at least one of `text` and `plates`. The test cell and every ref must be cells.
+    A cell needs at least one of `text`, `plates` and `holdout`. The test cell and every ref must be cells.
     `expected_repeats` (default 3) is how many typed repeats the test cell must hold for rule 2 to be decided;
     a cell with fewer gives INCOMPLETE. It must be a whole number of at least 1.
+
+    Held-out typed set (all optional; with none of these keys the report is the one it always was):
+    `typed_gold` (default `gold/gold_text.jsonl`) is the gold of every cell's `text` runs; `typed_gold_holdout`
+    (default `gold/gold_text_holdout.jsonl`) is the gold of every cell's `holdout` runs, a list of run
+    directories. Holdout runs are reported apart, in the "Holdout" block, and rule 2 is evaluated there for the
+    test cell with `expected_repeats` repeats. When a cell lists `holdout`, `expected_repeats` counts the holdout
+    repeats only; the `text` runs of the test cell then need `expected_text_repeats` (default: the value of
+    `expected_repeats`, so a file without the new keys reads as before). When the test cell has `holdout` and no
+    `text`, rule 2 is evaluated on the holdout only.
     """
     cfg = json.loads(Path(path).read_text(encoding="utf-8"))
     cells = cfg.get("cells")
     if not isinstance(cells, dict) or not cells:
         raise ValueError(f"{path}: `cells` must name at least one cell")
     for name, spec in cells.items():
-        if not spec.get("text") and not plate_names(spec):
-            raise ValueError(f"{path}: cell {name} lists neither text nor plate runs")
+        if not spec.get("text") and not plate_names(spec) and not spec.get("holdout"):
+            raise ValueError(f"{path}: cell {name} lists no text, plate or holdout runs")
+        holdout = spec.get("holdout")
+        if holdout is not None and (not isinstance(holdout, list) or not all(isinstance(h, str) for h in holdout)):
+            raise ValueError(f"{path}: cell {name}: `holdout` must be a list of run directories")
         spec.setdefault("label", name)
         spec.setdefault("text", [])
     test = cfg.get("test")
@@ -169,6 +192,13 @@ def load_config(path: Path) -> dict:
     expected = cfg.setdefault("expected_repeats", DEFAULT_EXPECTED_REPEATS)
     if isinstance(expected, bool) or not isinstance(expected, int) or expected < 1:
         raise ValueError(f"{path}: `expected_repeats` must be a whole number of at least 1, got {expected!r}")
+    if "expected_text_repeats" in cfg:
+        text_expected = cfg["expected_text_repeats"]
+        if isinstance(text_expected, bool) or not isinstance(text_expected, int) or text_expected < 1:
+            raise ValueError(f"{path}: `expected_text_repeats` must be a whole number of at least 1, got {text_expected!r}")
+    for key in ("typed_gold", "typed_gold_holdout"):
+        if key in cfg and (not isinstance(cfg[key], str) or not cfg[key]):
+            raise ValueError(f"{path}: `{key}` must name a gold file")
     return cfg
 
 # ---------------------------------------------------------------------------
@@ -1054,9 +1084,10 @@ def load_results(run_dir: Path) -> dict | None:
     if not path.is_file():
         return None
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError):
         return None
+    return data if isinstance(data, dict) else None
 
 
 def load_worksheet_listing(path: Path) -> dict[str, dict[str, bool]]:
@@ -1094,9 +1125,21 @@ def score_run(results: dict, gold: dict[str, dict], *, plate: bool, listing: dic
 
 
 def run_is_complete(results: dict | None, gold: dict) -> bool:
+    """Every gold case has a record and the runner is done: its `_partial` marker is gone (the runner writes the
+    marker while it works and drops it in the final write, so a run that still carries it can grow)."""
     if not results:
         return False
+    if results.get("_partial"):
+        return False
     return all(cid in results for cid in gold)
+
+
+def incomplete_reason(results: dict | None, gold: dict, unit: str = "answers") -> str:
+    """Why a run is not scored, for the report. A partial run is named as such, even when it holds every case."""
+    have = 0 if not results else sum(1 for cid in gold if cid in results)
+    if results is not None and results.get("_partial"):
+        return f"partial, the runner has not finished (`_partial` is set): {have} of {len(gold)} {unit}"
+    return f"incomplete: {have} of {len(gold)} {unit}"
 
 
 def tally(scored_runs: list[dict]) -> dict:
@@ -1186,28 +1229,38 @@ def score_all(
     skipped_cells: dict | None = None,
     text_gold: dict | None = None,
     plate_gold: dict | None = None,
+    holdout_gold: dict | None = None,
 ) -> dict:
     """`plate_listing`: "holder" (the main view) or "worksheet" (a plate core item the recall worksheet marks
     `n` counts as not listed; a sensitivity check, since the worksheet judges names, not what a dish holds).
     A plate run with no filled worksheet is scored with the holder view and named in `worksheet_missing`.
 
-    `skipped_cells` defaults to the fixed A and E cells; a config passes its own (or none)."""
+    `skipped_cells` defaults to the fixed A and E cells; a config passes its own (or none).
+
+    A cell that lists `holdout` runs gets a `holdout` entry: the runs scored against `holdout_gold` (default
+    `gold/gold_text_holdout.jsonl`) and the runs left out with the reason. Those runs never enter `repeats`, so
+    every number built from the typed repeats and the plates is the same with or without them."""
     text_gold = load_text_gold() if text_gold is None else text_gold
     plate_gold = load_plate_gold() if plate_gold is None else plate_gold
+    if holdout_gold is None and any(spec.get("holdout") for spec in cells.values()):
+        holdout_gold = load_text_gold(gold_path(DEFAULT_TYPED_GOLD_HOLDOUT))
     out = {"cells": {}, "skipped": {}, "worksheet_missing": []}
     for cell, spec in cells.items():
         repeats = []
         for name in spec.get("text") or []:
             res = load_results(run_path(runs_dir, name))
             if not run_is_complete(res, text_gold):
-                out["skipped"][run_display(name)] = f"incomplete: {_n_answers(res)} of {len(text_gold)} answers"
+                out["skipped"][run_display(name)] = incomplete_reason(res, text_gold)
                 continue
             repeats.append({"run": run_display(name), **score_run(res, text_gold, plate=False)})
         plate_runs = []
         for name in plate_names(spec):
             res = load_results(run_path(runs_dir, name))
             if not run_is_complete(res, plate_gold):
-                out["skipped"][run_display(name)] = f"incomplete or missing: {_n_answers(res)} of {len(plate_gold)} plates"
+                reason = f"incomplete or missing: {_n_answers(res)} of {len(plate_gold)} plates"
+                if res is not None and res.get("_partial"):
+                    reason = incomplete_reason(res, plate_gold, "plates")
+                out["skipped"][run_display(name)] = reason
                 continue
             listing = None
             if plate_listing == "worksheet":
@@ -1218,9 +1271,30 @@ def score_all(
                     out["worksheet_missing"].append(run_display(name))
             plate_runs.append({"run": run_display(name), **score_run(res, plate_gold, plate=True, listing=listing)})
         out["cells"][cell] = {"label": spec["label"], "repeats": repeats, "plate_runs": plate_runs}
+        if spec.get("holdout"):
+            out["cells"][cell]["holdout"] = score_holdout_runs(spec["holdout"], holdout_gold, runs_dir)
     for cell, (name, why) in (SKIPPED_CELLS if skipped_cells is None else skipped_cells).items():
         out["skipped"][name] = f"cell {cell}: {why}, no flags to score"
     return out
+
+
+def score_holdout_runs(names: list[str], holdout_gold: dict, runs_dir: Path) -> dict:
+    """Score the finished holdout runs of one cell. A run that is missing, unreadable, partial or short, or whose
+    records cannot be read as answers, is left out and named with the reason; it never stops the others."""
+    scored, left_out = [], []
+    for name in names:
+        res = load_results(run_path(runs_dir, name))
+        if res is None:
+            left_out.append({"run": run_display(name), "reason": "missing: no readable results.json"})
+            continue
+        if not run_is_complete(res, holdout_gold):
+            left_out.append({"run": run_display(name), "reason": incomplete_reason(res, holdout_gold)})
+            continue
+        try:
+            scored.append({"run": run_display(name), **score_run(res, holdout_gold, plate=False)})
+        except (ValueError, KeyError, TypeError, AttributeError) as exc:
+            left_out.append({"run": run_display(name), "reason": f"unreadable records: {type(exc).__name__}: {exc}"})
+    return {"listed": len(names), "runs": scored, "left_out": left_out, "cases": len(holdout_gold)}
 
 
 def cell_runs(data: dict) -> list[dict]:
@@ -1330,12 +1404,57 @@ def _fmt(x) -> str:
     return f"{x:g}"
 
 
+def rule_2_row(
+    test: str,
+    what: str,
+    per_rep: list[int],
+    failed_rep: list[int],
+    strict_extra: list[int] | None,
+    distinct: int,
+    repeats: int,
+    expected_repeats: int,
+    unit: str = "typed",
+) -> dict:
+    """The rule 2 row, for the typed set (`evaluate_rules`) and for the holdout (`evaluate_holdout_rule_2`).
+
+    FAIL on any miss. Otherwise INCOMPLETE until `expected_repeats` repeats are scored, then INCONCLUSIVE when a
+    failed call holds a clear entry, else PASS."""
+    strict_extra = strict_extra or [0] * len(per_rep)
+    no_miss = all(x == 0 for x in per_rep)
+    no_failed = all(x == 0 for x in failed_rep)
+    complete = repeats == expected_repeats
+    if not no_miss:
+        verdict = "FAIL"
+    elif not complete:
+        verdict = "INCOMPLETE"
+    elif not no_failed:
+        verdict = "INCONCLUSIVE"
+    else:
+        verdict = "PASS"
+    notes = []
+    if not complete:
+        notes.append(f"{test} holds {repeats} {unit} repeat(s), the rule needs {expected_repeats}")
+    return {
+        "rule": 2,
+        "what": what,
+        "verdict": verdict,
+        "numbers": f"misses per repeat {per_rep}; distinct entries missed {distinct}"
+        + (f"; {'; '.join(notes)}" if notes else ""),
+        "repeats": repeats,
+        "expected_repeats": expected_repeats,
+        "strict_with_failed_calls": _pf(no_miss and no_failed),
+        "failed_call_entries_per_repeat": failed_rep,
+        "strict_merge_view": f"misses per repeat {[a + b for a, b in zip(per_rep, strict_extra)]} ({_pf(all(a + b == 0 for a, b in zip(per_rep, strict_extra)))})",
+    }
+
+
 def evaluate_rules(
     nums: dict,
     test: str = "D",
     refs: tuple[str, ...] = ("B", "C"),
     nums_ws: dict | None = None,
     expected_repeats: int = DEFAULT_EXPECTED_REPEATS,
+    rule2: bool = True,
 ) -> list[dict]:
     """Rules 2 to 4. Repeats are scaled to 3 when a cell has fewer.
 
@@ -1348,40 +1467,24 @@ def evaluate_rules(
     must_flag entries of failed calls as misses on both sides. When that second reading gives a different verdict,
     the rule is INCONCLUSIVE: the answer depends on how failed calls count.
 
+    `rule2=False` leaves the typed rule 2 out (a test cell judged on the holdout only; see `load_config`).
+
     Keys a hand-built `nums` row lacks (failed calls, strict view) read as zero."""
     rules = []
     d = nums[test]
-    per_rep = d["preg_clear_typed_per_repeat"]
-    failed_rep = d["preg_clear_typed_failed_per_repeat"]
-    strict_extra = d.get("preg_clear_typed_strict_extra_per_repeat") or [0] * len(per_rep)
-    no_miss = all(x == 0 for x in per_rep)
-    no_failed = all(x == 0 for x in failed_rep)
-    complete = d["repeats"] == expected_repeats
-    if not no_miss:
-        verdict = "FAIL"
-    elif not complete:
-        verdict = "INCOMPLETE"
-    elif not no_failed:
-        verdict = "INCONCLUSIVE"
-    else:
-        verdict = "PASS"
-    notes = []
-    if not complete:
-        notes.append(f"{test} holds {d['repeats']} typed repeat(s), the rule needs {expected_repeats}")
-    rules.append(
-        {
-            "rule": 2,
-            "what": f"{test}: zero misses on the clear pregnancy must-flag typed cases, in every repeat",
-            "verdict": verdict,
-            "numbers": f"misses per repeat {per_rep}; distinct entries missed {d['preg_clear_typed_distinct']}"
-            + (f"; {'; '.join(notes)}" if notes else ""),
-            "repeats": d["repeats"],
-            "expected_repeats": expected_repeats,
-            "strict_with_failed_calls": _pf(no_miss and no_failed),
-            "failed_call_entries_per_repeat": failed_rep,
-            "strict_merge_view": f"misses per repeat {[a + b for a, b in zip(per_rep, strict_extra)]} ({_pf(all(a + b == 0 for a, b in zip(per_rep, strict_extra)))})",
-        }
-    )
+    if rule2:
+        rules.append(
+            rule_2_row(
+                test,
+                f"{test}: zero misses on the clear pregnancy must-flag typed cases, in every repeat",
+                d["preg_clear_typed_per_repeat"],
+                d["preg_clear_typed_failed_per_repeat"],
+                d.get("preg_clear_typed_strict_extra_per_repeat"),
+                d["preg_clear_typed_distinct"],
+                d["repeats"],
+                expected_repeats,
+            )
+        )
     for rule, kind, word in ((3, "preg", "pregnancy"), (4, "alg", "allergen")):
         for ref in refs:
             r = nums[ref]
@@ -1440,6 +1543,130 @@ def evaluate_rules(
                     row["worksheet_listing"] = f"{test} {wd} vs {ref} {wr} ({_pf(wd <= wr)})"
             rules.append(row)
     return rules
+
+
+# ---------------------------------------------------------------------------
+# The held-out typed set
+# ---------------------------------------------------------------------------
+
+
+def unscored_runs(cell_spec: dict, data: dict) -> list[str]:
+    """What a cell lists but did not score: the counts of typed and plate runs that are missing or unfinished."""
+    out = []
+    typed = len(cell_spec.get("text") or []) - len(data["repeats"])
+    plates = len(plate_names(cell_spec)) - len(data["plate_runs"])
+    if typed:
+        out.append(f"{typed} typed run(s)")
+    if plates:
+        out.append(f"{plates} plate run(s)")
+    return out
+
+
+def mark_incomplete_comparisons(rules: list[dict], cells: dict, scored: dict, test: str, refs: list[str]) -> None:
+    """Rules 3 and 4 compare totals, and a total over missing runs is smaller, not better. When the test cell or a
+    ref lists runs that were not scored (missing, unreadable or still being written), a PASS becomes INCOMPLETE and
+    the numbers line names them. A FAIL stays a FAIL (a miss counted is a miss), INCONCLUSIVE stays as it is.
+
+    Used only by a config that lists holdout runs, so the reports of the older configs read as before."""
+    for rule in rules:
+        if rule["rule"] not in (3, 4):
+            continue
+        gaps = []
+        for name in (test, rule["ref"]):
+            missing = unscored_runs(cells[name], scored["cells"][name])
+            if missing:
+                gaps.append(f"{name}: {', '.join(missing)} not scored")
+        if not gaps:
+            continue
+        rule["incomplete_runs"] = gaps
+        rule["numbers"] += f"; {'; '.join(gaps)}"
+        if rule["verdict"] == "PASS":
+            rule["verdict"] = "INCOMPLETE"
+
+
+def holdout_configured(scored: dict) -> bool:
+    return any("holdout" in data for data in scored["cells"].values())
+
+
+def summarise_holdout(scored: dict, expected_repeats: int) -> dict:
+    """Per cell that lists `holdout` runs: the numbers of the scored repeats, the runs left out with the reason,
+    and the mapping gaps (model items outside the gold, gold items no model item held).
+
+    Only complete runs are here; a run that is still being written never shows up as zero misses. A cell whose
+    scored repeats are fewer than `expected_repeats` is `complete: False` (INCOMPLETE in the report)."""
+    cells = {}
+    for cell, data in scored["cells"].items():
+        h = data.get("holdout")
+        if h is None:
+            continue
+        runs = h["runs"]
+        t = tally(runs)
+        per = [{"run": r["run"], **tally([r])["counts"]} for r in runs]
+        per_distinct = [tally([r])["distinct"] for r in runs]
+        outside: dict[tuple, dict] = {}
+        unheld: dict[tuple, dict] = {}
+        for r in runs:
+            for c in r["cases"]:
+                for o in c["outside_gold"]:
+                    row = outside.setdefault(
+                        (c["case"], o["name"], o["en"]),
+                        {"case": c["case"], "input": c["input"], "name": o["name"], "en": o["en"], "n_flags": 0, "runs": []},
+                    )
+                    row["n_flags"] = max(row["n_flags"], o["n_flags"])
+                    row["runs"].append(r["run"])
+                for gold_item, holders in c["mapping"].items():
+                    if not holders:
+                        row = unheld.setdefault((c["case"], gold_item), {"case": c["case"], "input": c["input"], "gold_item": gold_item, "runs": []})
+                        row["runs"].append(r["run"])
+        cells[cell] = {
+            "label": data["label"],
+            "listed": h["listed"],
+            "cases": h["cases"],
+            "scored": len(runs),
+            "expected": expected_repeats,
+            "complete": len(runs) == expected_repeats,
+            "runs": [r["run"] for r in runs],
+            "left_out": h["left_out"],
+            "preg_clear_miss_per_repeat": [r.get("preg_clear_miss", 0) for r in per],
+            "preg_clear_failed_per_repeat": [r.get("preg_clear_failed_call", 0) for r in per],
+            "preg_clear_strict_extra_per_repeat": [r.get("preg_clear_strict_extra_miss", 0) for r in per],
+            "alg_clear_miss_per_repeat": [r.get("alg_clear_miss", 0) for r in per],
+            "alg_nonclear_miss_per_repeat": [r.get("alg_nonclear_miss", 0) for r in per],
+            "alg_clear_demoted_per_repeat": [r.get("alg_clear_demoted", 0) for r in per],
+            "preg_false_alarm_per_repeat": [r.get("preg_false_alarm", 0) for r in per],
+            "alg_false_alarm_per_repeat": [r.get("alg_false_alarm", 0) for r in per],
+            "failed_calls_per_repeat": [r.get("failed_calls", 0) for r in per],
+            "outside_items_per_repeat": [r.get("outside_items", 0) for r in per],
+            "outside_items_flagged_per_repeat": [r.get("outside_items_flagged", 0) for r in per],
+            "unlisted_entries_per_repeat": [r.get("unlisted_entries_typed", 0) for r in per],
+            "preg_clear_distinct": t["distinct"].get("preg_clear_miss", 0),
+            "alg_clear_distinct": t["distinct"].get("alg_clear_miss", 0),
+            "preg_false_alarm_distinct": t["distinct"].get("preg_false_alarm", 0),
+            "alg_false_alarm_distinct": t["distinct"].get("alg_false_alarm", 0),
+            "outside_items": sorted(outside.values(), key=lambda x: (x["case"], x["name"] or "")),
+            "unheld_gold": sorted(unheld.values(), key=lambda x: (x["case"], x["gold_item"])),
+            "false_alarms": t["false_alarms"],
+            "per_repeat_distinct": per_distinct,
+        }
+    return cells
+
+
+def evaluate_holdout_rule_2(holdout: dict, test: str, expected_repeats: int) -> dict | None:
+    """Rule 2 on the holdout for the test cell, or None when the test cell lists no holdout runs."""
+    d = holdout.get(test)
+    if d is None:
+        return None
+    return rule_2_row(
+        test,
+        f"{test} holdout: zero misses on the clear pregnancy must-flag holdout cases, in every repeat",
+        d["preg_clear_miss_per_repeat"],
+        d["preg_clear_failed_per_repeat"],
+        d["preg_clear_strict_extra_per_repeat"],
+        d["preg_clear_distinct"],
+        d["scored"],
+        expected_repeats,
+        unit="holdout",
+    )
 
 
 def sanity_list(scored: dict, cells: tuple[str, ...] = ("B", "C", "D"), limit: int = 10, gold: dict | None = None) -> list[dict]:
@@ -1584,8 +1811,126 @@ def _md_escape(text: str) -> str:
     return no_long_dash(text or "").replace("|", "/").replace("\n", " ")
 
 
+def render_holdout(scored: dict, holdout: dict, rule2: dict | None, gold_name: str, test: str | None) -> list[str]:
+    """The "Holdout" block: the same per-cell numbers as the typed set, on the held-out cases, plus the mapping gaps."""
+    L = []
+    n_cases = next(iter(holdout.values()))["cases"] if holdout else 0
+    expected = next(iter(holdout.values()))["expected"] if holdout else 0
+    L.append("## Holdout")
+    L.append("")
+    L.append(f"Typed runs of `{gold_name}` ({n_cases} cases), scored with the same rules as the typed set and kept apart from")
+    L.append("it: nothing here enters the typed numbers, the plates or rules 3 and 4. Gold items are matched by word")
+    L.append("overlap with the `core` names of the holdout file; no override is written for the holdout, so a model name")
+    L.append("the words cannot place shows up as an item outside the gold and the gold item it should have held as one")
+    L.append("no model item held. A run is scored only when it is finished; a missing or partial run is INCOMPLETE. Each cell needs")
+    L.append(f"{expected} finished repeat(s).")
+    L.append("")
+    L.append("| cell | label | runs listed | scored | status | runs left out |")
+    L.append("|---|---|---|---|---|---|")
+    for cell, h in holdout.items():
+        status = "complete" if h["complete"] else f"**INCOMPLETE** ({h['scored']} of {h['expected']})"
+        left = "; ".join(f"`{x['run']}`: {_md_escape(x['reason'])}" for x in h["left_out"]) or "none"
+        L.append(f"| {cell} | {h['label']} | {h['listed']} | {', '.join(h['runs']) or 'none'} | {status} | {left} |")
+    L.append("")
+    L.append("### Rule 2 on the holdout")
+    L.append("")
+    if rule2 is None:
+        L.append(f"The test cell {test} lists no holdout runs, so rule 2 is not evaluated on the holdout.")
+    else:
+        L.append(f"{rule2['what']}: **{rule2['verdict']}**. {rule2['numbers']}. Failed calls that hold a clear pregnancy entry,")
+        L.append(f"per repeat {rule2['failed_call_entries_per_repeat']}; counted as misses: {rule2['strict_with_failed_calls']}. Strict merge view:")
+        L.append(f"{rule2['strict_merge_view']}.")
+    L.append("")
+    L.append("### Numbers per cell (one entry per scored repeat)")
+    L.append("")
+    L.append("| cell | repeats | preg clear misses | distinct | allergen clear misses | distinct | allergen not clear misses | preg false alarms | allergen false alarms | failed calls | items outside the gold (with flags) | gold entries with no holder |")
+    L.append("|---|---|---|---|---|---|---|---|---|---|---|---|")
+    for cell, h in holdout.items():
+        outside = "[" + ", ".join(f"{a} ({b})" for a, b in zip(h["outside_items_per_repeat"], h["outside_items_flagged_per_repeat"])) + "]"
+        L.append(
+            f"| {cell} | {h['scored']} | {h['preg_clear_miss_per_repeat']} | {h['preg_clear_distinct']} | "
+            f"{h['alg_clear_miss_per_repeat']} | {h['alg_clear_distinct']} | {h['alg_nonclear_miss_per_repeat']} | "
+            f"{h['preg_false_alarm_per_repeat']} | {h['alg_false_alarm_per_repeat']} | {h['failed_calls_per_repeat']} | "
+            f"{outside} | {h['unlisted_entries_per_repeat']} |"
+        )
+    L.append("")
+    L.append("### Items outside the gold, per holdout cell (mapping gaps)")
+    L.append("")
+    L.append("A model item that shares too few words with any gold food of its case. Its flags are not judged. Read the")
+    L.append("list before you read a miss as a safety result: the gold item it should have held is `unlisted`.")
+    L.append("")
+    for cell, h in holdout.items():
+        L.append(f"#### Cell {cell} ({len(h['outside_items'])} item(s), {len(h['unheld_gold'])} gold item(s) no model item held)")
+        L.append("")
+        if not h["outside_items"] and not h["unheld_gold"]:
+            L.append("None.")
+            L.append("")
+            continue
+        if h["outside_items"]:
+            L.append("| case | text | model item | english | flags on it | repeats |")
+            L.append("|---|---|---|---|---|---|")
+            for o in h["outside_items"]:
+                L.append(f"| {o['case']} | {_md_escape(o['input'])} | {_md_escape(o['name'] or '')} | {_md_escape(o['en'] or '')} | {o['n_flags']} | {len(o['runs'])} |")
+            L.append("")
+        if h["unheld_gold"]:
+            L.append("| case | text | gold item no model item held | repeats |")
+            L.append("|---|---|---|---|")
+            for u in h["unheld_gold"]:
+                L.append(f"| {u['case']} | {_md_escape(u['input'])} | {_md_escape(u['gold_item'])} | {len(u['runs'])} |")
+            L.append("")
+    L.append("### Misses, false alarms and failed calls on the holdout")
+    L.append("")
+    for cell in holdout:
+        runs = scored["cells"][cell]["holdout"]["runs"]
+        rows = []
+        for run in runs:
+            for c in run["cases"]:
+                for e in c["entries"]:
+                    if e["outcome"] in ("miss", "unlisted_miss"):
+                        rows.append((run["run"], c, e))
+        L.append(f"#### Cell {cell}: misses ({len(rows)})")
+        L.append("")
+        if rows:
+            L.append("| run | case | text | gold item | flag | clear | outcome | model item(s) and flags |")
+            L.append("|---|---|---|---|---|---|---|---|")
+            for run, c, m in rows:
+                held = "; ".join(f"{_md_escape(h['name'])} {_flags_text(h)}" for h in m["holders"]) or "not listed"
+                L.append(
+                    f"| {run} | {c['case']} | {_md_escape(c['input'])} | {_md_escape(m['item'])} | {m['kind']} {m['value']} | "
+                    f"{'yes' if m['clear'] else 'no'} | {m['outcome']} | {held} |"
+                )
+        else:
+            L.append("None.")
+        L.append("")
+        fa = Counter((r["case"], r["item"], r["kind"], r["value"], r["where"]) for r in holdout[cell]["false_alarms"])
+        L.append(f"#### Cell {cell}: false alarms on must_not_flag ({sum(fa.values())})")
+        L.append("")
+        for (cid, item, kind, value, where), k in sorted(fa.items()):
+            L.append(f"- {cid} {item}: {kind} {value} (in {where}), {k} answer(s)")
+        if not fa:
+            L.append("None.")
+        L.append("")
+        failed = [(run["run"], f) for run in runs for f in run["failed"]]
+        L.append(f"#### Cell {cell}: failed calls ({len(failed)})")
+        L.append("")
+        for run, f in failed:
+            ents = ", ".join(f"{e['kind']} {e['value']}" for e in f["must_flag"] if e["clear"])
+            L.append(f"- {run} {f['case']}: {_md_escape(str(f['finish_reason'] or f.get('error') or 'none')[:120])}; clear must_flag entries: {ents or 'none'}")
+        if not failed:
+            L.append("None.")
+        L.append("")
+    return L
+
+
 def render_markdown(
-    scored: dict, summary: dict, nums: dict, rules: list[dict], sanity: list[dict], cfg: dict | None = None
+    scored: dict,
+    summary: dict,
+    nums: dict,
+    rules: list[dict],
+    sanity: list[dict],
+    cfg: dict | None = None,
+    holdout: dict | None = None,
+    holdout_rule: dict | None = None,
 ) -> str:
     cfg = cfg or {}
     sanity_cells = tuple(cfg.get("sanity_cells") or ("B", "C", "D"))
@@ -1650,6 +1995,8 @@ def render_markdown(
                 f"{r['distinct']} | {r['listed_only']} | {r.get('worksheet_listing', '')} | {r['strict_merge_view']} |"
             )
     L.append("")
+    if holdout:
+        L.extend(render_holdout(scored, holdout, holdout_rule, cfg.get("typed_gold_holdout", DEFAULT_TYPED_GOLD_HOLDOUT), cfg.get("test")))
     L.append("## Miss counts per cell")
     L.append("")
     L.append("Typed counts are summed over the scored repeats. `per 3` scales a cell with fewer repeats to three.")
@@ -1978,11 +2325,16 @@ def render_comparisons(scored: dict, summary: dict, pairs: list) -> list[str]:
 # ---------------------------------------------------------------------------
 
 
-def map_dump(cells: dict = CELLS, runs_dir: Path = RUNS_DIR) -> None:
-    text_gold = load_text_gold()
+def map_dump(cells: dict = CELLS, runs_dir: Path = RUNS_DIR, cfg: dict | None = None) -> None:
+    cfg = cfg or {}
+    text_gold = load_text_gold(gold_path(cfg.get("typed_gold", DEFAULT_TYPED_GOLD)))
     plate_gold = load_plate_gold()
+    holdout_gold = None
+    if any(spec.get("holdout") for spec in cells.values()):
+        holdout_gold = load_text_gold(gold_path(cfg.get("typed_gold_holdout", DEFAULT_TYPED_GOLD_HOLDOUT)))
     for cell, spec in cells.items():
         runs = [(n, text_gold, False) for n in spec.get("text") or []] + [(n, plate_gold, True) for n in plate_names(spec)]
+        runs += [(n, holdout_gold, False) for n in spec.get("holdout") or []]
         for name, gold, plate in runs:
             res = load_results(run_path(runs_dir, name))
             if not run_is_complete(res, gold):
@@ -2052,12 +2404,19 @@ def run_scoring(
     *,
     text_gold: dict | None = None,
     plate_gold: dict | None = None,
+    holdout_gold_override: dict | None = None,
 ) -> dict:
     """Score the cells of `cfg` (the shape of `load_config`), evaluate rules 2 to 4 for `cfg["test"]` against
     `cfg["refs"]`, and write `<stem>.json` and `<stem>.md` when a stem is given. Returns the JSON document."""
     cells = cfg["cells"]
     skipped_cells = cfg.get("skipped_cells")
-    gold_kw = {"text_gold": text_gold, "plate_gold": plate_gold}
+    if text_gold is None and cfg.get("typed_gold"):
+        text_gold = load_text_gold(gold_path(cfg["typed_gold"]))
+    has_holdout = any(spec.get("holdout") for spec in cells.values())
+    holdout_gold = None
+    if has_holdout:
+        holdout_gold = load_text_gold(gold_path(cfg.get("typed_gold_holdout", DEFAULT_TYPED_GOLD_HOLDOUT))) if holdout_gold_override is None else holdout_gold_override
+    gold_kw = {"text_gold": text_gold, "plate_gold": plate_gold, "holdout_gold": holdout_gold}
     scored = score_all(cells, runs_dir, skipped_cells=skipped_cells, **gold_kw)
     for name, why in (cfg.get("skipped") or {}).items():
         scored["skipped"][name] = why
@@ -2068,13 +2427,23 @@ def run_scoring(
     missing = set(scored_ws["worksheet_missing"])
     for cell, data in scored_ws["cells"].items():
         nums_ws[cell]["worksheet_missing"] = sorted(r["run"] for r in data["plate_runs"] if r["run"] in missing)
+    expected = cfg.get("expected_repeats", DEFAULT_EXPECTED_REPEATS)
+    test_spec = cells[cfg["test"]]
+    # A test cell with holdout runs and no typed runs is judged by rule 2 on the holdout alone.
+    typed_rule_2 = not (test_spec.get("holdout") and not test_spec.get("text"))
     rules = evaluate_rules(
         nums,
         test=cfg["test"],
         refs=tuple(cfg["refs"]),
         nums_ws=nums_ws,
-        expected_repeats=cfg.get("expected_repeats", DEFAULT_EXPECTED_REPEATS),
+        expected_repeats=cfg.get("expected_text_repeats", expected),
+        rule2=typed_rule_2,
     )
+    holdout = holdout_rule = None
+    if holdout_configured(scored):
+        mark_incomplete_comparisons(rules, cells, scored, cfg["test"], cfg["refs"])
+        holdout = summarise_holdout(scored, expected)
+        holdout_rule = evaluate_holdout_rule_2(holdout, cfg["test"], expected)
     gold = None
     if text_gold is not None or plate_gold is not None:
         gold = {**(text_gold or {}), **(plate_gold or {})}
@@ -2104,10 +2473,29 @@ def run_scoring(
         "sanity": sanity,
         "scored": compact_scored(scored),
     }
+    if holdout is not None:
+        doc["holdout"] = {
+            "gold": cfg.get("typed_gold_holdout", DEFAULT_TYPED_GOLD_HOLDOUT),
+            "expected_repeats": expected,
+            "rule_2": holdout_rule,
+            "cells": {cell: {k: v for k, v in h.items() if k != "false_alarms"} for cell, h in holdout.items()},
+            "scored": compact_scored(
+                {
+                    "skipped": {},
+                    "cells": {
+                        cell: {"label": data["label"], "repeats": data["holdout"]["runs"], "plate_runs": []}
+                        for cell, data in scored["cells"].items()
+                        if "holdout" in data
+                    },
+                }
+            ),
+        }
     if stem is not None:
         stem.parent.mkdir(parents=True, exist_ok=True)
         Path(f"{stem}.json").write_text(no_long_dash(json.dumps(doc, indent=1, ensure_ascii=False)) + "\n", encoding="utf-8")
-        md = render_markdown(scored, summary, nums, rules, sanity, cfg if cfg.get("config_path") else None)
+        md = render_markdown(
+            scored, summary, nums, rules, sanity, cfg if cfg.get("config_path") else None, holdout=holdout, holdout_rule=holdout_rule
+        )
         if cfg.get("config_path"):
             kept = keep_section(Path(f"{stem}.md"), READING_HEADING)
             md = md.replace(f"\n{READING_PLACE}\n", "\n" + (kept or f"{READING_HEADING}\n\n(not written yet)\n") + "\n")
@@ -2135,7 +2523,7 @@ def main(argv: list[str] | None = None) -> int:
     else:
         cfg = {"cells": CELLS, "test": DEFAULT_TEST, "refs": list(DEFAULT_REFS), "expected_repeats": DEFAULT_EXPECTED_REPEATS}
     if args.map_dump:
-        map_dump(cfg["cells"], runs_dir)
+        map_dump(cfg["cells"], runs_dir, cfg)
         return 0
     if args.out:
         stem = Path(args.out)
@@ -2150,6 +2538,18 @@ def main(argv: list[str] | None = None) -> int:
         if "with_nonclear" in r:
             print(f"    {r['with_nonclear']}")
             print(f"    {r['with_failed_calls']}")
+    if "holdout" in doc:
+        rule = doc["holdout"]["rule_2"]
+        print(f"holdout rule 2: {rule['verdict']}  {rule['numbers']}" if rule else "holdout rule 2: the test cell lists no holdout runs")
+        for cell, h in doc["holdout"]["cells"].items():
+            state = "complete" if h["complete"] else f"INCOMPLETE ({h['scored']} of {h['expected']} repeats)"
+            print(
+                f"    holdout {cell}: {state}; preg clear misses {h['preg_clear_miss_per_repeat']}, "
+                f"alg clear misses {h['alg_clear_miss_per_repeat']}, failed calls {h['failed_calls_per_repeat']}, "
+                f"items outside the gold {h['outside_items_per_repeat']}"
+            )
+            for x in h["left_out"]:
+                print(f"        left out {x['run']}: {x['reason']}")
     print(f"wrote {stem}.json and {stem}.md")
     return 0
 

@@ -382,6 +382,24 @@ last key is the number of typed repeats rule 2 needs, 3 when absent. It must be 
   failed call is a call with no answer: an HTTP error, a truncated answer, or an `{"error": ...}` record.
   A schema-valid answer with an empty `foods` list is an answer, not a failed call.
 
+A run that is missing, unreadable, or still being written is never scored. The runner writes
+`"_partial": true` into `results.json` while it works and drops it in the final write, so a run that
+carries it, or that holds fewer answers than the gold, is named in the report with the reason and counted
+as not scored. This holds for typed runs, plate runs and holdout runs alike.
+
+**The held-out typed set.** A cell may list `holdout`, a list of run directories scored against a second
+typed gold, `gold/gold_text_holdout.jsonl` (key `typed_gold_holdout`; `typed_gold` names the gold of the
+cell's `text` runs, default `gold/gold_text.jsonl`). The runs get their own "Holdout" block: clear
+pregnancy misses per repeat, allergen misses, false alarms on `must_not_flag`, failed calls, the items
+outside the gold with the gold items no model item held (the mapping gaps), and rule 2 for the test cell.
+Nothing in the block enters the typed numbers, the plates, or rules 3 and 4. The gold items match by word
+overlap with the `core` names of the holdout file; no override is written for a holdout case, so read the
+mapping gaps before you read a miss as a safety result. With holdout keys in the file, `expected_repeats`
+counts the holdout repeats and `expected_text_repeats` (default: `expected_repeats`) counts the repeats of
+the main typed runs. A test cell with holdout runs and no `text` runs gets rule 2 on the holdout only. Rules 3
+and 4 turn from `PASS` to `INCOMPLETE` when the test cell or the ref lists runs that were not scored. A file
+with none of the new keys reads and reports exactly as before. See `configs/score-flags-v4.json`.
+
 Rules 3 and 4 pass only when two comparisons both pass: the clear entries alone, and all entries (clear
 plus `clear: false`). Both numbers are printed on the rule row, with a third line that counts failed calls
 as misses. Per cell the report also prints three counts that guard against a new model's naming turning

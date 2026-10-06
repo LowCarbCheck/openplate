@@ -1,0 +1,118 @@
+{
+ "title": "EU switch: the v4 prompt cells, typed holdout and plates",
+ "intro": [
+  "Candidate F25v4 (2.5 flash, v4 prompt) against C3v4 (3.8 minimal, v4 prompt) and B (3.8 default reasoning,",
+  "production prompt). G31 and O6 are further v4 cells, listed without a verdict. C3 (3.8 minimal, v3 prompt) is a",
+  "reference for the main typed set. The Holdout block scores the held-out typed set (`gold/gold_text_holdout.jsonl`,",
+  "36 cases) with three repeats per cell, and rule 2 is evaluated there for F25v4. The main typed set has one run per",
+  "v4 cell, so `expected_text_repeats` is 1. F25v4 has no main typed run. A run that is missing or still being written",
+  "is named INCOMPLETE and is not scored. Runs named `worktree:directory` live in a sibling worktree."
+ ],
+ "refs": [
+  "C3v4",
+  "B"
+ ],
+ "cells": {
+  "C3v4": {
+   "label": "3.8, reasoning minimal, v4 prompt",
+   "text": [
+    "v4-text-eu-cell-38-minimal-newprompt-r1"
+   ],
+   "plates": [
+    "v4-eu-cell-38-minimal-newprompt-r1"
+   ],
+   "holdout": [
+    "v4-holdout-eu-cell-38-minimal-newprompt-r1",
+    "v4-holdout-eu-cell-38-minimal-newprompt-r2",
+    "v4-holdout-eu-cell-38-minimal-newprompt-r3"
+   ]
+  },
+  "F25v4": {
+   "label": "2.5 flash, google-vertex/eu, minimal, v4 prompt",
+   "plates": [
+    "v4-eu-cell-25-flash-newprompt-r1",
+    "v4-eu-cell-25-flash-newprompt-r2",
+    "v4-eu-cell-25-flash-newprompt-r3"
+   ],
+   "holdout": [
+    "v4-holdout-eu-cell-25-flash-newprompt-r1",
+    "v4-holdout-eu-cell-25-flash-newprompt-r2",
+    "v4-holdout-eu-cell-25-flash-newprompt-r3"
+   ]
+  },
+  "G31": {
+   "label": "3.1 flash lite, minimal, v4 prompt",
+   "text": [
+    "v4-text-eu-cell-31-lite-newprompt-r1"
+   ],
+   "plates": [
+    "v4-eu-cell-31-lite-newprompt-r1",
+    "v4-eu-cell-31-lite-newprompt-r2",
+    "v4-eu-cell-31-lite-newprompt-r3"
+   ],
+   "holdout": [
+    "v4-holdout-eu-cell-31-lite-newprompt-r1",
+    "v4-holdout-eu-cell-31-lite-newprompt-r2",
+    "v4-holdout-eu-cell-31-lite-newprompt-r3"
+   ]
+  },
+  "O6": {
+   "label": "gpt 6 luna, v4 prompt",
+   "text": [
+    "v4-text-eu-cell-gpt6-luna-newprompt-r1"
+   ],
+   "plates": [
+    "v4-eu-cell-gpt6-luna-newprompt-r1",
+    "v4-eu-cell-gpt6-luna-newprompt-r2",
+    "v4-eu-cell-gpt6-luna-newprompt-r3"
+   ],
+   "holdout": [
+    "v4-holdout-eu-cell-gpt6-luna-newprompt-r1",
+    "v4-holdout-eu-cell-gpt6-luna-newprompt-r2",
+    "v4-holdout-eu-cell-gpt6-luna-newprompt-r3"
+   ]
+  },
+  "B": {
+   "label": "3.8, default reasoning, production prompt",
+   "text": [
+    "../../../../../eval-harness/apps/inference/eval/runs/text-eu-cell-38-newprompt-r1",
+    "../../../../../eval-harness/apps/inference/eval/runs/text-eu-cell-38-newprompt-r2",
+    "../../../../../eval-harness/apps/inference/eval/runs/text-eu-cell-38-newprompt-r3"
+   ],
+   "plates": [
+    "../../../../../eval-harness/apps/inference/eval/runs/eu-cell-38-newprompt"
+   ]
+  },
+  "C3": {
+   "label": "3.8, reasoning minimal, v3 prompt",
+   "text": [
+    "../../../../../prompt-v3/apps/inference/eval/runs/v3-text-eu-cell-38-minimal-newprompt-r1",
+    "../../../../../prompt-v3/apps/inference/eval/runs/v3-text-eu-cell-38-minimal-newprompt-r2",
+    "../../../../../prompt-v3/apps/inference/eval/runs/v3-text-eu-cell-38-minimal-newprompt-r3"
+   ],
+   "plates": [
+    "../../../../../prompt-v3/apps/inference/eval/runs/v3-eu-cell-38-minimal-newprompt",
+    "../../../../../prompt-v3/apps/inference/eval/runs/v3-eu-cell-38-minimal-newprompt-r2"
+   ]
+  }
+ },
+ "sanity_cells": [
+  "B",
+  "C3",
+  "C3v4"
+ ],
+ "category_cells": [
+  "B",
+  "C3",
+  "C3v4",
+  "F25v4",
+  "G31",
+  "O6"
+ ],
+ "typed_gold": "gold/gold_text.jsonl",
+ "typed_gold_holdout": "gold/gold_text_holdout.jsonl",
+ "expected_repeats": 3,
+ "expected_text_repeats": 1,
+ "test": "F25v4",
+ "out": "runs/SCORE-FLAGS-V4"
+}
