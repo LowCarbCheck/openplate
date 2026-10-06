@@ -399,6 +399,18 @@ def normalize_item_name(name: object) -> str:
     return " ".join(str(name).lower().split())
 
 
+_GOLD_DASH_RE = re.compile(r"\s*[\u2013\u2014]\s*|\s+-\s+")
+
+
+def normalize_gold_name(name: object) -> str:
+    """Gold row key: an en dash, an em dash or " - " reads as ", ", then as normalize_item_name.
+
+    A filled sheet replaces the dash some gold labels carry with a comma, so an
+    exact key would miss those rows. Hyphens inside a word ("stir-fried") stay.
+    """
+    return normalize_item_name(_GOLD_DASH_RE.sub(", ", str(name)))
+
+
 def parse_verdict(cell: str) -> str | None:
     """`Y`, `Y merged` or `n` (any case); everything else, `Y?` and blank included, is None."""
     text = " ".join(cell.replace("*", "").replace("`", "").split()).lower()
@@ -533,11 +545,11 @@ class VerdictMemory:
         self.uncertain = 0
 
     def add(self, plate: str, gold: str, item: str, memory: Memory) -> None:
-        key = (plate, normalize_item_name(gold), normalize_item_name(item))
+        key = (plate, normalize_gold_name(gold), normalize_item_name(item))
         self.entries.setdefault(key, []).append(memory)
 
     def lookup(self, plate: str, gold: str, item: str) -> list[Memory]:
-        return self.entries.get((plate, normalize_item_name(gold), normalize_item_name(item)), [])
+        return self.entries.get((plate, normalize_gold_name(gold), normalize_item_name(item)), [])
 
 
 def discover_sheets(
@@ -795,7 +807,7 @@ def compare_plan_with_filled(plan: PrefillPlan, filled_text: str) -> dict:
         for position, column in enumerate(plate.columns):
             rows = filled.setdefault((plate.plate, column), {})
             for row in plate.rows:
-                rows.setdefault(normalize_item_name(row.gold), row.cells[position])
+                rows.setdefault(normalize_gold_name(row.gold), row.cells[position])
 
     result: dict = {
         "rows": 0, "unscorable": 0, "decided": 0, "right": 0, "wrong": 0, "merged_differs": 0,
@@ -808,7 +820,7 @@ def compare_plan_with_filled(plan: PrefillPlan, filled_text: str) -> dict:
             if decision.kind == "needs":
                 result["needs"] += 1
                 continue
-            cell = theirs_by_gold.get(normalize_item_name(decision.gold))
+            cell = theirs_by_gold.get(normalize_gold_name(decision.gold))
             theirs = parse_verdict(cell) if cell is not None else None
             if theirs is None:
                 result["unscorable"] += 1

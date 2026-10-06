@@ -96,6 +96,48 @@ class NormalisationTest(unittest.TestCase):
         self.assertNotEqual(scorecard.normalize_item_name("fried egg"), scorecard.normalize_item_name("fried eggs"))
         self.assertNotEqual(scorecard.normalize_item_name("Greek salad"), scorecard.normalize_item_name("greek-salad"))
 
+    def test_gold_key_reads_dashes_as_a_comma(self) -> None:
+        key = scorecard.normalize_gold_name
+        expected = "battered fried fish (cod), partly eaten"
+        for spelling in (
+            "battered fried fish (cod) \u2014 partly eaten",
+            "Battered fried fish (cod) \u2013 partly  eaten",
+            "battered fried fish (cod) - partly eaten",
+            "battered fried fish (cod), partly eaten",
+        ):
+            self.assertEqual(key(spelling), expected, spelling)
+        # control: a hyphen inside a word and a different row stay different
+        self.assertNotEqual(key("stir-fried rice"), key("stir, fried rice"))
+        self.assertNotEqual(key("fried fish, partly eaten"), key("fried fish, fully eaten"))
+
+    def test_dashed_gold_row_is_matched_from_a_comma_sheet(self) -> None:
+        ws = Workspace(self)
+        dashed = "battered fried fish (cod) \u2014 partly eaten"
+        ws.write_sheet(
+            "src",
+            sheet(
+                {"41": ["Fried fish"]},
+                {"41": [("battered fried fish (cod), partly eaten", "Y", '"Fried fish" is the cod')]},
+            ),
+        )
+        memory = memory_from(ws)
+        hit = scorecard.decide_row(memory, "41", dashed, ["Fried fish"])
+        self.assertEqual((hit.kind, hit.cell), ("Y", "Y"))
+        self.assertIn("src", hit.notes)
+        # control: a different gold row on the same plate is still not matched
+        other = scorecard.decide_row(memory, "41", "chips", ["Fried fish"])
+        self.assertEqual(other.kind, "needs")
+
+    def test_check_against_pairs_a_dashed_gold_row_with_its_comma_row(self) -> None:
+        ws = Workspace(self)
+        dashed = "slice of cake \u2013 partly eaten"
+        ws.write_sheet("src", sheet({"48": ["Cake"]}, {"48": [("slice of cake, partly eaten", "Y", '"Cake"')]}))
+        memory = memory_from(ws)
+        plan = {("48", "production"): [scorecard.decide_row(memory, "48", dashed, ["Cake"])]}
+        filled = sheet({"48": ["Cake"]}, {"48": [("slice of cake, partly eaten", "Y", '"Cake"')]})
+        result = scorecard.compare_plan_with_filled(plan, filled)
+        self.assertEqual((result["decided"], result["right"], result["unscorable"]), (1, 1, 0))
+
     def test_verdict_parsing(self) -> None:
         self.assertEqual(scorecard.parse_verdict(" Y "), "Y")
         self.assertEqual(scorecard.parse_verdict("y  merged"), "Y merged")
