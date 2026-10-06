@@ -7,6 +7,7 @@
       "use": "Every managed request today: plate photo, typed words, pantry, recipes.",
       "model": "google/gemini-3.8-flash",
       "routing": { "zdr": true, "only": ["google-vertex"] },
+      "reasoningEffort": "minimal",
       "price": {
         "inputUsdPerMillion": 0.75,
         "outputUsdPerMillion": 3.75,

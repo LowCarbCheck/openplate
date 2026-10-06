@@ -217,10 +217,21 @@ test('the shipped file gives the model and the provider block Bay production giv
       only: ['google-vertex'],
       allow_fallbacks: false,
     });
-    // The WHOLE body, byte for byte, not only the two fields named above.
-    assert.equal(JSON.stringify(fromFile), JSON.stringify(forwarded({ tiers: production, body })));
+    // The WHOLE body, byte for byte, not only the two fields named above. The
+    // one field left out is `reasoning`: the shipped file sets a reasoning
+    // effort (ADR 0025) that the legacy env has no way to say, and the test
+    // for that field is further down.
+    assert.equal(
+      JSON.stringify(withoutReasoning(fromFile)),
+      JSON.stringify(withoutReasoning(forwarded({ tiers: production, body }))),
+    );
   }
 });
+
+/** The body without its `reasoning` field, the one field the shipped tier file sets and the legacy env cannot. */
+function withoutReasoning(body: JsonObject): JsonObject {
+  return Object.fromEntries(Object.entries(body).filter(([field]) => field !== 'reasoning'));
+}
 
 test('CONTROL: the model read from the file is a real id, and the equality fails for another id', () => {
   assert.match(SHIPPED_MODEL, /^[a-z0-9-]+\/[\w.:-]+$/);
@@ -403,6 +414,73 @@ test('CONTROL: with no reasoningEffort the caller reasoning is only capped, as b
   });
   assert.equal('reasoning' in forwarded({ tiers: plain, body: bareBody }), false);
   assert.deepEqual(forwarded({ tiers: plain, body: effortBody }).reasoning, { effort: 'low' });
+});
+
+/**
+ * The `reasoningEffort` of the standard tier in the shipped `ai-tiers.json`,
+ * read with `JSON.parse` straight from the file, not through the loader under
+ * test. `null` when the file does not set one.
+ */
+function readShippedStandardReasoningEffort(): string | null {
+  const path = fileURLToPath(new URL('../../ai-tiers.json', import.meta.url));
+  // SAFETY: the tier file is a JSON file this repository ships.
+  const file = JSON.parse(readFileSync(path, 'utf8')) as JsonValue;
+  return asString(asObject(asObject(asObject(file)?.tiers)?.standard)?.reasoningEffort);
+}
+
+test('the shipped tier file sets a reasoning effort, and the default tier forwards exactly that effort', () => {
+  const shippedEffort = readShippedStandardReasoningEffort();
+  // A removed line fails here, not in the assertions below, which would then compare null with null.
+  assert.notEqual(shippedEffort, null, 'ai-tiers.json standard tier sets no reasoningEffort');
+
+  const bundled = fileTiers({ file: BUNDLED_MODEL_TIERS });
+  assert.equal(standardOf(bundled).reasoningEffort, shippedEffort);
+
+  // photoBody asks for reasoning.max_tokens 99999, effort high and exclude true.
+  const fromPhoto = forwarded({ tiers: bundled, body: photoBody });
+  assert.deepEqual(fromPhoto.reasoning, { effort: shippedEffort, exclude: true });
+  assert.equal('max_tokens' in (asObject(fromPhoto.reasoning) ?? {}), false);
+
+  // A body with no reasoning gets the effort written in.
+  assert.deepEqual(forwarded({ tiers: bundled, body: bareBody }).reasoning, { effort: shippedEffort });
+
+  // The same two bodies for a request that names a schema, so the default tier answers by resolution too.
+  const asked = forwarded({
+    tiers: bundled,
+    body: bodyAskingFor('plate_identification', { reasoning: { max_tokens: 500, effort: 'high' } }),
+  });
+  assert.deepEqual(asked.reasoning, { effort: shippedEffort });
+});
+
+test('CONTROL: the same bodies through a tier with no reasoningEffort keep the caller reasoning and get no effort', () => {
+  const shippedEffort = readShippedStandardReasoningEffort();
+  assert.notEqual(shippedEffort, null, 'ai-tiers.json standard tier sets no reasoningEffort');
+
+  // The shipped file with only the effort taken out.
+  const shipped = asObject(BUNDLED_MODEL_TIERS);
+  const shippedStandard = asObject(asObject(shipped?.tiers)?.standard);
+  if (shipped === null || shippedStandard === null) throw new Error('ai-tiers.json has no standard tier');
+  const { reasoningEffort: _removed, ...standardWithoutEffort } = shippedStandard;
+  const withoutEffort = fileTiers({
+    file: { ...shipped, tiers: { ...asObject(shipped.tiers), standard: standardWithoutEffort } },
+  });
+  assert.equal(standardOf(withoutEffort).reasoningEffort, null);
+
+  // The caller's reasoning is capped (99999 becomes the ceiling) and otherwise kept, field for field.
+  const fromPhoto = forwarded({ tiers: withoutEffort, body: photoBody });
+  assert.equal(
+    JSON.stringify(fromPhoto.reasoning),
+    JSON.stringify({ max_tokens: CEILING, effort: 'high', exclude: true }),
+  );
+  assert.equal('reasoning' in forwarded({ tiers: withoutEffort, body: bareBody }), false);
+  assert.equal(
+    JSON.stringify(forwarded({ tiers: withoutEffort, body: effortBody }).reasoning),
+    JSON.stringify(effortBody.reasoning),
+  );
+
+  // And the shipped file does differ from it, so the two arms are not the same arm.
+  const withEffort = forwarded({ tiers: fileTiers({ file: BUNDLED_MODEL_TIERS }), body: photoBody });
+  assert.notEqual(JSON.stringify(withEffort.reasoning), JSON.stringify(fromPhoto.reasoning));
 });
 
 test('a tier output cap lowers the ceiling and can never raise it', () => {
