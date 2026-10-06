@@ -1,0 +1,77 @@
+{
+ "title": "EU switch: safety flags of the v3 prompt cells against the production prompt",
+ "out": "runs/EU-FLAG-SCORING-V3-2026-10-06",
+ "intro": [
+  "The candidate is D3: 3.5 flash lite on the EU host, reasoning minimal, with the v3 prompt (commit a5e7690f, the",
+  "prompts list the foods behind each pregnancy category; `prompt.ts` blob cc374d3e). Rules 2 to 4 judge D3 against",
+  "two 3.8 readings: B (3.8 default reasoning, production prompt, blob ab221491) and C3 (3.8 minimal, v3 prompt). D and",
+  "C (production prompt) are restated from `EU-FLAG-SCORING-2026-10-06.md`. The plate-only cells B2, C2 and D2 used",
+  "the v2 photo prompt (blob 56cf88f3: every separate food its own item, same flag words as production). The typed",
+  "prompt of v2 is the production one, so typed D against D3 isolates the v3 flag words, and plates D2 against D3 do",
+  "the same for photos. Runs named `worktree:directory` live in that sibling worktree."
+ ],
+ "test": "D3",
+ "refs": ["B", "C3"],
+ "cells": {
+  "B": {
+   "label": "3.8, default reasoning, production prompt",
+   "text": [
+    "../../../../../eval-harness/apps/inference/eval/runs/text-eu-cell-38-newprompt-r1",
+    "../../../../../eval-harness/apps/inference/eval/runs/text-eu-cell-38-newprompt-r2",
+    "../../../../../eval-harness/apps/inference/eval/runs/text-eu-cell-38-newprompt-r3"
+   ],
+   "plates": ["../../../../../eval-harness/apps/inference/eval/runs/eu-cell-38-newprompt"]
+  },
+  "C": {
+   "label": "3.8, reasoning minimal, production prompt",
+   "text": [
+    "../../../../../eval-harness/apps/inference/eval/runs/text-eu-cell-38-minimal-newprompt-r1",
+    "../../../../../eval-harness/apps/inference/eval/runs/text-eu-cell-38-minimal-newprompt-r2",
+    "../../../../../eval-harness/apps/inference/eval/runs/text-eu-cell-38-minimal-newprompt-r3"
+   ],
+   "plates": ["../../../../../eval-harness/apps/inference/eval/runs/eu-cell-38-minimal-newprompt"]
+  },
+  "D": {
+   "label": "3.5 flash lite EU, minimal, production prompt",
+   "text": [
+    "../../../../../eval-harness/apps/inference/eval/runs/text-eu-cell-35-eu-newprompt-r1",
+    "../../../../../eval-harness/apps/inference/eval/runs/text-eu-cell-35-eu-newprompt-r2",
+    "../../../../../eval-harness/apps/inference/eval/runs/text-eu-cell-35-eu-newprompt-r3"
+   ],
+   "plates": ["../../../../../eval-harness/apps/inference/eval/runs/eu-cell-35-eu-newprompt"]
+  },
+  "C3": {
+   "label": "3.8, reasoning minimal, v3 prompt",
+   "text": [
+    "v3-text-eu-cell-38-minimal-newprompt-r1",
+    "v3-text-eu-cell-38-minimal-newprompt-r2",
+    "v3-text-eu-cell-38-minimal-newprompt-r3"
+   ],
+   "plates": ["v3-eu-cell-38-minimal-newprompt", "v3-eu-cell-38-minimal-newprompt-r2"]
+  },
+  "D3": {
+   "label": "3.5 flash lite EU, minimal, v3 prompt",
+   "text": [
+    "v3-text-eu-cell-35-eu-newprompt-r1",
+    "v3-text-eu-cell-35-eu-newprompt-r2",
+    "v3-text-eu-cell-35-eu-newprompt-r3"
+   ],
+   "plates": ["v3-eu-cell-35-eu-newprompt", "v3-eu-cell-35-eu-newprompt-r2", "v3-eu-cell-35-eu-newprompt-r3"]
+  },
+  "B2": {
+   "label": "3.8, default reasoning, v2 photo prompt, plates only",
+   "plates": ["../../../../../prompt-v2/apps/inference/eval/runs/v2-eu-cell-38-newprompt"]
+  },
+  "C2": {
+   "label": "3.8, reasoning minimal, v2 photo prompt, plates only",
+   "plates": ["../../../../../prompt-v2/apps/inference/eval/runs/v2-eu-cell-38-minimal-newprompt"]
+  },
+  "D2": {
+   "label": "3.5 flash lite EU, minimal, v2 photo prompt, plates only",
+   "plates": ["../../../../../prompt-v2/apps/inference/eval/runs/v2-eu-cell-35-eu-newprompt"]
+  }
+ },
+ "sanity_cells": ["B", "C3", "D3"],
+ "category_cells": ["B", "C", "D", "C3", "D3"],
+ "compare": [["D", "D3"], ["C", "C3"], ["D2", "D3"], ["C2", "C3"]]
+}
