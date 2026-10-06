@@ -138,6 +138,7 @@ Significant decisions — anything that constrains future work, locks in a trade
 | [0022](.adr/0022-the-push-gate-runs-a-scoped-browser-tier.md) | The push gate runs a scoped browser tier, the release gate and the nightly run the full one | Accepted |
 | [0023](.adr/0023-the-device-lock-names-its-owner.md) | The device lock names its owner, and another account erases first | Accepted   |
 | [0024](.adr/0024-a-feature-gate-is-a-door-and-the-proxy-is-the-only-lock.md) | A feature gate is a door, and the AI proxy is the only lock | Accepted   |
+| [0025](.adr/0025-the-managed-model-stays-on-gemini-3-8-flash-on-the-global-host.md) | The managed model stays on Gemini 3.8 Flash on the global host | Accepted   |
 
 ADR-0001, ADR-0002 and ADR-0003 are historical record only — the HTTP API, the data-migration runner and the multi-tenancy they describe have all been removed. See their superseded-status notes for what replaced them.
 

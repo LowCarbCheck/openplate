@@ -50,3 +50,4 @@ A changed decision gets a new ADR that supersedes the old one and sets the old o
 | [0022](0022-the-push-gate-runs-a-scoped-browser-tier.md) | The push gate runs a scoped browser tier, the release gate and the nightly run the full one | Accepted |
 | [0023](0023-the-device-lock-names-its-owner.md) | The device lock names its owner, and another account erases first | Accepted |
 | [0024](0024-a-feature-gate-is-a-door-and-the-proxy-is-the-only-lock.md) | A feature gate is a door, and the AI proxy is the only lock | Accepted |
+| [0025](0025-the-managed-model-stays-on-gemini-3-8-flash-on-the-global-host.md) | The managed model stays on Gemini 3.8 Flash on the global host | Accepted |
