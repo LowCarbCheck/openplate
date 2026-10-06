@@ -5,13 +5,21 @@ Run from anywhere:
 
     python3 apps/inference/eval/gold/check_new_gold.py            # checks this folder
     python3 check_new_gold.py --dir /some/copy/of/gold            # checks a copy
+    python3 check_new_gold.py --prompt <path to another prompt.ts> # adds a prompt to the leakage check
 
 Exits 1 when any check fails, 0 otherwise. It prints the coverage table that
 proves the minimums in GOLD-NOTES.md.
 
 What it checks:
-  - the shape of gold_text.jsonl, gold_plate_flags.json, gold_kcal_text.jsonl,
-    gold_pantry.jsonl and gold_recipes.jsonl;
+  - the shape of gold_text.jsonl, gold_text_holdout.jsonl, gold_plate_flags.json,
+    gold_kcal_text.jsonl, gold_pantry.jsonl and gold_recipes.jsonl;
+  - the held-out typed set (--holdout, default gold_text_holdout.jsonl): ids
+    h001 and up, 30 to 36 cases, at least 3 clear must_flag cases for each
+    pregnancy category, at least 6 must_not_flag cases, and NO LEAKAGE: no word
+    of an input may appear in the prompt texts (the v3 prompt.ts and
+    translations.ts of this tree, plus every --prompt), and no word of the
+    prompts' flag lines may hide inside an input word, except the adjudicated
+    false matches in COMPOUND_FALSE_MATCHES;
   - every flag value is inside the app's vocabulary (constants below);
   - every flag names an item of its case (core, or optional for if_listed);
   - no entry is both required and forbidden, or both acceptable and forbidden;
@@ -24,6 +32,7 @@ What it checks:
 import argparse
 import json
 import os
+import re
 import sys
 
 # Copied from apps/app/app/services/vision/schema.ts (PREGNANCY_CATEGORIES and
@@ -54,10 +63,34 @@ MIN_PER_ALLERGEN = 2
 MIN_MUST_NOT_CASES = 12
 
 LONG_DASHES = (chr(0x2013), chr(0x2014))
+HOLDOUT_FILE = "gold_text_holdout.jsonl"
 NEW_FILES = [
-    "gold_text.jsonl", "gold_plate_flags.json", "gold_kcal_text.jsonl",
+    "gold_text.jsonl", HOLDOUT_FILE, "gold_plate_flags.json", "gold_kcal_text.jsonl",
     "gold_pantry.jsonl", "gold_recipes.jsonl", "GOLD-NOTES.md", "check_new_gold.py",
 ]
+
+# The held-out typed set (GOLD-NOTES.md section 10).
+HOLDOUT_MIN_CASES, HOLDOUT_MAX_CASES = 30, 36
+HOLDOUT_MIN_MUST_NOT_CASES = 6
+HOLDOUT_FOCUS = ("pregnancy", "allergen", "control")
+# The prompt texts a holdout input must not share a word with. prompt.ts holds
+# both system prompts; translations.ts writes the NAMES paragraph into them.
+VISION_DIR = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "app", "app", "services", "vision"))
+DEFAULT_PROMPTS = [os.path.join(VISION_DIR, "prompt.ts"), os.path.join(VISION_DIR, "translations.ts")]
+# Words of an input that name no food: articles, joins, numbers, units and
+# portion words. Every one of them occurs in the prompts' own prose.
+LEAK_STOP_WORDS = {
+    "a", "an", "and", "of", "on", "in", "with", "then", "can", "g", "half", "large", "portion", "mit",
+}
+# An input word that holds a flag-line word without naming that food. Each was
+# read by hand (input word, prompt word): the reason is the note.
+COMPOUND_FALSE_MATCHES = {
+    ("rucola", "cola"): "rucola is rocket, a leaf; no cola",
+    ("rinderfilet", "rind"): "Rind is German for beef; the prompt's rind is a cheese rind",
+    ("oatcakes", "cake"): "oatcakes are baked oat biscuits; the prompt's cake is raw cake dough",
+    ("pissaladière", "salad"): "an onion tart; salad is not in it",
+    ("tilefish", "fish"): "the allergen word fish, which a typed fish case names anyway; high-mercury-fish there is clear:false",
+}
 
 
 class Report:
@@ -136,7 +169,7 @@ def check_text(path, rep, ids):
     required = ["id", "lang", "input", "core", "grams", "must_flag", "may_flag", "must_not_flag", "clear", "note"]
     for row in rows:
         cid = row.get("id", "?")
-        where = f"gold_text.jsonl {cid}"
+        where = f"{os.path.basename(path)} {cid}"
         for f in required:
             if f not in row:
                 rep.fail(where, f"missing field '{f}'")
@@ -198,6 +231,66 @@ def check_text(path, rep, ids):
         if row.get("must_not_flag"):
             must_not_cases.add(cid)
     return rows, must_cov, must_not_cases, langs
+
+
+def words(text):
+    """Lower-case letter runs, any script. A hyphen or an apostrophe splits a word."""
+    return set(re.findall(r"[^\W\d_]+", text.lower()))
+
+
+def prompt_words(paths, rep):
+    """(every word of the prompt files, the words of 4+ letters on their flag lines)."""
+    vocab, flag_words = set(), set()
+    for path in paths:
+        if not os.path.exists(path):
+            rep.fail("leakage", f"cannot find the prompt file {path}")
+            continue
+        with open(path, encoding="utf-8") as fh:
+            text = fh.read()
+        vocab |= words(text)
+        for line in text.splitlines():
+            if '"pregnancy": every category' in line or '"allergens": every one' in line:
+                flag_words |= {w for w in words(line) if len(w) >= 4}
+    if not flag_words:
+        rep.fail("leakage", "no prompt file holds a flag line; the check would prove nothing")
+    return vocab, flag_words
+
+
+def check_leakage(rows, prompt_paths, rep):
+    """No input word in the prompt texts, and no flag-line word hidden in an input word."""
+    vocab, flag_words = prompt_words(prompt_paths, rep)
+    checked, adjudicated = 0, []
+    for row in rows:
+        cid = row.get("id", "?")
+        tokens = words(row.get("input", "")) - LEAK_STOP_WORDS
+        checked += len(tokens)
+        for tok in sorted(tokens & vocab):
+            rep.fail(f"{HOLDOUT_FILE} {cid}", f"input word {tok!r} appears in a prompt file (leakage)")
+        for tok in sorted(tokens):
+            for fw in sorted(flag_words):
+                if fw != tok and fw in tok:
+                    if (tok, fw) in COMPOUND_FALSE_MATCHES:
+                        adjudicated.append((cid, tok, fw))
+                    else:
+                        rep.fail(f"{HOLDOUT_FILE} {cid}", f"input word {tok!r} holds the flag-line word {fw!r} (leakage, or add an adjudicated false match)")
+    return checked, adjudicated
+
+
+def check_holdout(path, prompt_paths, rep, ids):
+    rows, cov, must_not_cases, langs = check_text(path, rep, ids)
+    if not HOLDOUT_MIN_CASES <= len(rows) <= HOLDOUT_MAX_CASES:
+        rep.fail(HOLDOUT_FILE, f"{len(rows)} cases, expected {HOLDOUT_MIN_CASES} to {HOLDOUT_MAX_CASES}")
+    for n, row in enumerate(rows, 1):
+        cid = row.get("id", "?")
+        if cid != f"h{n:03d}":
+            rep.fail(f"{HOLDOUT_FILE} {cid}", f"ids must run h001, h002, ... in order; expected h{n:03d}")
+        focus = row.get("focus")
+        if not isinstance(focus, list) or not focus or any(x not in HOLDOUT_FOCUS for x in focus):
+            rep.fail(f"{HOLDOUT_FILE} {cid}", f"focus must be a non-empty list from {HOLDOUT_FOCUS}")
+        elif "control" in focus and not row.get("must_not_flag"):
+            rep.fail(f"{HOLDOUT_FILE} {cid}", "a control case needs a must_not_flag entry")
+    checked, adjudicated = check_leakage(rows, prompt_paths, rep)
+    return rows, cov, must_not_cases, langs, checked, adjudicated
 
 
 def check_plates(path, labels_path, rep, ids):
@@ -364,14 +457,19 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--dir", default=os.path.dirname(os.path.abspath(__file__)), help="the gold folder to check (default: this script's folder)")
     ap.add_argument("--labels", default=None, help="gold_labels.json (default: <dir>/gold_labels.json)")
+    ap.add_argument("--holdout", default=None, help=f"the held-out typed set (default: <dir>/{HOLDOUT_FILE})")
+    ap.add_argument("--prompt", action="append", default=[], help="one more prompt file for the leakage check, for example the v4 draft (repeatable)")
     args = ap.parse_args()
     folder = args.dir
     labels = args.labels or os.path.join(folder, "gold_labels.json")
+    holdout = args.holdout or os.path.join(folder, HOLDOUT_FILE)
+    prompts = DEFAULT_PROMPTS + args.prompt
     rep = Report()
     ids = set()
 
     scan_dashes(folder, rep)
     text, cov, must_not_cases, langs = check_text(os.path.join(folder, "gold_text.jsonl"), rep, ids)
+    hrows, hcov, h_must_not, hlangs, hchecked, hadjudicated = check_holdout(holdout, prompts, rep, ids)
     plates, with_clear, pcov = check_plates(os.path.join(folder, "gold_plate_flags.json"), labels, rep, ids)
     kcal = check_kcal(os.path.join(folder, "gold_kcal_text.jsonl"), rep, ids)
     pantry = check_pantry(os.path.join(folder, "gold_pantry.jsonl"), rep, ids)
@@ -397,6 +495,27 @@ def main():
     print(f"typed must_flag entries: {n_entries}, of which clear: {n_clear_entries}")
     print(f"plates: {len(plates)}, with at least one clear must_flag: {len(with_clear)}")
     print(f"kcal cases: {len(kcal)}, pantry cases: {len(pantry)}, recipe cases: {len(recipes)}")
+
+    print(f"\nHeld-out typed set ({os.path.basename(holdout)}): clear must_flag cases per value")
+    print(f"{'kind':<10} {'value':<18} {'cases':>5} {'min':>4}  status")
+    for kind, vocab in (("pregnancy", PREGNANCY_CATEGORIES), ("allergen", ALLERGENS)):
+        for v in vocab:
+            n = len(hcov[(kind, v)])
+            minimum = MIN_PER_PREGNANCY if kind == "pregnancy" else 0
+            status = "PASS" if n >= minimum else "FAIL"
+            print(f"{kind:<10} {v:<18} {n:>5} {minimum:>4}  {status}")
+            if n < minimum:
+                rep.fail("holdout coverage", f"{kind} {v}: {n} clear must_flag cases, minimum {minimum}")
+    print(f"must_not_flag cases: {len(h_must_not)} (min {HOLDOUT_MIN_MUST_NOT_CASES})")
+    if len(h_must_not) < HOLDOUT_MIN_MUST_NOT_CASES:
+        rep.fail("holdout coverage", f"{len(h_must_not)} must_not_flag cases, minimum {HOLDOUT_MIN_MUST_NOT_CASES}")
+    focus_counts = {f: sum(1 for r in hrows if f in (r.get("focus") or [])) for f in HOLDOUT_FOCUS}
+    print(f"cases: {len(hrows)} by language {dict(sorted(hlangs.items()))}, by focus {focus_counts}")
+    print(f"leakage: {hchecked} input words checked against {len(prompts)} prompt file(s):")
+    for p in prompts:
+        print(f"  - {p}")
+    for cid, tok, fw in hadjudicated:
+        print(f"  adjudicated false match {cid}: {tok!r} holds {fw!r} ({COMPOUND_FALSE_MATCHES[(tok, fw)]})")
 
     if rep.errors:
         print(f"\nFAIL: {len(rep.errors)} problem(s)")

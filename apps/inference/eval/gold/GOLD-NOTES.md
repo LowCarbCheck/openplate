@@ -8,6 +8,7 @@ Written 2026-10-06. No model call was made to build them.
 | File | Rows | What it measures |
 | --- | --- | --- |
 | `gold_text.jsonl` | 91 typed meals | flags (rules 2, 3, 4), item split, stated grams, brand, refusal |
+| `gold_text_holdout.jsonl` | 36 typed meals | the same flags on foods that neither the v3 nor the v4 prompt names (section 10) |
 | `gold_plate_flags.json` | 50 plates | flags on the visible items of the existing photo corpus |
 | `gold_kcal_text.jsonl` | 34 typed foods | kcal and carbs per 100 g against USDA (reported, not blocking) |
 | `gold_pantry.jsonl` | 10 typed pantry lists | item names, amounts, units, nulls |
@@ -94,6 +95,8 @@ new files must not hold one, so they write ", " where `gold_labels.json` writes
   confidence (a vague food, a named brand).
 - `expect_brand`: `{item: brand}` where a brand is named. The text prompt keeps
   the generic food and puts the brand in `brand`.
+- `focus` (holdout only): which part of section 10 a case serves, a list of
+  `pregnancy`, `allergen` and `control`. A scorer ignores it.
 
 ## 3. Coverage (proves the minimums)
 
@@ -279,8 +282,162 @@ These are the judgment calls. Each is marked `clear: false` or placed in
 ```bash
 python3 apps/inference/eval/gold/check_new_gold.py         # exit 0 when every check holds
 python3 apps/inference/eval/gold/check_new_gold.py --dir /tmp/broken-copy
+python3 apps/inference/eval/gold/check_new_gold.py \
+  --prompt ../prompt-v4/apps/app/app/services/vision/prompt.ts   # adds the v4 draft to the leakage check
 ```
 
 The control: a copy with one raw-sprouts case removed, a vocabulary word that
 does not exist, a duplicate id and a long dash fails with exit 1 and names each
-problem.
+problem. For the holdout, a copy with "Tiramisu" in h001, "Mettbrötchen" in
+h002 and the `must_not_flag` list of control h036 emptied fails with exit 1 and
+names all three (a whole prompt word, a prompt word inside a compound, a control
+without a control entry).
+
+## 10. The held-out typed set (`gold_text_holdout.jsonl`)
+
+### Why it exists
+
+A review of the v3 prompt found that every one of the 42 typed cases with a
+clear pregnancy entry (49 entries) and every one of the 8 plates with a clear
+pregnancy entry (11 entries) names a food that the v3 prompt names by word. The
+review found only t016, t035, t036, t046 and t055 unnamed by v3, all five
+`clear: false`, and t035 ("cheese") and t036 ("steak") are the production text
+prompt's own examples. So a zero-miss result on rule 2 shows that a
+model can match a word in its prompt. It does not show that the model applies
+the category to a food it was not shown. The holdout asks that second question.
+It is written to the same format and the same labelling rules as
+`gold_text.jsonl` (sections 1 and 2), so the same scorer reads it. Rule 2 on
+typed cases counts only after a run on this set too.
+
+### What is in it
+
+36 cases, ids h001 to h036, German 21 and English 15, typed the way people type
+(short, a brand or a portion word now and then, "Katerfrühstück", "starter
+portion", "large americano"). `grams` holds a value only where the input states
+grams (h003, h008, h009, h015, h030), as in the main set.
+
+- **22 pregnancy cases (h001 to h022).** At least 3 clear cases for each of the
+  11 categories, labelled from the category definition only. Most cases list two
+  foods, so one case can serve two categories.
+- **14 cases with a non-obvious allergen.** 8 cases are there for the allergen
+  only (h023 to h030). 6 pregnancy cases also hold an allergen that the name
+  hides: oats in haggis (h004) and in oatcakes (h016), egg in pike quenelles
+  (h007), soy in natto and in the soy sauce of tamago kake gohan (h014), soy in
+  teriyaki (h020), wheat in bulgur (h021).
+- **6 controls (h031 to h036)** that must NOT carry a pregnancy flag: fried and
+  then pickled herring, cooked sprouts inside fried spring rolls, a pasteurised
+  semi-hard cheese with UHT milk, cooked Kasseler, a decaf latte and a baked
+  quiche. 5 more cases carry a control entry beside their flags (h004 cooked
+  custard, h012 cream cheese, h018 Frischkaese, h021 feta, h029 coconut milk), so
+  11 cases hold a `must_not_flag`.
+
+### The no-leakage check, and its result
+
+`check_new_gold.py` runs it on every call. It reads the prompt files whole
+(code comments included, which is stricter than the text a model sees):
+`apps/app/app/services/vision/prompt.ts` (v3, both system prompts),
+`translations.ts` (it writes the NAMES paragraph into both prompts), and every
+file given with `--prompt`. On 2026-10-06 it ran with the v4 draft of
+`op-worktrees/prompt-v4` added. Two tests, both case-insensitive:
+
+1. **Whole words.** No word of an input may appear anywhere in those files.
+   Only a fixed list of words that name no food is skipped: a, an, and, of, on,
+   in, with, then, can, g, half, large, portion, mit. Each of them occurs in the
+   prompts' own prose ("Kaffee mit Hafermilch", "a large handful").
+2. **Compounds.** No word of 4 or more letters from the two flag lines (the
+   pregnancy line and the allergen line) may sit inside an input word.
+   "Mettbrötchen" fails this test, because the prompts name Mett.
+
+**Result: 167 input words checked against 3 files, 0 leaks, exit 0.** The
+compound test found 5 matches, each read by hand and listed in the checker as a
+false match: rucola holds "cola" (rocket, a leaf), Rinderfilet holds "rind"
+(Rind is beef), oatcakes holds "cake" (baked oat biscuits, not raw cake dough),
+pissaladière holds "salad", tilefish holds "fish" (the allergen word; its
+high-mercury entry is `clear: false`).
+
+**What a grep cannot see.** A grep does not know translations. So each clear
+pregnancy case was also read by hand for a translated or a member word. The
+table says which kind of new each case is:
+
+- **new food**: neither the food nor a translation of it is in either prompt;
+- **member**: the word is new, but the food belongs to a group the prompt names
+  (ahi is a tuna, Nova is smoked salmon). Alcohol and caffeine are defined by
+  group words (beer, spirits, cocktails; coffee, energy drinks), so a holdout
+  can rename a drink but cannot leave the group;
+- **category noun**: the input holds the category's own noun in German (Milch
+  for raw-dairy, Sprossen or Keimlinge for raw-sprouts, tamago for egg). The
+  flag still rests on an unnamed word (Vorzugsmilch, Milchtankstelle, kuhwarm;
+  fenugreek, lentil, sunflower), but the noun is a hint.
+
+### Coverage per category
+
+Clear cases decide rule 2. "Not clear" and "control" list the other entries.
+
+| Category | Clear cases (naming) | Not clear | Control (`must_not_flag`) |
+| --- | --- | --- | --- |
+| raw-dairy | h017 Milchtankstelle, h018 Vorzugsmilch, h019 kuhwarme Milch (all category noun) | | h018, h033 |
+| soft-cheese | h015 Taleggio, h016 Epoisses, h017 Romadur (all new food) | | h012, h018, h021, h033 |
+| raw-meat | h001 bresaola, h002 Landjäger, h003 biltong (all new food) | h006 liver spread, h013 beef fillet | h034, h036 |
+| raw-egg | h013 Béarnaise (new food), h022 pisco sour (new food), h014 tamago kake gohan (category noun) | | h004, h036 |
+| raw-fish | h006 crudo, h010 Matjes, h011 Rollmops (new food), h009 seared ahi (member) | | h031 |
+| smoked-fish | h011 Seelachsschnitzel (new food), h010 Lachsröllchen, h012 Nova (member) | | |
+| high-mercury-fish | h007 pike, h008 orange roughy (new food), h009 ahi (member) | h022 tilefish | |
+| liver-retinol | h004 haggis, h005 faggots, h006 crostini toscani (all new food, no liver word in any language) | | |
+| alcohol | h001 Radler, h004 sherry trifle, h022 pisco sour, h027 Bloody Mary (all member) | | |
+| caffeine | h002 Spezi, h003 Red Bull, h012 americano (all member) | | h035 |
+| raw-sprouts | h018 sunflower, h020 fenugreek, h021 lentil (all category noun) | | h032 |
+
+Pregnancy sources outside the prompts, for the two categories where the prompt's
+list is closed: pike is named by the EU Commission's 2008 advice on mercury in
+fish for pregnant women (with swordfish, shark and marlin); orange roughy is on
+the FDA and EPA "choices to avoid" list. Tilefish is on that list only from the
+Gulf of Mexico, so h022 is `clear: false`.
+
+### Coverage per allergen
+
+| Allergen | Cases (clear) | Not clear | Hidden in the name |
+| --- | --- | --- | --- |
+| gluten | 20 | h007, h031 | seitan (h024), bulgur (h021), oats (h004, h016), soy sauce in teriyaki (h020) |
+| eggs | 9 | | fresh tagliatelle (h028), pike quenelles (h007), Waldorf dressing (h023) |
+| fish | 10 | h027, h029 | anchovies in pissaladière (h026), Worcestershire in a Bloody Mary (h027), fish sauce (h029) |
+| crustaceans | 1 (h007) | h029 | shrimp paste in Panang paste (h029) |
+| molluscs | 2 (h025, h026) | | calamari, escargots |
+| sesame | 1 (h024, two items) | | tahini in hummus and halva |
+| soybeans | 2 (h014, h020) | h014 | natto, teriyaki |
+| mustard | 1 (h027) | | piccalilli |
+| celery | 1 (h023) | h027 | Waldorf salad, celery salt |
+| nuts | 1 (h023) | h028 | walnuts in Waldorf, cashews in jarred pesto |
+| sulphites | 0 | h030 | sulphured dried apricots |
+| peanuts | 0 | h029 | ground peanuts on Panang |
+| milk | 18 | | (control: coconut milk in h029 is not milk) |
+| lupin | 0 | | none, see below |
+
+### Suggestions from the brief that were left out, and why
+
+- **Named in v3 or v4, so they would leak:** zabaione (v4 names zabaglione),
+  chocolate mousse, tiramisu, steak tartare, oyster shooter, carpaccio, chorizo,
+  Mettwurst, Teewurst, swordfish, king mackerel, marlin, shark, bigeye tuna,
+  radish sprouts, mung bean sprouts ("bean sprouts"), rum baba, cider, matcha
+  latte, mate, Caesar dressing (v4), calf liver and chicken liver pâté ("liver",
+  "pate"). Translations of a named food were left out too: Räucherlachs (smoked
+  salmon), Leberknödel (liver dumplings).
+- **Lupin.** "lupin" is a word of the allergen list in both prompts, so the
+  brief's condition fails and no lupin case was written. The main set keeps 4.
+- **Not clear from the words:** royal icing (often made with pasteurised
+  meringue powder), queso fresco (mostly pasteurised), smoked eel (hot-smoked,
+  and the definition says cold-smoked), kipper (usually cooked before eating),
+  guanciale (usually fried), guarana sodas (little caffeine), bouillon (celery
+  varies), Senfgurken (the name says Senf, so the mustard is not hidden).
+- **Cut for the 36-case cap:** coppa, nduja, Reblochon, Vacherin, tataki on
+  salmon, Feuerzangenbowle, miso, marzipan, a vinaigrette.
+
+### Limits
+
+- 3 clear cases per category is a smoke test, not a measurement (section 8: a
+  rule of three on n = 3 bounds the miss rate below about 63 percent). It
+  catches a model that flags only the words it was shown.
+- One labeller (an AI agent) wrote every label from the definitions, in one
+  sitting, with no model call. The `clear: false` marks are the guard.
+- The set is held out only while no prompt names its foods. A prompt change
+  that adds one of them must move that case out, or the check fails on the next
+  run with `--prompt`.
