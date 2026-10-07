@@ -29,6 +29,39 @@ export const PATCH_ALIGNMENT = 112;
 
 const JPEG_QUALITY = 85;
 
+/**
+ * The only formats this path decodes. sharp sniffs the format from the BYTES, not
+ * from the declared MIME type, so without this list a client could send an SVG
+ * (or any other loader libvips ships) and reach its parser. This is the belt to
+ * the braces of keeping sharp patched.
+ */
+export const ALLOWED_IMAGE_FORMATS: ReadonlySet<string> = new Set(['jpeg', 'png', 'webp']);
+
+/**
+ * libvips loader classes that must never parse client bytes. `sharp.block` is
+ * process-wide and runs once, on import of this module, so every call path in
+ * the process is covered. Blocking a class also blocks its File, Buffer and
+ * Source variants (checked: blocking `VipsForeignLoadSvg` makes a Buffer SVG
+ * fail to load).
+ *
+ * - `VipsForeignLoadSvg`: librsvg, the loader of advisory GHSA-wq5f-xc86-pv6w.
+ * - `VipsForeignLoadPdf`: PDF renderer. The prebuilt sharp has none; blocked so
+ *   a custom libvips build cannot reopen it. An unknown name is a harmless no-op.
+ * - `VipsForeignLoadTiff`, `VipsForeignLoadNsgif` (the GIF loader; a
+ *   class named `...Gif` does not exist and blocks nothing), `VipsForeignLoadHeif`: photo
+ *   containers this service does not accept (the allow list is JPEG, PNG,
+ *   WebP). Their loaders are complex and nothing here needs them.
+ */
+export const BLOCKED_LOADER_OPERATIONS: readonly string[] = [
+  'VipsForeignLoadSvg',
+  'VipsForeignLoadPdf',
+  'VipsForeignLoadTiff',
+  'VipsForeignLoadNsgif',
+  'VipsForeignLoadHeif',
+];
+
+sharp.block({ operation: [...BLOCKED_LOADER_OPERATIONS] });
+
 /** base64 inflates by 4/3; a data URI adds a small prefix on top. */
 const BASE64_INFLATION = 4 / 3;
 
@@ -207,6 +240,13 @@ export async function prepareImage(
   try {
     metadata = await sharp(bytes).metadata();
   } catch {
+    throw badRequest('The image could not be decoded. Send a valid JPEG, PNG or WebP.', {
+      param: 'messages',
+      code: 'unsupported_image_source',
+    });
+  }
+
+  if (metadata.format === undefined || !ALLOWED_IMAGE_FORMATS.has(metadata.format)) {
     throw badRequest('The image could not be decoded. Send a valid JPEG, PNG or WebP.', {
       param: 'messages',
       code: 'unsupported_image_source',

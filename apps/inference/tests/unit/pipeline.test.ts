@@ -6,6 +6,8 @@ import { describe, expect, it } from 'vitest';
 import sharp from 'sharp';
 import { parseApiKeys, parseConfig } from '../../src/config.js';
 import {
+  ALLOWED_IMAGE_FORMATS,
+  BLOCKED_LOADER_OPERATIONS,
   PATCH_ALIGNMENT,
   decodeImageDataUri,
   extractImageDataUri,
@@ -171,6 +173,91 @@ describe('image intake', () => {
     await expect(prepareImage(junk, { maxImageBytes: 1_000_000, maxLongEdge: 896 })).rejects.toMatchObject({
       status: 400,
     });
+  });
+});
+
+describe('image format allow list', () => {
+  const svgBytes = Buffer.from(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><rect width="8" height="8" fill="red"/></svg>',
+  );
+  const limits = { maxImageBytes: 1_000_000, maxLongEdge: 896 };
+
+  it('accepts a small valid PNG', async () => {
+    const png = await sharp({ create: { width: 8, height: 8, channels: 3, background: '#ff0000' } })
+      .png()
+      .toBuffer();
+    const dataUri = `data:image/png;base64,${png.toString('base64')}`;
+    const prepared = await prepareImage(dataUri, limits);
+    expect(prepared.width).toBe(8);
+    expect(prepared.dataUri).toBe(dataUri);
+  });
+
+  it('rejects an SVG document with the same 400 as a corrupt image, whatever MIME it declares', async () => {
+    for (const mime of ['image/svg+xml', 'image/png']) {
+      const dataUri = `data:${mime};base64,${svgBytes.toString('base64')}`;
+      await expect(prepareImage(dataUri, limits)).rejects.toMatchObject({
+        status: 400,
+        code: 'unsupported_image_source',
+      });
+    }
+  });
+
+  it('control: the loader block is active, so sharp refuses the SVG before any parse', async () => {
+    // sharp's message here is the generic "unsupported image format", it does not
+    // name the operation, so the assertion is that the call rejects at all. The
+    // unblock test below shows the same call succeeds without the block.
+    await expect(sharp(svgBytes).metadata()).rejects.toThrow();
+    const png = await sharp({ create: { width: 4, height: 4, channels: 3, background: '#00ff00' } })
+      .png()
+      .toBuffer();
+    await expect(sharp(png).metadata()).resolves.toMatchObject({ format: 'png', width: 4 });
+  });
+
+  it('control: without the block, sharp WOULD decode that SVG', async () => {
+    sharp.unblock({ operation: ['VipsForeignLoadSvg'] });
+    try {
+      const metadata = await sharp(svgBytes).metadata();
+      expect(metadata.format).toBe('svg');
+      expect(metadata.width).toBe(8);
+    } finally {
+      sharp.block({ operation: [...BLOCKED_LOADER_OPERATIONS] });
+    }
+  });
+
+  it('the per-call format check rejects an SVG on its own when the block is lifted', async () => {
+    sharp.unblock({ operation: ['VipsForeignLoadSvg'] });
+    try {
+      expect(ALLOWED_IMAGE_FORMATS.has('svg')).toBe(false);
+      const dataUri = `data:image/png;base64,${svgBytes.toString('base64')}`;
+      await expect(prepareImage(dataUri, limits)).rejects.toMatchObject({
+        status: 400,
+        code: 'unsupported_image_source',
+      });
+    } finally {
+      sharp.block({ operation: [...BLOCKED_LOADER_OPERATIONS] });
+    }
+  });
+
+  it('control: the blocked non-photo loaders refuse TIFF and GIF, and the allowed ones still decode', async () => {
+    const blank = { create: { width: 4, height: 4, channels: 3 as const, background: '#ff0000' } };
+    for (const bytes of [await sharp(blank).tiff().toBuffer(), await sharp(blank).gif().toBuffer()]) {
+      await expect(sharp(bytes).metadata()).rejects.toThrow();
+    }
+    for (const bytes of [await sharp(blank).jpeg().toBuffer(), await sharp(blank).webp().toBuffer()]) {
+      await expect(sharp(bytes).metadata()).resolves.toBeDefined();
+    }
+  });
+
+  it('blocks the SVG and PDF loaders and none of the allowed formats', () => {
+    expect(BLOCKED_LOADER_OPERATIONS).toContain('VipsForeignLoadSvg');
+    expect(BLOCKED_LOADER_OPERATIONS).toContain('VipsForeignLoadPdf');
+    for (const format of ALLOWED_IMAGE_FORMATS) {
+      expect(BLOCKED_LOADER_OPERATIONS.join(' ').toLowerCase()).not.toContain(format);
+    }
+  });
+
+  it('control: the allow list holds the formats the error message promises', () => {
+    expect([...ALLOWED_IMAGE_FORMATS].toSorted()).toEqual(['jpeg', 'png', 'webp']);
   });
 });
 
