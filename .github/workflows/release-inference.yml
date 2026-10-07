@@ -176,7 +176,7 @@ jobs:
           flavor: latest=false
 
       - name: Build and push (${{ matrix.variant }})
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: apps/inference
           file: apps/inference/Dockerfile
