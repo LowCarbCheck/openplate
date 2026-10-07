@@ -1,5 +1,9 @@
-# Version updates. Three independent lockfiles, so three npm directories.
-# Security updates stay on in the repository settings.
+# Version updates are OFF for npm (open-pull-requests-limit 0) since 2026-10-07.
+# There is no cloud CI, so a Dependabot PR carries no test signal, and the Merge
+# button would skip the local gate. Dependencies move in the monthly ritual
+# `dependency-update` in the tracker, through the local gate; a major version gets
+# its own spec. Security alerts and security update PRs stay on in the repository
+# settings; the limit 0 does not apply to them. Land one through a local push.
 # cooldown: a version must be 7 days old before Dependabot proposes it, the same
 # minimumReleaseAge pnpm enforces, so a younger one cannot fail the install.
 version: 2
@@ -7,46 +11,34 @@ updates:
   - package-ecosystem: npm
     directory: /apps/app
     schedule:
-      interval: weekly
+      interval: monthly
     cooldown:
       default-days: 7
-    open-pull-requests-limit: 5
-    groups:
-      minor-and-patch:
-        update-types:
-          - minor
-          - patch
+    open-pull-requests-limit: 0
   - package-ecosystem: npm
     directory: /apps/core
     schedule:
-      interval: weekly
+      interval: monthly
     cooldown:
       default-days: 7
-    open-pull-requests-limit: 5
-    groups:
-      minor-and-patch:
-        update-types:
-          - minor
-          - patch
+    open-pull-requests-limit: 0
   - package-ecosystem: npm
     directory: /apps/inference
     schedule:
-      interval: weekly
+      interval: monthly
     cooldown:
       default-days: 7
-    open-pull-requests-limit: 5
-    groups:
-      minor-and-patch:
-        update-types:
-          - minor
-          - patch
+    open-pull-requests-limit: 0
+  # One PR a month with every action bump in it. Read the changelogs, then land
+  # it through a local push.
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
-    open-pull-requests-limit: 5
+      interval: monthly
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 1
     groups:
-      minor-and-patch:
-        update-types:
-          - minor
-          - patch
+      actions:
+        patterns:
+          - "*"
