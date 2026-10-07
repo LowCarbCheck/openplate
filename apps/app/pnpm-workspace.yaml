@@ -32,3 +32,11 @@ supportedArchitectures:
 # patch sooner, lower this temporarily or add the package to
 # `minimumReleaseAgeExclude`.
 minimumReleaseAge: 10080
+
+# Security overrides for dev-only transitives that a parent pins to an exact,
+# vulnerable version (Dependabot alerts 54 and 50, 2026-10-07). Remove each one
+# once its parent catches up: concurrently pins shell-quote 1.9.0, and
+# @tailwindcss/typography 0.5.20 pins postcss-selector-parser 6.0.10.
+overrides:
+  shell-quote: '>=1.11.0'
+  postcss-selector-parser: '>=7.1.6'

@@ -11,3 +11,11 @@ allowBuilds:
 # patch sooner, lower this temporarily or add the package to
 # `minimumReleaseAgeExclude`.
 minimumReleaseAge: 10080
+
+# Security override, scoped to one parent. drizzle-kit pulls
+# `@esbuild-kit/core-utils`, which pins `esbuild ~0.18.20` (dev server
+# request-read advisory GHSA-67mh-4wv8-2f99, fixed in 0.25.0). The scope keeps
+# our own esbuild range untouched. Drop it when drizzle-kit stops using
+# `@esbuild-kit/*`.
+overrides:
+  '@esbuild-kit/core-utils>esbuild': ^0.25.0

@@ -33,6 +33,11 @@ on:
       - 'docker/**'
       - '.github/workflows/release-app.yml'
 
+# Least default for every job. A job that needs more (a GHCR push, a release
+# page) declares its own `permissions:` block, which replaces this one.
+permissions:
+  contents: read
+
 env:
   REGISTRY: ghcr.io
   # Hardcoded, no longer derived from the repository name: that is
