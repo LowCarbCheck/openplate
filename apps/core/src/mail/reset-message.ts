@@ -18,6 +18,7 @@
 import type { InstanceLanguage } from '../protocol.js';
 import { renderHtml, type BuiltMessage } from './invite-message.js';
 import { MAIL_STRINGS } from './strings.js';
+import { stripTrailingSlashes } from '../lib/trailing-slashes.js';
 
 export interface ResetMessageInput {
   /** Where the openplate client lives, from `CLIENT_BASE_URL`. */
@@ -37,8 +38,8 @@ export interface ResetMessageInput {
  * The path is `/reset` rather than `/join`, and both values are encoded.
  */
 export function buildResetLink(parts: { clientBaseUrl: string; serverPublicUrl: string; resetToken: string }): string {
-  const client = parts.clientBaseUrl.replace(/\/+$/, '');
-  const server = encodeURIComponent(parts.serverPublicUrl.replace(/\/+$/, ''));
+  const client = stripTrailingSlashes(parts.clientBaseUrl);
+  const server = encodeURIComponent(stripTrailingSlashes(parts.serverPublicUrl));
   const token = encodeURIComponent(parts.resetToken);
   return `${client}/reset#server=${server}&token=${token}`;
 }

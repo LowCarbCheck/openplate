@@ -92,7 +92,7 @@ function assertLoggedOnTheSuccessPath(handler: string, call: string): void {
 
   assert.match(
     body,
-    new RegExp(`^ {2}${call.replace(/[(){}'.[\]]/g, '\\$&')}$`, 'm'),
+    new RegExp(`^ {2}${call.replace(/[\\^$.*+?(){}|'[\]]/g, '\\$&')}$`, 'm'),
     `${handler} no longer fires ${call} at its own top level. A call nested in a branch reports some logs and not others, which is worse than reporting none.`,
   );
 

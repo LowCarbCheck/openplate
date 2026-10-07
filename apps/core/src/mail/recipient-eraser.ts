@@ -52,6 +52,7 @@ import { setTimeout as sleep } from 'node:timers/promises';
 import type { Logger } from '../logger.js';
 import { errorFields, type ErrorFields } from '../log-error.js';
 import type { MailConfig } from './mailer.js';
+import { stripTrailingSlashes } from '../lib/trailing-slashes.js';
 
 /** How many times one erasure is tried, the first included. */
 export const MAX_ERASE_ATTEMPTS = 3;
@@ -89,7 +90,7 @@ export function pigeonEraseUrl(mailApiUrl: string): string | null {
   } catch {
     return null;
   }
-  const path = parsed.pathname.replace(/\/+$/, '');
+  const path = stripTrailingSlashes(parsed.pathname);
   if (!path.endsWith(PIGEON_MAIL_PATH_SUFFIX)) return null;
   parsed.pathname = `${path.slice(0, -PIGEON_MAIL_PATH_SUFFIX.length)}${PIGEON_ERASE_PATH_SUFFIX}`;
   parsed.search = '';

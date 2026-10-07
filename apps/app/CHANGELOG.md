@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Fixed
+
+- **A moved instance never points a browser at another host.** In moved mode the server sends a request path back as a redirect. It collapsed leading slashes, but a backslash, a tab or a line break at the start could still make a browser read the path as another host. Express encoded the backslash in a `Location` header, but the route data answer puts the path in `X-Remix-Redirect` as it is. Every leading separator is now removed before the path goes back.
+
 ## [0.67.0] - 2026-10-07
 
 ### Changed

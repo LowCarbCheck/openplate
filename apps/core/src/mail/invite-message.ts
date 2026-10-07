@@ -25,6 +25,7 @@
  */
 import type { InstanceLanguage } from '../protocol.js';
 import { MAIL_STRINGS, fill, formatExpiryDate } from './strings.js';
+import { stripTrailingSlashes } from '../lib/trailing-slashes.js';
 
 export interface InviteMessageInput {
   /** Where the openplate client lives, from `CLIENT_BASE_URL`. */
@@ -51,11 +52,6 @@ export interface BuiltMessage {
   html: string;
   /** Returned separately so a caller can show the same link in an admin response. */
   link: string;
-}
-
-/** Drops trailing slashes so the join below never produces `//`. */
-function stripTrailingSlashes(value: string): string {
-  return value.replace(/\/+$/, '');
 }
 
 /**

@@ -61,7 +61,7 @@ function stubLccFetch(options: { status?: number; body?: unknown } = {}): Captur
   type FetchInput = Parameters<typeof fetch>[0];
   vi.stubGlobal('fetch', async (input: FetchInput, init?: RequestInit) => {
     const url = input instanceof URL ? input.href : input instanceof Request ? input.url : input;
-    if (!url.startsWith(LCC_URL)) return realFetch(input, init);
+    if (new URL(url).origin !== LCC_URL) return realFetch(input, init);
     captured.push({ url, authorization: new Headers(init?.headers).get('authorization') });
     return new Response(JSON.stringify(options.body ?? { results: [LCC_ROW] }), {
       status: options.status ?? 200,

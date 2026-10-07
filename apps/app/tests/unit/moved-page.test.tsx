@@ -36,7 +36,7 @@ const FAKE_BUILD: RootLinkSource = {
 
 /** Every `<script>` opening tag in a document. */
 function scriptTags(html: string): string[] {
-  return [...html.matchAll(/<script\b[^>]*>/g)].map((match) => match[0]);
+  return [...html.matchAll(/<script\b[^>]*>/gi)].map((match) => match[0]);
 }
 
 /** The attribute list of every `<link>` in a document. */

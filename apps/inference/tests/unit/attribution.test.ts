@@ -78,7 +78,7 @@ function stubLccFetch(payload: LccSearchResponse, status = 200): void {
   type FetchInput = Parameters<typeof fetch>[0];
   vi.stubGlobal('fetch', async (input: FetchInput, init?: RequestInit) => {
     const url = input instanceof URL ? input.href : input instanceof Request ? input.url : input;
-    if (!url.startsWith(LCC_URL)) return realFetch(input, init);
+    if (new URL(url).origin !== LCC_URL) return realFetch(input, init);
     return new Response(JSON.stringify(payload), {
       status,
       headers: { 'Content-Type': 'application/json' },

@@ -31,6 +31,7 @@ import { asNumber, asObject, asString, type JsonValue } from '../lib/json.js';
 import type { Logger } from '../logger.js';
 import { isOpenRouterUpstream } from './chat-body-policy.js';
 import type { AiUpstreamConfig } from './proxy.js';
+import { stripTrailingSlashes } from '../lib/trailing-slashes.js';
 
 /** How often the provider resets the key's limit. `null` is a limit that never resets on its own. */
 export type UpstreamBudgetReset = 'daily' | 'weekly' | 'monthly';
@@ -71,7 +72,7 @@ export const UPSTREAM_BUDGET_FAILED_TTL_MS = 15_000;
 
 /** `<base>/key`, the OpenRouter route that describes the bearer's own key. */
 export function openRouterKeyUrl(baseUrl: string): string {
-  return `${baseUrl.replace(/\/+$/, '')}/key`;
+  return `${stripTrailingSlashes(baseUrl)}/key`;
 }
 
 /**

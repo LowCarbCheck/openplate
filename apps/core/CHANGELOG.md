@@ -7,6 +7,10 @@ change moves the minor.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Trailing slashes in an address are stripped in one pass.** The service removed a trailing `/` from `UPSTREAM_BASE_URL`, `PLANS_UPSTREAM_URL`, `SERVER_PUBLIC_URL`, `CLIENT_BASE_URL` and the mail API address with a regular expression that took quadratic time on a long run of slashes inside the value. One helper now walks back from the end once. Every address comes out exactly as before, and no setting changes.
+
 ## [0.37.0] - 2026-10-07
 
 Note for operators: this release runs two additive migrations on start. The service applies every pending migration on each boot, before it listens, so a new image needs no second command. 0034 adds one column with a default, so every existing account keeps exactly the limit it had, per day. 0035 adds one counter column with a default and one new table; nothing writes them unless an operator sets the free bounds. Neither migration drops or rewrites data.

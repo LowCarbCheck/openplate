@@ -84,22 +84,27 @@ interface RawSection {
 }
 
 /**
+ * A released heading, `## [version] - YYYY-MM-DD`. The version is captured and compared as a
+ * string rather than built into the pattern, so a `--version` argument is never read as regex.
+ */
+const RELEASE_HEADING = /^## \[([^\]]+)\] - (\d{4}-\d{2}-\d{2})\s*$/;
+
+/**
  * The lines of `## [version] - date`'s section, and the date out of that heading. The section runs
  * from its own heading to the next `## ` heading, or to the end of the file.
  */
 function sectionLines({ changelog, version }: { changelog: string; version: string }): RawSection {
   const lines = toLines(changelog);
-  const headingPattern = new RegExp(`^## \\[${version.replaceAll('.', '\\.')}\\] - (\\d{4}-\\d{2}-\\d{2})\\s*$`);
   for (let i = 0; i < lines.length; i++) {
-    const match = headingPattern.exec(lines[i] ?? '');
-    if (!match) continue;
+    const match = RELEASE_HEADING.exec(lines[i] ?? '');
+    if (match?.[1] !== version) continue;
     const body: string[] = [];
     for (let j = i + 1; j < lines.length; j++) {
       const line = lines[j] ?? '';
       if (line.startsWith('## ')) break;
       body.push(line);
     }
-    return { date: match[1] ?? '', lines: body };
+    return { date: match[2] ?? '', lines: body };
   }
   throw new Error(
     `CHANGELOG has no '## [${version}] - YYYY-MM-DD' heading. ` +
