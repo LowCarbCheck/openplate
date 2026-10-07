@@ -84,8 +84,9 @@ areas in `tests/e2e/areas.ts`, and smoke specs carry ` * @smoke`. `areas.ts`
 also holds the ordered path rules. A new bug check goes into the file of its
 area. A spec passes in any shard and reads ports from `tests/e2e/env.ts`. A
 smoke spec takes under 10 seconds and covers a daily door. A missing path rule
-falls back to the full tier, so add the rule, never skip the gate. Shared
-saved sign-in state per worker is planned.
+falls back to the full tier, so add the rule, never skip the gate. Specs do
+not share saved sign-in state: it was measured on 2026-10-03 and saves about
+1 percent.
 
 ## Key Documentation
 
