@@ -138,8 +138,10 @@ describe('projectSiteUrl', () => {
       }
     }
     // THE CONTROL: the old form is a violation by the same predicate, so the loop cannot pass vacuously.
-    assert.equal(endsInSlash('https://openplate.de/en/'), true);
-    assert.equal(endsInSlash('https://openplate.de/en/docs/app/import-from-yazio/#x'), true);
+    // It is built from the canonical address plus a slash, so no file carries the slash form as a literal
+    // (the `openplate/no-trailing-slash-link` lint rule refuses one).
+    assert.equal(endsInSlash(`${projectSiteUrl('en', '/')}/`), true);
+    assert.equal(endsInSlash(`${projectSiteUrl('en', YAZIO_IMPORT_DOCS_PATH)}/#x`), true);
     assert.equal(endsInSlash('https://openplate.de/'), false);
   });
 

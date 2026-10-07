@@ -24,12 +24,17 @@
     ".adr/**",
     ".react-router/**",
     "build/**",
-    "tools/oxlint/anti-slop/**"
+    "tools/oxlint/anti-slop/**",
+    "tools/oxlint/openplate/**"
   ],
   "jsPlugins": [
     {
       "name": "anti-slop",
       "specifier": "./tools/oxlint/anti-slop/index.ts"
+    },
+    {
+      "name": "openplate",
+      "specifier": "./tools/oxlint/openplate/index.ts"
     }
   ],
   "rules": {
@@ -48,6 +53,7 @@
     "anti-slop/no-unsafe-dictionary-type": "error",
     "anti-slop/no-widen-then-assert": "error",
     "anti-slop/require-safety-comment-for-type-assertion": "error",
+    "openplate/no-trailing-slash-link": "error",
     "react/react-in-jsx-scope": "off",
     "unicorn/no-instanceof-builtins": "off",
     "import/no-named-as-default-member": "off",

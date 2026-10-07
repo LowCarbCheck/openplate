@@ -10,6 +10,9 @@
     "target": "ES2022",
     "module": "ES2022",
     "moduleResolution": "bundler",
+    // The oxlint plugins under tools/oxlint import each other with their `.ts` extension, because
+    // Node loads them as they are. Nothing is emitted (`noEmit`), so the extension is safe.
+    "allowImportingTsExtensions": true,
     "jsx": "react-jsx",
     "rootDirs": [".", "./.react-router/types"],
     "paths": {
