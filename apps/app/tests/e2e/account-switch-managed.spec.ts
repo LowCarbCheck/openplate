@@ -37,6 +37,7 @@
  *
  * @area accounts-and-sign-in
  */
+import { randomUUID } from 'node:crypto';
 import { expect, test, type Browser, type Locator, type Page } from '@playwright/test';
 import { z } from 'zod';
 
@@ -97,7 +98,7 @@ test.afterAll(async () => {
 
 /** A fresh address per call, so no two tests and no two runs meet. */
 function newAddress(label: string): string {
-  return `${label}-${Date.now()}-${Math.round(Math.random() * 1e6)}@example.invalid`;
+  return `${label}-${randomUUID()}@example.invalid`;
 }
 
 /** Mints an invitation on the fake service, the way an admin would. */

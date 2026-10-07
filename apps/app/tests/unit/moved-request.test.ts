@@ -71,4 +71,55 @@ describe('toSameOriginPath', () => {
     assert.notEqual(new URL('//evil.example/x', origin).origin, origin);
     assert.equal(new URL(toSameOriginPath('//evil.example/x'), origin).origin, origin);
   });
+
+  /**
+   * CodeQL alert 28 (`js/server-side-unvalidated-url-redirection`). `new URL` in Node follows the
+   * WHATWG URL rules a browser follows, so it is the judge here: each raw path below resolves to
+   * another host when a browser follows it, which is the control, and none may after the guard.
+   */
+  const OFF_ORIGIN_PATHS = [
+    '//evil.example/x',
+    '///evil.example',
+    '/\\evil.example',
+    '/\\\\evil.example/x',
+    '\\/evil.example',
+    '/\\/evil.example',
+    '/\t/evil.example',
+    '/\n/evil.example',
+    '/\r\n/evil.example',
+  ];
+
+  it('control: every raw path in the list leaves the origin when a browser follows it', () => {
+    const origin = 'https://beta.openplate.example';
+    for (const path of OFF_ORIGIN_PATHS) {
+      assert.notEqual(new URL(path, origin).origin, origin, JSON.stringify(path));
+    }
+  });
+
+  it('keeps protocol-relative, backslash and tab or line-break paths on this origin', () => {
+    const origin = 'https://beta.openplate.example';
+    for (const path of OFF_ORIGIN_PATHS) {
+      const guarded = toSameOriginPath(path);
+      assert.equal(
+        new URL(guarded, origin).origin,
+        origin,
+        `${JSON.stringify(path)} became ${JSON.stringify(guarded)}`,
+      );
+    }
+    assert.equal(toSameOriginPath('/\\evil.example'), '/evil.example');
+  });
+
+  it('turns an absolute URL into a path on this origin', () => {
+    const origin = 'https://beta.openplate.example';
+    for (const path of ['http://evil.example/x', 'https:evil.example', 'javascript:alert(1)']) {
+      const guarded = toSameOriginPath(path);
+      assert.ok(guarded.startsWith('/'), JSON.stringify(guarded));
+      assert.equal(new URL(guarded, origin).origin, origin, JSON.stringify(path));
+    }
+    assert.equal(toSameOriginPath('http://evil.example/x'), '/http://evil.example/x');
+  });
+
+  it('carries the separator guard into the route-data answer', () => {
+    assert.equal(pageOfRouteData('/\\evil.example/x.data'), '/evil.example/x');
+  });
 });

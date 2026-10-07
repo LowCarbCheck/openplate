@@ -58,11 +58,11 @@ function coreByToken(authorization: string | null): Response {
 
 function fakeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const url = String(input);
-  if (url.startsWith(CORE)) {
+  if (new URL(url).origin === CORE) {
     coreCalls += 1;
     return Promise.resolve(coreAnswer(new Headers(init?.headers).get('authorization')));
   }
-  if (url.startsWith(LCC)) {
+  if (new URL(url).origin === LCC) {
     lccCalls += 1;
     if (url.endsWith('/proposals')) return Promise.resolve(new Response(null, { status: 202 }));
     return Promise.resolve(Response.json({ results: [] }));

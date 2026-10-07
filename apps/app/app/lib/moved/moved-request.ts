@@ -62,15 +62,24 @@ export function classifyMovedRequest(path: string): MovedRequestKind {
 }
 
 /**
+ * What a browser reads as the start of another host when it follows a path: a slash, a backslash
+ * (a browser treats `\` as `/` in an http URL), and the tab and line breaks it deletes from a URL
+ * before reading it, so `/\t/evil.example` is `//evil.example` to it.
+ */
+const LEADING_HOST_SEPARATORS = /^[/\\\t\n\r]+/;
+
+/**
  * The same path, safe to send back as a same-origin address.
  *
- * A request line may carry `//evil.example/x`, and a `Location` or a redirect header holding that
- * would send the browser to another host. Collapsing the leading slashes keeps it on this origin.
+ * A request line may carry `//evil.example/x` or `/\evil.example`, and a `Location` or an
+ * `X-Remix-Redirect` header holding that would send the browser to another host. Express encodes
+ * a backslash in `Location`, but nothing encodes `X-Remix-Redirect`. Collapsing every leading
+ * separator keeps the result on this origin whichever header carries it.
  *
  * @param path - a request path.
  */
 export function toSameOriginPath(path: string): string {
-  return `/${path.replace(/^\/+/, '')}`;
+  return `/${path.replace(LEADING_HOST_SEPARATORS, '')}`;
 }
 
 /**

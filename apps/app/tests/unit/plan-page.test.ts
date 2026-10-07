@@ -325,7 +325,7 @@ describe('the order page', () => {
     const offer: PlanOffer = { ...OFFER, texts: { ...OFFER.texts, withdrawal } };
     const markup = render({ kind: 'ready', plan: FREE }, { offer });
     const notice = /<p[^>]*data-slot="plan-order-withdrawal"[^>]*>(.*?)<\/p>/s.exec(markup)?.[1] ?? '';
-    assert.match(notice, new RegExp(`<a[^>]*href="/widerrufen"[^>]*>${address}</a>`));
+    assert.match(notice, new RegExp(`<a[^>]*href="/widerrufen"[^>]*>${address.replaceAll('.', '\\.')}</a>`));
     // The notice reads exactly as served once the markup is taken away.
     assert.equal(notice.replaceAll(/<[^>]+>/g, ''), `${withdrawal} ${enCommon.plan.order.withdrawalLink}`);
     // CONTROL: the fixture notice prints no address and gains no such link.
