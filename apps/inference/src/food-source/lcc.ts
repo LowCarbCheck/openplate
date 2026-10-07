@@ -52,6 +52,7 @@
 import { z } from 'zod';
 import { JsonValueSchema, type JsonValue } from '../json.js';
 import { scoreLexical } from './lexical.js';
+import { stripTrailingSlashes } from '../trailing-slashes.js';
 import {
   emptyMacros,
   toMacroValue,
@@ -157,7 +158,7 @@ function toCandidate(query: string, food: LccFood): FoodCandidate {
 }
 
 export function createLccFoodSource(options: LccFoodSourceOptions): FoodSource {
-  const apiUrl = options.apiUrl.replace(/\/+$/, '');
+  const apiUrl = stripTrailingSlashes(options.apiUrl);
   const defaultLocale = options.locale ?? DEFAULT_LOCALE;
   const authHeader: Record<string, string> = options.apiKey
     ? { Authorization: `Bearer ${options.apiKey}` }

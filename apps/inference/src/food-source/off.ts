@@ -34,6 +34,7 @@
 import { z } from 'zod';
 import { JsonValueSchema, type JsonValue } from '../json.js';
 import { scoreLexical } from './lexical.js';
+import { stripTrailingSlashes } from '../trailing-slashes.js';
 import {
   emptyMacros,
   toMacroValue,
@@ -130,7 +131,7 @@ function toCandidate(query: string, product: OffProduct): FoodCandidate | null {
 }
 
 export function createOffFoodSource(options: OffFoodSourceOptions = {}): FoodSource {
-  const baseUrl = (options.baseUrl ?? 'https://world.openfoodfacts.org').replace(/\/+$/, '');
+  const baseUrl = stripTrailingSlashes(options.baseUrl ?? 'https://world.openfoodfacts.org');
 
   async function getJson(url: string, signal: AbortSignal | undefined): Promise<JsonValue> {
     const response = await fetch(url, {

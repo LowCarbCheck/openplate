@@ -28,6 +28,20 @@ export interface ApiKeyIdentity {
 
 const identityByRequest = new WeakMap<Request, ApiKeyIdentity>();
 
+/**
+ * `Bearer`, whitespace, then the key from its first non-space character to the
+ * end of the line.
+ *
+ * LINEAR ON PURPOSE. The old form, `/^Bearer\s+(.+)$/i`, let `\s+` and `.+`
+ * both match a tab, so a header of `Bearer`, many tabs and a line break made
+ * the engine try every split of the tab run (CodeQL `js/polynomial-redos`).
+ * Here `\s+` and `\S` cannot match the same character, so the run ends in
+ * exactly one place. The header is trimmed first, so the key never ends in
+ * whitespace and needs no trim of its own.
+ * `tests/unit/bearer-header.test.ts` checks the old and new forms agree.
+ */
+const BEARER_HEADER = /^Bearer\s+(\S.*)$/i;
+
 function digest(key: string): Buffer {
   return createHash('sha256').update(key, 'utf8').digest();
 }
@@ -43,8 +57,8 @@ export function getApiKeyIdentity(req: Request): ApiKeyIdentity | null {
 
 export function parseBearerHeader(header: string | undefined): string | null {
   if (!header) return null;
-  const match = /^Bearer\s+(.+)$/i.exec(header.trim());
-  return match ? match[1].trim() || null : null;
+  const match = BEARER_HEADER.exec(header.trim());
+  return match ? match[1] : null;
 }
 
 /**

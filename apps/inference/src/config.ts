@@ -12,6 +12,7 @@
 import { z } from 'zod';
 import { isLogLevel, type LogLevel } from './logger.js';
 import { FOOD_SOURCE_NAMES, type FoodSourceName } from './food-source/types.js';
+import { stripTrailingSlashes } from './trailing-slashes.js';
 
 /** The model id this service advertises and accepts. The runtime's own id is `MODEL_ID`. */
 export const PUBLIC_MODEL_ID = 'openplate-plate-1';
@@ -239,14 +240,9 @@ export function parseApiKeys(raw: string): string[] {
   return [...new Set(keys)];
 }
 
-/** Drops trailing slashes so URL building never doubles them. */
-function stripTrailingSlashes(value: string): string {
-  return value.replace(/\/+$/, '');
-}
-
 /** Drops a trailing `/v1` (and any trailing slashes) so URL building never doubles it. */
 function normalizeRuntimeUrl(value: string): string {
-  return value.replace(/\/+$/, '').replace(/\/v1$/, '');
+  return stripTrailingSlashes(value).replace(/\/v1$/, '');
 }
 
 /** Pure: builds the config from an arbitrary env bag. Throws on anything invalid. */

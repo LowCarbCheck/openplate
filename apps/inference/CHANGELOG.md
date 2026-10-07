@@ -7,6 +7,10 @@ change moves the minor.
 
 ## [Unreleased]
 
+### Fixed
+
+- **The bearer header and base URLs are parsed in linear time.** The `Authorization` parser let two parts of its pattern match the same tab, so a header with a long tab run and a line break took quadratic time before its `401`. The trailing-slash cleanup of `MODEL_RUNTIME_URL`, `LCC_API_URL` and `OFF_API_URL` had the same flaw on a long run of slashes. Both now finish in one pass. Every key and address is read exactly as before, and no setting changes.
+
 ## [0.3.1] - 2026-10-07
 
 ### Changed
