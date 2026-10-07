@@ -38,6 +38,11 @@ export interface AccountView {
   createdAt: string;
   /** The operator's label, or `null` for none, and for an older instance that sends no key. */
   label: string | null;
+  /**
+   * The account's OWN capability record: `null` is no record (the instance default
+   * decides, and so does an older instance that sends no key), `[]` grants nothing.
+   */
+  capabilities: string[] | null;
   blobBytes: number | null;
   blobUpdatedAt: string | null;
   keyRecordKinds: string[];
@@ -139,6 +144,7 @@ function decodeAccount(value: JsonValue | undefined): AccountView {
     createdAt,
     // An older instance omits it, and "no label" is exactly what it means.
     label: asString(account?.label),
+    capabilities: decodeCapabilities(account?.capabilities),
     blobBytes: asNumber(blob?.sizeBytes),
     blobUpdatedAt: asString(blob?.updatedAt),
     keyRecordKinds: kinds.map((kind) => asString(kind)).filter((kind): kind is string => kind !== null),
@@ -163,6 +169,13 @@ export function decodeSingleAccount(value: JsonValue): AccountView {
   const body = asObject(value);
   if (body?.account === undefined) throw undocumentedResponse('account');
   return decodeAccount(body.account);
+}
+
+/** `capabilities` off an account view. Absent and `null` are both "no record", which is what an older instance means. */
+function decodeCapabilities(value: JsonValue | undefined): string[] | null {
+  const items = asArray(value);
+  if (items === null) return null;
+  return items.map((item) => asString(item)).filter((item): item is string => item !== null);
 }
 
 /** `trialScans` off an account view (M253). An older instance omits it, which reads as no trial. */
@@ -451,6 +464,12 @@ function paidUsage(account: AccountView): string {
   return `${account.aiUsedToday}/${account.dailyAiLimit}`;
 }
 
+/** `none` is a record that grants nothing, and `not set` is no record at all: they are different facts. */
+function formatCapabilities(capabilities: string[] | null): string {
+  if (capabilities === null) return 'not set (the instance default decides)';
+  return capabilities.length === 0 ? 'none' : capabilities.join(', ');
+}
+
 export function formatAccountDetail(account: AccountView): string {
   return [
     `id              ${account.id}`,
@@ -465,6 +484,7 @@ export function formatAccountDetail(account: AccountView): string {
     `free scans      ${account.trialScans === null ? 'none' : `${account.trialScans.left} of ${account.trialScans.granted} left`}`,
     `standing        ${account.suspendedAt === null ? 'active' : `suspended ${account.suspendedAt}`}`,
     `label           ${account.label ?? 'none'}`,
+    `capabilities    ${formatCapabilities(account.capabilities)}`,
     `created         ${account.createdAt}`,
     `blob            ${account.blobBytes === null ? 'none' : `${formatBytes(account.blobBytes)}, updated ${account.blobUpdatedAt ?? 'unknown'}`}`,
     `key records     ${account.keyRecordKinds.length === 0 ? 'none' : account.keyRecordKinds.join(', ')}`,

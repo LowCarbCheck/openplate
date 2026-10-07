@@ -49,6 +49,7 @@ import {
 import { resolveCoreUrl } from './core-url.js';
 import { runCanary } from './canary.js';
 import { generateVapidKeys } from '../../src/push/vapid-keys.js';
+import { NO_CAPABILITIES_WORD, parseCapabilityLabels } from '../../src/lib/capabilities.js';
 import { MAX_ACCOUNT_LABEL_LENGTH, parseAccountLabel } from '../../src/admin/account-label.js';
 import {
   decodeAccountPage,
@@ -99,6 +100,11 @@ const USAGE = `core-api, the openplate-core admin CLI
     accounts set-label <id> "<text>"      Pin a note only admins see, such as
                                "Beta supporter" (quote it, 40 characters at most)
     accounts clear-label <id>  Take the note away
+    accounts set-capabilities <id> <a,b,c|none|unset>
+                               Write the AI features it may use: comma separated
+                               labels (lower case, such as scan,recipes), none for
+                               no feature, or unset to fall back to the instance
+                               default
     accounts suspend <id>      Lock it out and revoke every session, reversibly
     accounts reactivate <id>   Let it back in
     invites list               Outstanding and spent signup invites
@@ -280,6 +286,35 @@ function freeLimitFrom(value: string): AccountPatchBody {
 }
 
 /**
+ * The list argument of `accounts set-capabilities`, or a refusal.
+ *
+ * THREE SPELLINGS FOR THREE FACTS, the same three the service stores: a comma
+ * list is a record that grants exactly those labels, `none` is the record that
+ * grants nothing (`[]`), and `unset` takes the record away (`null`) so the
+ * instance default decides. They are words rather than an empty argument,
+ * because an empty one is what a shell variable that expanded to nothing looks
+ * like, and that must never silently become "grants nothing".
+ *
+ * The labels are checked with the service's own rule (`src/lib/capabilities.ts`,
+ * a pure module), so a typo costs no round trip. They are sent sorted and
+ * without duplicates, which is the form the service stores.
+ */
+function capabilitiesFrom(value: string): AccountPatchBody {
+  const raw = value.trim();
+  if (raw === '') {
+    throw new CliError(
+      `accounts set-capabilities needs a list: \`accounts set-capabilities <id> scan,recipes\`, \`... ${NO_CAPABILITIES_WORD}\` for no feature, or \`... unset\` to use the instance default.`,
+    );
+  }
+  if (raw === 'unset') return { capabilities: null };
+  if (raw === NO_CAPABILITIES_WORD) return { capabilities: [] };
+
+  const parsed = parseCapabilityLabels(raw.split(',').map((label) => label.trim()));
+  if (!parsed.ok) throw new CliError(`accounts set-capabilities refused the list: ${parsed.reason}.`);
+  return { capabilities: parsed.value };
+}
+
+/**
  * The count argument of `accounts set-trial` (M253), or a refusal. `none`
  * takes the scan trial away, which is a different statement from `0`: an
  * account with `0` is refused every scan, one with none is decided by its
@@ -411,15 +446,16 @@ function periodFrom(value: string): AccountPatchBody {
   throw new CliError('accounts set-period needs day or week.');
 }
 
-/** The PATCH body of the five one-value `accounts` commands. */
+/** The PATCH body of the six one-value `accounts` commands. */
 function patchFor(input: {
-  subcommand: 'set-role' | 'set-limit' | 'set-period' | 'set-free-limit' | 'set-trial';
+  subcommand: 'set-role' | 'set-limit' | 'set-period' | 'set-free-limit' | 'set-trial' | 'set-capabilities';
   value: string;
 }): AccountPatchBody {
   if (input.subcommand === 'set-role') return roleFrom(input.value);
   if (input.subcommand === 'set-limit') return limitFrom(input.value);
   if (input.subcommand === 'set-period') return periodFrom(input.value);
   if (input.subcommand === 'set-free-limit') return freeLimitFrom(input.value);
+  if (input.subcommand === 'set-capabilities') return capabilitiesFrom(input.value);
   return trialFrom(input.value);
 }
 
@@ -517,7 +553,8 @@ async function runAccounts(client: AdminClient, invocation: Invocation): Promise
     subcommand === 'set-limit' ||
     subcommand === 'set-period' ||
     subcommand === 'set-free-limit' ||
-    subcommand === 'set-trial'
+    subcommand === 'set-trial' ||
+    subcommand === 'set-capabilities'
   ) {
     const id = accountIdArgument(invocation);
     // The third positional, because a value this short is clearer beside the id
@@ -573,7 +610,7 @@ async function runAccounts(client: AdminClient, invocation: Invocation): Promise
   }
 
   throw new CliError(
-    `Unknown accounts subcommand "${subcommand}". Try: list, get, delete, set-role, set-limit, set-free-limit, set-expiry, set-trial, set-label, clear-label, suspend, reactivate, reset-mail, blob-versions, rollback.`,
+    `Unknown accounts subcommand "${subcommand}". Try: list, get, delete, set-role, set-limit, set-free-limit, set-expiry, set-trial, set-capabilities, set-label, clear-label, suspend, reactivate, reset-mail, blob-versions, rollback.`,
   );
 }
 

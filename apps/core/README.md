@@ -458,7 +458,7 @@ Another upstream sends and logs what it did before.
 
 **Accounts can hold capabilities.** A capability is a short label, such as
 `scan` or `recipes`, for one kind of AI request. An administrator writes an
-account's list (`PATCH /v1/admin/accounts/:id` with `capabilities`), and so does
+account's list (`pnpm core-api accounts set-capabilities`, or `PATCH /v1/admin/accounts/:id` with `capabilities`), and so does
 the billing service, which may name this field and no other standing beyond its
 two. `DEFAULT_CAPABILITIES` is what an account with no list of its own may use:
 comma separated labels, or `none` for nothing. Unset or empty means no check at
@@ -878,6 +878,9 @@ ADMIN_TOKEN=... pnpm core-api accounts set-role 42 admin
 ADMIN_TOKEN=... pnpm core-api accounts set-free-limit 42 10
 ADMIN_TOKEN=... pnpm core-api accounts set-limit 42 200
 ADMIN_TOKEN=... pnpm core-api accounts set-period 42 week
+ADMIN_TOKEN=... pnpm core-api accounts set-capabilities 42 scan,recipes
+ADMIN_TOKEN=... pnpm core-api accounts set-capabilities 42 none    # no AI feature at all
+ADMIN_TOKEN=... pnpm core-api accounts set-capabilities 42 unset   # back to the instance default
 ADMIN_TOKEN=... pnpm core-api accounts suspend 42
 ADMIN_TOKEN=... pnpm core-api accounts reset-mail 42
 ADMIN_TOKEN=... pnpm core-api accounts delete 42 --yes

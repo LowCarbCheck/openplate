@@ -75,6 +75,11 @@ export interface AccountPatchBody {
   displayName?: string | null;
   /** The operator's label, at most 40 characters, or `null` to clear it. Absent leaves it alone. */
   label?: string | null;
+  /**
+   * The account's own capability labels. `[]` is a record that grants nothing,
+   * `null` takes the record away so the instance default decides. Absent leaves it alone.
+   */
+  capabilities?: string[] | null;
 }
 
 /** The body of `POST /v1/admin/trials/grant-lapsed` (M253). */
