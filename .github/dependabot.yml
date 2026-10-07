@@ -1,11 +1,15 @@
 # Version updates. Three independent lockfiles, so three npm directories.
 # Security updates stay on in the repository settings.
+# cooldown: a version must be 7 days old before Dependabot proposes it, the same
+# minimumReleaseAge pnpm enforces, so a younger one cannot fail the install.
 version: 2
 updates:
   - package-ecosystem: npm
     directory: /apps/app
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 5
     groups:
       minor-and-patch:
@@ -16,6 +20,8 @@ updates:
     directory: /apps/core
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 5
     groups:
       minor-and-patch:
@@ -26,6 +32,8 @@ updates:
     directory: /apps/inference
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 5
     groups:
       minor-and-patch:
