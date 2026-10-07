@@ -735,3 +735,48 @@ test('passphrase guesses on rotate-dek are throttled per account, in the bucket 
     await strict.close();
   }
 });
+
+/**
+ * The route CodeQL flagged as "authorization without a rate limit" (alert 24):
+ * a key-record overwrite checks the passphrase through the same gate, so it
+ * spends from the same per-account bucket. The first guesses are plain `401`s,
+ * which is the control: a route that answered `429` from the start would also
+ * pass the last assertion.
+ */
+test('passphrase guesses on a key-record overwrite are throttled per account, so a token cannot guess its way to the recovery wrap', async () => {
+  const strict = await startService({
+    db: database.db,
+    throttleConfig: { freeAttempts: 2, baseLockoutMs: 60_000, maxLockoutMs: 60_000, attemptResetMs: 60_000 },
+  });
+  try {
+    const session = await strict.signupThroughInvite({ email: 'overwritten@example.org', authHash: OWNER_AUTH_HASH });
+    const accessToken = session.tokens.accessToken;
+    const overwrite = async (currentAuthHash: string): Promise<{ status: number; headers: Headers }> =>
+      strict.request({
+        method: 'PUT',
+        path: '/v1/sync/key-records/recovery',
+        accessToken,
+        body: {
+          kdfDescriptor: null,
+          wrappedDek: sampleWrappedDek(66),
+          expectedUpdatedAt: await strict.currentKeyRecordToken({ accessToken, kind: 'recovery' }),
+          currentAuthHash,
+        },
+      });
+
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      const guess = await overwrite(sampleAuthHash(99));
+      assert.equal(guess.status, 401, `guess ${attempt} is refused as a wrong passphrase, not throttled yet`);
+    }
+    // Locked now, even for the right passphrase: the bucket is the account's.
+    const locked = await overwrite(OWNER_AUTH_HASH);
+    assert.equal(locked.status, 429);
+    assert.ok(locked.headers.get('retry-after'));
+
+    const records = await strict.request<KeyRecordList>({ method: 'GET', path: '/v1/sync/key-records', accessToken });
+    const recovery = records.body.records.find((record) => record.kind === 'recovery');
+    assert.notEqual(recovery?.wrappedDek, sampleWrappedDek(66), 'no guess wrote the recovery wrap');
+  } finally {
+    await strict.close();
+  }
+});

@@ -220,6 +220,7 @@ import { decideCapability } from './capability-gate.js';
 import { createUsageTap, type CompletionUsage, type UsageTap } from './usage-tap.js';
 import type { TrialNetworkShare } from './trial-network.js';
 import { errorFields } from '../log-error.js';
+import { stripTrailingSlashes } from '../lib/trailing-slashes.js';
 
 /**
  * The upstream this proxy forwards to, already validated all-or-nothing by
@@ -460,7 +461,7 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
     upstream: upstreamConfig,
   } = deps;
   const now = deps.now ?? ((): Date => new Date());
-  const upstreamUrl = `${upstreamConfig.baseUrl.replace(/\/+$/, '')}/chat/completions`;
+  const upstreamUrl = `${stripTrailingSlashes(upstreamConfig.baseUrl)}/chat/completions`;
 
   /**
    * ONE dispatcher for the life of the handler, not one per request: an `Agent`

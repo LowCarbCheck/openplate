@@ -117,6 +117,7 @@ import { parseAccountLabel } from '../admin/account-label.js';
 import type { AiCapacityReader } from '../ai/quota-store.js';
 import type { UpstreamBudgetRead, UpstreamBudgetReset, UpstreamBudgetSource } from '../ai/upstream-budget.js';
 import { scrubbedErrorMessage } from '../log-error.js';
+import { stripTrailingSlashes } from '../lib/trailing-slashes.js';
 
 /** Mount prefix for the operator endpoints. The user-facing families live under `/v1/auth` and `/v1/sync`. */
 export const ADMIN_API_PREFIX = '/v1/admin';
@@ -668,7 +669,7 @@ function toInviteView(invite: InviteSummary, now: Date): AdminInviteView {
 function buildJoinLink(input: { links: AdminLinkBases | null; token: string }): string | null {
   if (input.links === null) return null;
   const server = encodeURIComponent(input.links.serverPublicUrl);
-  return `${input.links.clientBaseUrl.replace(/\/+$/, '')}/join#server=${server}&invite=${input.token}`;
+  return `${stripTrailingSlashes(input.links.clientBaseUrl)}/join#server=${server}&invite=${input.token}`;
 }
 
 /**
@@ -681,7 +682,7 @@ function buildJoinLink(input: { links: AdminLinkBases | null; token: string }): 
 function buildResetLink(input: { links: AdminLinkBases | null; token: string }): string | null {
   if (input.links === null) return null;
   const server = encodeURIComponent(input.links.serverPublicUrl);
-  return `${input.links.clientBaseUrl.replace(/\/+$/, '')}/reset#server=${server}&token=${input.token}`;
+  return `${stripTrailingSlashes(input.links.clientBaseUrl)}/reset#server=${server}&token=${input.token}`;
 }
 
 /** The two absolute URLs a join link is built from. Both or neither, see `config.ts`. */

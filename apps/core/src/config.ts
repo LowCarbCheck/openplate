@@ -55,6 +55,7 @@ import {
   LEGAL_DECLARATION_RECEIPTS_PER_DAY,
   LEGAL_DECLARATION_RECEIPTS_PER_NETWORK_PER_DAY,
 } from './legal/receipt-ceilings.js';
+import { stripTrailingSlashes } from './lib/trailing-slashes.js';
 
 /**
  * Minimum accepted `SERVER_SECRET` length. 32 characters is the shortest
@@ -793,7 +794,7 @@ function parsePlans(env: NodeJS.ProcessEnv): PlansUpstreamConfig | null {
   return {
     // Trailing slashes stripped once, here, so the proxy can concatenate a
     // path without deciding whether to.
-    baseUrl: baseUrl.replace(/\/+$/, ''),
+    baseUrl: stripTrailingSlashes(baseUrl),
     secret: env.PLANS_UPSTREAM_SECRET?.trim() ?? '',
   };
 }
@@ -962,7 +963,7 @@ function parseOptionalBaseUrl(env: NodeJS.ProcessEnv, key: string): string | nul
   }
   // Trailing slashes are stripped once, here, so every caller can concatenate
   // a path without deciding whether to.
-  return raw.replace(/\/+$/, '');
+  return stripTrailingSlashes(raw);
 }
 
 /**
@@ -1439,7 +1440,7 @@ function parseAi(env: NodeJS.ProcessEnv): AiUpstreamConfig | null {
   return {
     // Trailing slashes stripped once, here, so `proxy.ts` can concatenate a
     // path without deciding whether to.
-    baseUrl: baseUrl.replace(/\/+$/, ''),
+    baseUrl: stripTrailingSlashes(baseUrl),
     apiKey: env.UPSTREAM_API_KEY?.trim() ?? '',
     timeoutMs: parsePositiveInteger(env, 'UPSTREAM_TIMEOUT_MS', DEFAULT_UPSTREAM_TIMEOUT_MS),
   };
