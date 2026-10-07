@@ -7,6 +7,16 @@ change moves the minor.
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-10-07
+
+### Changed
+
+- **Only JPEG, PNG and WebP photos reach the image decoder.** An uploaded file goes to sharp, and libvips can load formats that are not photos: SVG, PDF, TIFF, animated GIF and HEIF. The service now blocks those five loaders for the whole process, and each decode also carries a format allow list of jpeg, png and webp, so a file that names another format fails early. A photo in an allowed format decodes as before. This is a second guard beside the librsvg fix that comes with sharp 0.35.5. ([435cbb05](https://github.com/LowCarbCheck/openplate/commit/435cbb05))
+
+### Fixed
+
+- **Dependency fixes clear the open security alerts.** `sharp` moves to 0.35.5, `undici` to 8.10.2 and `proxy-addr` to 2.0.8. The test runner `vitest` moves from 3 to 4.1.11, which changes the test tooling only and nothing in the shipped service. No setting changes. The release workflow now holds a read-only token, and a Dependabot config checks for updates every week. ([0dbde3eb](https://github.com/LowCarbCheck/openplate/commit/0dbde3eb))
+
 ## [0.3.0] - 2026-10-01
 
 ### Added
