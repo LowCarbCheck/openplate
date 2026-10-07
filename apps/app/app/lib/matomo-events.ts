@@ -295,6 +295,7 @@ export type ScanFailureReason =
   | 'trial-expired'
   | 'capability-required'
   | 'ai-instance-ceiling'
+  | 'ai-quota-spent'
   // Not provider causes: the photo never reached a provider at all.
   | 'no-provider'
   | 'unreadable-image'

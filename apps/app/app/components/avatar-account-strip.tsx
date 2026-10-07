@@ -49,7 +49,8 @@ import { useSyncSession } from './sync-status';
 import { useInstancePolicy, useSyncServerUrl } from '#app/hooks/use-public-config';
 import { useServerInstance } from '#app/hooks/use-server-instance';
 import { hasPlansDoor } from '#app/lib/plans/plans-door';
-import { shownDailyAiLimit } from '#app/lib/plans/free-grant';
+import { describeQuotaReset, type AiLimitPeriod } from '#app/lib/plans/ai-quota';
+import { shownAllowance } from '#app/lib/plans/free-grant';
 import { bindingTrialScans, trialDaysLeft, type TrialScans } from '#app/lib/plans/trial-scans';
 import { formatRelativeTime } from '#app/lib/relative-time';
 import { deriveSyncMenuState, type SyncMenuState } from '#app/lib/sync/sync-menu-state';
@@ -69,8 +70,12 @@ export const ACCOUNT_STRIP_HREF = '/settings/account';
 export type AllowanceLine =
   /** Nothing to add: the AI does not come from the instance, or the view is unread. */
   | { kind: 'none' }
-  /** A working allowance, with today's numbers. */
-  | { kind: 'usage'; used: number; limit: number }
+  /**
+   * A working allowance, with the count in its window: today for a `'day'`,
+   * Monday to today for a `'week'`. `resetsAt` is when the count starts again,
+   * or `null` from a core that does not say (2026-10-07).
+   */
+  | { kind: 'usage'; used: number; limit: number; period: AiLimitPeriod; resetsAt: string | null }
   /**
    * A scan trial, with the free scans left (M253/05). Replaces the per-day
    * line. `daysLeft` is the free tier's days left (`trialDaysLeft`), or
@@ -86,10 +91,18 @@ export type AllowanceLine =
 export interface AllowanceLineInput {
   /** `InstancePolicy.aiComesFromTheInstance`, the same question `/settings` asks. */
   aiComesFromTheInstance: boolean;
-  /** `session.account.dailyAiLimit`. `null` is "not read yet", never "zero". */
-  dailyAiLimit: number | null;
-  /** `session.account.aiUsedToday`. `null` is "not read yet". */
-  aiUsedToday: number | null;
+  /** The limit the proxy holds this account to (`shownAllowance`). `null` is "not read yet", never "zero". */
+  limit: number | null;
+  /**
+   * The count in that limit's window (`shownAllowance`). `null` is "this device
+   * cannot know it", which a weekly limit read without an `aiQuota` is, and
+   * the strip then prints no count rather than today's against a week's limit.
+   */
+  used: number | null;
+  /** The window `limit` counts over. Absent is `'day'`, which is what every limit was before the week. */
+  period?: AiLimitPeriod;
+  /** When the count starts again, an ISO instant, or `null`/absent for a core that does not say. */
+  resetsAt?: string | null;
   /** `hasPlansDoor(useServerInstance())`. */
   plansAvailable: boolean;
   /**
@@ -110,19 +123,25 @@ export interface AllowanceLineInput {
  */
 export function resolveAllowanceLine({
   aiComesFromTheInstance,
-  dailyAiLimit,
-  aiUsedToday,
+  limit,
+  used,
+  period = 'day',
+  resetsAt = null,
   plansAvailable,
   trialScans,
   trialDaysLeft: daysLeft,
 }: AllowanceLineInput): AllowanceLine {
   if (!aiComesFromTheInstance) return { kind: 'none' };
-  if (dailyAiLimit === null) return { kind: 'none' };
-  if (dailyAiLimit === 0) return plansAvailable ? { kind: 'plan' } : { kind: 'no-allowance' };
+  if (limit === null) return { kind: 'none' };
+  if (limit === 0) return plansAvailable ? { kind: 'plan' } : { kind: 'no-allowance' };
   if (trialScans !== null && trialScans !== undefined) {
     return { kind: 'trial-scans', left: trialScans.left, granted: trialScans.granted, daysLeft: daysLeft ?? null };
   }
-  return { kind: 'usage', used: aiUsedToday ?? 0, limit: dailyAiLimit };
+  // A COUNT THAT IS NOT KNOWN IS NOT DRAWN. A weekly limit with no `aiQuota` has
+  // only today's count to go with it, and "3 of 40 this week" built from that
+  // would be a number nobody measured.
+  if (used === null && period === 'week') return { kind: 'none' };
+  return { kind: 'usage', used: used ?? 0, limit, period, resetsAt };
 }
 
 /**
@@ -182,6 +201,8 @@ export interface AccountStripViewProps {
   title: string | null;
   /** The third line. */
   allowance: AllowanceLine;
+  /** An IANA zone for the reset time, for a test that must not depend on the machine. Absent is the device's own. */
+  timeZone?: string;
 }
 
 /**
@@ -192,13 +213,23 @@ export interface AccountStripViewProps {
  * hooks cannot be exercised any other way. See
  * `tests/unit/avatar-account-strip.test.ts`.
  */
-export function AccountStripView({ state, title, allowance }: AccountStripViewProps) {
-  const { t } = useTranslation();
+export function AccountStripView({ state, title, allowance, timeZone }: AccountStripViewProps) {
+  const { t, i18n } = useTranslation();
   const status = useSyncStatusLine(state);
   // Signed out on an instance that HAS accounts. The strip is the door back
   // in, and "Abgemeldet" is the same word the settings hub's row already uses
   // for the same state.
   const heading = title ?? t('settings.rows.account.signedOut');
+  const resetLine =
+    allowance.kind === 'usage' ?
+      describeQuotaReset({
+        period: allowance.period,
+        resetsAt: allowance.resetsAt,
+        language: i18n.resolvedLanguage ?? i18n.language,
+        timeZone,
+        t,
+      })
+    : null;
 
   return (
     <>
@@ -225,8 +256,18 @@ export function AccountStripView({ state, title, allowance }: AccountStripViewPr
             )}
             {allowance.kind === 'usage' && (
               <span className="block truncate text-xs text-muted-foreground">
-                {t('account.allowance.today', { used: allowance.used, limit: allowance.limit })}
+                {t(allowance.period === 'week' ? 'account.allowance.thisWeek' : 'account.allowance.today', {
+                  used: allowance.used,
+                  limit: allowance.limit,
+                })}
               </span>
+            )}
+            {/* WHEN THE COUNT STARTS AGAIN, on its own line so the count above
+                never truncates for it. Its box comes with the count: both are
+                read from the same snapshot, so the menu opens with the line
+                already there and nothing under it moves. */}
+            {allowance.kind === 'usage' && resetLine !== null && (
+              <span className="block truncate text-xs text-muted-foreground">{resetLine}</span>
             )}
             {allowance.kind === 'trial-scans' && (
               <span className="block truncate text-xs text-muted-foreground">
@@ -274,17 +315,25 @@ export function AvatarAccountStrip() {
     freeDailyAiLimit: account?.freeDailyAiLimit,
   });
   const now = new Date();
+  // THE LIMIT THE PROXY HOLDS THIS ACCOUNT TO, with its window, its count and
+  // its reset (2026-10-07): the core's `aiQuota` when it sent one, otherwise
+  // the paid window's limit while it runs and the standing free grant's after.
+  const shown = shownAllowance({
+    dailyAiLimit: account?.dailyAiLimit ?? null,
+    aiUsedToday: account?.aiUsedToday ?? null,
+    aiLimitPeriod: account?.aiLimitPeriod,
+    freeDailyAiLimit: account?.freeDailyAiLimit,
+    freeAiLimitPeriod: account?.freeAiLimitPeriod,
+    allowanceExpiresAt: account?.allowanceExpiresAt ?? null,
+    aiQuota: account?.aiQuota,
+    now,
+  });
   const allowance = resolveAllowanceLine({
     aiComesFromTheInstance,
-    // THE LIMIT THE PROXY HOLDS THIS ACCOUNT TO TODAY (2026-09-30): the paid
-    // window's while it runs, otherwise the standing free grant's.
-    dailyAiLimit: shownDailyAiLimit({
-      dailyAiLimit: account?.dailyAiLimit ?? null,
-      freeDailyAiLimit: account?.freeDailyAiLimit,
-      allowanceExpiresAt: account?.allowanceExpiresAt ?? null,
-      now,
-    }),
-    aiUsedToday: account?.aiUsedToday ?? null,
+    limit: shown?.limit ?? null,
+    used: shown?.used ?? null,
+    period: shown?.period,
+    resetsAt: shown?.resetsAt,
     plansAvailable: hasPlansDoor(instance),
     trialScans,
     trialDaysLeft: trialDaysLeft({ trialScans, trialEndsAt: account?.trialEndsAt, now }),

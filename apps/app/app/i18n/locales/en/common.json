@@ -1306,7 +1306,7 @@
           "title": "Connect a provider, or skip it"
         },
         "connectManaged": {
-          "body": "The AI comes with this instance, so you bring no key and pay no provider. Your administrator sets how many photos may be read for you each day. Searching for a food never counts against that number, because only a photo has to be read.",
+          "body": "The AI comes with this instance, so you bring no key and pay no provider. Your administrator sets how many photos may be read for you. Searching for a food never counts against that number, because only a photo has to be read.",
           "title": "The AI is already set up for you"
         },
         "open": {
@@ -2034,7 +2034,10 @@
         "allowanceExpiredOn": "Your allowance for photo estimates ended on {{date}}. Everything else in openplate keeps working.",
         "instanceCeiling": "This instance has read all the photos it can today. Try again tomorrow. Nothing is wrong with your account.",
         "managedUpstream": "The AI provider for this instance rejected the request. Ask the person who runs it to check their provider setup.",
-        "allowanceSpentPlans": "You have used today's AI scans. Try again tomorrow, or see the plans."
+        "allowanceSpentPlans": "You have used today's AI scans. Try again tomorrow, or see the plans.",
+        "allowanceSpentWeek": "You have used this week's AI scans. They come back on {{weekday}} at {{time}}.",
+        "allowanceSpentWeekPlans": "You have used this week's AI scans. They come back on {{weekday}} at {{time}}, or see the plans.",
+        "allowanceSpentWeekUndated": "You have used this week's AI scans. They come back when the next week starts."
       },
       "readPhoto": "Failed to read that photo. Try another.",
       "titles": {
@@ -2054,6 +2057,7 @@
         "trialScansSpentUncounted": "You used your free AI scans",
         "trialDaysOver": "Your free days are over",
         "instanceCeiling": "This instance is out of capacity today",
+        "quotaSpent": "Your AI scans are used up",
         "managedUpstream": "The AI provider rejected the request"
       },
       "text": {
@@ -3232,6 +3236,12 @@
       "none": "Photo estimates are not switched on for this account.",
       "askAdmin": "Your administrator sets this.",
       "today": "Photo estimates today: {{used}} of {{limit}}",
+      "thisWeek": "Photo estimates this week: {{used}} of {{limit}}",
+      "bodyWeek": "{{used}} of {{limit}} used this week.",
+      "limitWeek_one": "Up to {{count}} AI scan a week.",
+      "limitWeek_other": "Up to {{count}} AI scans a week.",
+      "resetsWeek": "Resets {{weekday}} at {{time}}.",
+      "resetsDay": "Resets at {{time}}.",
       "trialScans": "{{left}} of {{granted}} free AI scans left.",
       "trialDaysLeft_one": "{{count}} day left in your free trial",
       "trialDaysLeft_other": "{{count}} days left in your free trial",
@@ -3252,7 +3262,8 @@
       "createdAt": "The day your account was created.",
       "lastSeenAt": "When you last signed in, or last had a photo read.",
       "aiUsedToday": "How many photos were read for you today.",
-      "dailyAiLimit": "How many photos may be read for you each day.",
+      "aiUsedThisWeek": "How many photos were read for you this week.",
+      "dailyAiLimit": "How many photos may be read for you, counted per day or per week.",
       "role": "Whether you may administer this instance yourself.",
       "suspendedAt": "Whether your account is suspended.",
       "activity": "They can also see how many photos were read for you on each of the last {{days}} days. Older daily counts are deleted.",
@@ -3366,6 +3377,7 @@
       "actions": "Actions"
     },
     "usage": "{{used}} of {{limit}}",
+    "usageWeek": "{{used}} of {{limit}} this week",
     "usageNone": "No photos",
     "trialScansUsed": "{{used}} of {{granted}} used",
     "lastSeen": {
@@ -3402,6 +3414,7 @@
       "save": "Save",
       "cancel": "Cancel",
       "allowanceLabel": "Photos per day",
+      "allowanceLabelWeek": "Photos per week",
       "allowanceHint": "Applies while a paid plan or free AI scans run. Setting this to 0 turns those off. Daily free photos stay.",
       "freeAllowanceLabel": "Free photos per day",
       "freeAllowanceHint": "These stay when no paid plan runs, and they never end. 0 takes them away.",
@@ -3670,6 +3683,8 @@
       "legend": "What each plan includes",
       "dailyLimit_one": "{{count}} AI scan a day",
       "dailyLimit_other": "{{count}} AI scans a day",
+      "weeklyLimit_one": "{{count}} AI scan a week",
+      "weeklyLimit_other": "{{count}} AI scans a week",
       "noScans": "No AI scans",
       "includes": "Includes: {{features}}.",
       "pricePerMonth": "{{price}} a month",

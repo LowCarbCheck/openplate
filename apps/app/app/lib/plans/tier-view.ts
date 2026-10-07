@@ -39,6 +39,7 @@
  * Yearly to monthly on one tier is not offered: the biller refuses it, because
  * the yearly plan already continues monthly after its year.
  */
+import type { AiLimitPeriod } from '#app/lib/plans/ai-quota';
 import { FEATURE_LABELS, isFeatureLabel, type FeatureLabel } from '#app/lib/plans/capabilities';
 import {
   PLAN_KEYS,
@@ -55,8 +56,10 @@ export interface TierRowView {
   id: string;
   name: string;
   description: string;
-  /** AI scans a day, `0` for none, `null` when the biller states no limit. */
-  dailyAiLimit: number | null;
+  /** AI scans per {@link aiLimitPeriod}, `0` for none, `null` when the biller states no limit. */
+  aiLimit: number | null;
+  /** The window {@link aiLimit} counts over (2026-10-07). A biller older than the field counts per day. */
+  aiLimitPeriod: AiLimitPeriod;
   /** The features this tier includes that this build knows, in the order the plan page lists them. */
   features: FeatureLabel[];
   /** `true` for the tier the account is on. */
@@ -92,6 +95,27 @@ export interface OwnPlan {
 
 /** A reader with no subscription. */
 export const NO_OWN_PLAN: OwnPlan = { tierId: null, planKey: null, isPastDue: false };
+
+/** A tier's AI limit and the window it counts over. `limit` is `null` for a tier that states none. */
+export interface TierAiLimit {
+  limit: number | null;
+  period: AiLimitPeriod;
+}
+
+/**
+ * A tier's AI limit and its window, from what the biller sent.
+ *
+ * `aiLimit` with its `aiLimitPeriod` is the current form. A biller older than
+ * the pair sends `dailyAiLimit` alone, which always meant per day, so it is
+ * read as one. A weekly tier sends `dailyAiLimit: null`, and reading that
+ * alone would draw an empty line for a tier that has a limit.
+ */
+export function tierAiLimitOf(tier: Pick<Tier, 'dailyAiLimit' | 'aiLimit' | 'aiLimitPeriod'>): TierAiLimit {
+  if (tier.aiLimit !== undefined && tier.aiLimit !== null) {
+    return { limit: tier.aiLimit, period: tier.aiLimitPeriod ?? 'day' };
+  }
+  return { limit: tier.dailyAiLimit, period: 'day' };
+}
 
 /** The known feature words a capability list names, in the page's order and without duplicates. */
 export function knownFeaturesOf(capabilities: readonly string[]): FeatureLabel[] {
@@ -158,11 +182,13 @@ export function tiersViewOf({ offer, own }: { offer: PlanOffer; own: OwnPlan }):
     const ordering = orderingOf({ tier, index, own, ownRank });
     // THE FREE ENTRY IS CURRENT FOR A PERSON WITH NO TIER: the first entry, when it is not sold.
     const isFreeEntry = !tier.isSold;
+    const aiLimit = tierAiLimitOf(tier);
     return {
       id: tier.id,
       name: tier.name,
       description: tier.description,
-      dailyAiLimit: tier.dailyAiLimit,
+      aiLimit: aiLimit.limit,
+      aiLimitPeriod: aiLimit.period,
       features: knownFeaturesOf(tier.capabilities),
       isCurrent: own.tierId === null ? isFreeEntry && index === 0 : index === ownRank,
       isFree: isFreeEntry,

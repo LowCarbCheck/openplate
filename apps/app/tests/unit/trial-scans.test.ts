@@ -69,7 +69,7 @@ describe('bindingTrialScans', () => {
 });
 
 describe('the account strip on a scan trial', () => {
-  const base = { aiComesFromTheInstance: true, dailyAiLimit: 20, aiUsedToday: 4, plansAvailable: true };
+  const base = { aiComesFromTheInstance: true, limit: 20, used: 4, plansAvailable: true };
 
   it('says the free scans left instead of the per-day line', () => {
     assert.deepEqual(resolveAllowanceLine({ ...base, trialScans: { granted: 10, left: 3 } }), {
@@ -90,8 +90,9 @@ describe('the account strip on a scan trial', () => {
   });
 
   it('keeps the per-day line without a binding count, the control for the case above', () => {
-    assert.deepEqual(resolveAllowanceLine({ ...base, trialScans: null }), { kind: 'usage', used: 4, limit: 20 });
-    assert.deepEqual(resolveAllowanceLine(base), { kind: 'usage', used: 4, limit: 20 });
+    const perDay = { kind: 'usage', used: 4, limit: 20, period: 'day', resetsAt: null };
+    assert.deepEqual(resolveAllowanceLine({ ...base, trialScans: null }), perDay);
+    assert.deepEqual(resolveAllowanceLine(base), perDay);
   });
 });
 

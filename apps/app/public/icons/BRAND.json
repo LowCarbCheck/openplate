@@ -1,8 +1,8 @@
 {
   "note": "Written by `pnpm sync:brand`. Do not hand-edit, and do not hand-edit the icons it names.",
-  "repo": "git@github.com:LowCarbCheck/openplate-brand.git",
-  "ref": "v0.2.0",
-  "commit": "a6077d6762ca80498318311ada6d0f8bddb604c6",
+  "repo": "/var/home/altan/projects/openplate-workspace/openplate-brand",
+  "ref": "feat/line-icons-and-neutrals",
+  "commit": "73c04719d11572dc4b60609187d65fd72bf7cbeb",
   "producedBy": "openplate-brand, scripts/ship.ts",
   "markTeal": "#069A9D",
   "files": {

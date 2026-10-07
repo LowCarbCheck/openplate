@@ -186,8 +186,19 @@ export const tierSchema = z
     description: z.string(),
     /** `true` for a tier that can be ordered. `false` is the free entry. */
     isSold: z.boolean(),
-    /** AI scans per day, `0` for none, or `null` when the biller states no limit. */
+    /**
+     * AI scans per day, `0` for none, or `null` when the biller states no
+     * limit OR the tier counts per week (`aiLimit` and `aiLimitPeriod` below
+     * say which). Read it only through `tierAiLimit`.
+     */
     dailyAiLimit: z.number().int().nonnegative().nullable().catch(null),
+    /**
+     * AI scans per `aiLimitPeriod` (2026-10-07), `0` for none. Absent from a
+     * biller older than the field, which sends `dailyAiLimit` alone.
+     */
+    aiLimit: z.number().int().nonnegative().nullable().optional().catch(undefined),
+    /** The window `aiLimit` counts over. Absent or anything but `'week'` reads as a day, which is what every tier counted over before. */
+    aiLimitPeriod: z.enum(['day', 'week']).optional().catch(undefined),
     capabilities: z.array(z.string()).catch([]),
     plans: z.array(offerPlanSchema),
   })

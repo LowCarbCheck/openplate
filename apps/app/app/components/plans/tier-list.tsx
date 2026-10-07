@@ -3,7 +3,7 @@
  *
  * One card per row of `tiersViewOf`: the name, the description and the prices
  * are the biller's words and figures, drawn as served. What this file writes is
- * chrome: the line about scans a day, the names of the features (from the
+ * chrome: the line about scans a day or a week, the names of the features (from the
  * catalog, by feature word), the mark on the person's own tier and the label of
  * the switch button. No tier name and no price is in this file.
  *
@@ -87,9 +87,11 @@ export function TierList({ rows, pickedTierId, canPick, onPick }: TierListProps)
                 {row.description}
               </span>
               <span data-slot="tier-limit" className="block text-xs">
-                {row.dailyAiLimit === null ? EMPTY_LINE
-                : row.dailyAiLimit === 0 ? t('plan.tiers.noScans')
-                : t('plan.tiers.dailyLimit', { count: row.dailyAiLimit })}
+                {row.aiLimit === null ? EMPTY_LINE
+                : row.aiLimit === 0 ? t('plan.tiers.noScans')
+                : t(row.aiLimitPeriod === 'week' ? 'plan.tiers.weeklyLimit' : 'plan.tiers.dailyLimit', {
+                    count: row.aiLimit,
+                  })}
               </span>
               {row.features.length > 0 && (
                 <span data-slot="tier-features" className="block text-xs text-muted-foreground">

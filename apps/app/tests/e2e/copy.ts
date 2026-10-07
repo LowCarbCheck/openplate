@@ -111,7 +111,18 @@ const catalogSchema = z.object({
       previewAlt: z.string(),
     }),
     errors: z.object({
-      titles: z.object({ allowanceExpired: z.string(), trialScansSpent_other: z.string(), aiNotAllowed: z.string() }),
+      titles: z.object({
+        allowanceExpired: z.string(),
+        trialScansSpent_other: z.string(),
+        aiNotAllowed: z.string(),
+        quotaSpent: z.string(),
+      }),
+      provider: z.object({
+        allowanceSpent: z.string(),
+        allowanceSpentPlans: z.string(),
+        allowanceSpentWeek: z.string(),
+        allowanceSpentWeekPlans: z.string(),
+      }),
       /** The pick this device could not re-encode, refused instead of sent as it was (M3/05). */
       photo: z.object({ notPrepared: z.string() }),
     }),
@@ -291,6 +302,10 @@ const catalogSchema = z.object({
     /** The scan trial's two lines: the scans left, and beside them the days left (2026-09-30). */
     allowance: z.object({
       today: z.string(),
+      /** The weekly twins of `today`, and the line that says when a count starts again (2026-10-07). */
+      thisWeek: z.string(),
+      resetsWeek: z.string(),
+      resetsDay: z.string(),
       trialScans: z.string(),
       trialDaysLeft_one: z.string(),
       trialDaysLeft_other: z.string(),

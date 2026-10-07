@@ -34,7 +34,21 @@ export const accountViewSchema = z.object({
   displayName: z.string().nullable(),
   role: accountRoleSchema,
   dailyAiLimit: z.number().int(),
+  /**
+   * The window `dailyAiLimit` counts over: a UTC day, or a UTC week from Monday
+   * 00:00 (2026-10-07, `PROTOCOL.md` §5.20). ABSENT from a core older than the
+   * field, which means `'day'`, so a reader writes `?? 'day'` and every fixture
+   * written before the field is still right.
+   */
+  aiLimitPeriod: z.enum(['day', 'week']).optional().catch(undefined),
   aiUsedToday: z.number().int(),
+  /**
+   * Requests this account spent from Monday 00:00 UTC to today, whatever its
+   * window (2026-10-07). ABSENT or `null` from a core older than the field. It
+   * is the count an admin reads against a WEEKLY limit; `aiUsedToday` is today
+   * only.
+   */
+  aiUsedThisWeek: z.number().int().min(0).nullable().optional().catch(undefined),
   /**
    * When this account's AI allowance ends, or `null` for no end at all.
    *

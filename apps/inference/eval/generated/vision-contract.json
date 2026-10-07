@@ -8,7 +8,7 @@
       "apps/app/app/lib/photo-constraints.ts": "f0572fb52c839d4813113f64ddd872f35f6b78e5",
       "apps/app/app/lib/remaining-day.ts": "244737f4c5194eb426adb19947cb5d5deef30bae",
       "apps/app/app/services/vision/catalog.ts": "c4fa8bfa0882587b747516200c0bd6450e0a53a7",
-      "apps/app/app/services/vision/openai-compatible.ts": "00ffcd72191896b351bc718f1df78c0d201decc3",
+      "apps/app/app/services/vision/openai-compatible.ts": "c17c2ea38d87a4ef046767ad123ad7d1f81916f1",
       "apps/app/app/services/vision/pantry-prompt.ts": "f20a99544f027134fee5ee9ff550bdecf77d7eac",
       "apps/app/app/services/vision/pantry-schema.ts": "a18dd54960131b7b9fcc750a8a0a9618f6a4fcdd",
       "apps/app/app/services/vision/prompt.ts": "cd6145b02dcd433943a7936383ece876b8bf7850",

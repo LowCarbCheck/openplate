@@ -169,11 +169,11 @@ invitation as a link an administrator can copy and send, mailed or not. See
 sub-keys.
 
 On a managed instance that same server also carries the scan. A signed-in member posts the
-photo to the AI proxy, the server counts it against that account's daily allowance, and it
+photo to the AI proxy, the server counts it against that account's allowance (per day or per week), and it
 forwards the request to whatever the operator pointed it at.
 
 ```mermaid
-%% alt: On a managed instance the signed-in member scans through the core server's AI proxy, which counts the request against a daily allowance.
+%% alt: On a managed instance the signed-in member scans through the core server's AI proxy, which counts the request against the account's allowance.
 flowchart LR
   browser["Member's browser"] -->|"ciphertext"| sync["openplate-core, managed"]
   browser -->|"photo"| sync

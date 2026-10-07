@@ -63,7 +63,8 @@ import { useInstancePolicy } from '#app/hooks/use-public-config';
 import { useServerInstanceRead } from '#app/hooks/use-server-instance';
 import { resolveAllowanceDoor, type AllowanceDoor } from '#app/lib/ai/managed-ai-settings';
 import { hasPlansDoor, PLAN_PAGE_HREF } from '#app/lib/plans/plans-door';
-import { hasFreeGrant, isPaidWindowLive, shownDailyAiLimit } from '#app/lib/plans/free-grant';
+import { describeQuotaReset } from '#app/lib/plans/ai-quota';
+import { hasFreeGrant, isPaidWindowLive, shownAllowance, type ShownAllowance } from '#app/lib/plans/free-grant';
 import { bindingTrialScans, trialDaysLeft, type TrialScans } from '#app/lib/plans/trial-scans';
 import type { Translate } from '#app/lib/sync/setup-flow';
 import { canSendMemberInvites } from '#app/lib/sync/member-invites';
@@ -135,14 +136,20 @@ export default function SettingsAccount() {
     allowanceExpiresAt: account?.allowanceExpiresAt ?? null,
     freeDailyAiLimit: account?.freeDailyAiLimit,
   });
-  // THE LIMIT THE PROXY HOLDS THIS ACCOUNT TO TODAY (2026-09-30): the paid
-  // window's while it runs, otherwise the standing free grant's. `null` while
-  // the account view is not read, like the raw limit.
+  // THE LIMIT THE PROXY HOLDS THIS ACCOUNT TO, with its window, the count in
+  // it and when it starts again (2026-10-07): the core's `aiQuota` when it
+  // sent one, otherwise the paid window's limit while it runs and the standing
+  // free grant's after (2026-09-30). `null` while the account view is not
+  // read, like the raw limit.
   const now = new Date();
-  const dailyLimit = shownDailyAiLimit({
+  const allowance = shownAllowance({
     dailyAiLimit: account?.dailyAiLimit ?? null,
+    aiUsedToday: account?.aiUsedToday ?? null,
+    aiLimitPeriod: account?.aiLimitPeriod,
     freeDailyAiLimit: account?.freeDailyAiLimit,
+    freeAiLimitPeriod: account?.freeAiLimitPeriod,
     allowanceExpiresAt: account?.allowanceExpiresAt ?? null,
+    aiQuota: account?.aiQuota,
     now,
   });
   // AND THE PAID WINDOW'S END ONLY WHILE IT BINDS. A plan that ended above a
@@ -187,11 +194,7 @@ export default function SettingsAccount() {
             // `AccountView` read must never show a borrowed `0` as this
             // account's allowance. The `useEffect` above refreshes on open,
             // so this is a loading flicker, not a dead end.
-            allowance={
-              aiComesFromTheInstance && dailyLimit !== null && account.aiUsedToday !== null ?
-                { usedToday: account.aiUsedToday, dailyLimit }
-              : null
-            }
+            allowance={aiComesFromTheInstance ? allowance : null}
             trialScans={trialScans}
             trialDaysLeft={daysLeft}
           />
@@ -204,10 +207,9 @@ export default function SettingsAccount() {
               card, where nothing sits below it to be pushed. */}
           {instanceRead.isSettled && (
             <>
-              {aiComesFromTheInstance && dailyLimit !== null && account.aiUsedToday !== null && (
+              {aiComesFromTheInstance && allowance !== null && (
                 <AllowanceCard
-                  dailyLimit={dailyLimit}
-                  usedToday={account.aiUsedToday}
+                  allowance={allowance}
                   expiresAt={shownExpiresAt}
                   door={allowanceDoor}
                   plansAvailable={plansAvailable}
@@ -320,8 +322,8 @@ function IdentityCard({
 }: {
   email: string;
   displayName: string | null;
-  /** `null` on an open instance, where there is no allowance to have. */
-  allowance: { usedToday: number; dailyLimit: number } | null;
+  /** `null` on an open instance, where there is no allowance to have, and while the account is not read. */
+  allowance: ShownAllowance | null;
   /** The scan trial that binds this account, or `null`. Replaces the per-day line (M253/05). */
   trialScans: TrialScans | null;
   /** That trial's days left (`trialDaysLeft`), or `null` for no day line. */
@@ -356,10 +358,13 @@ function IdentityCard({
           working. `AllowanceCard` below explains it; this line is the
           number (M192/06). It sits inside the box now rather than beside the
           heading: a section carries ONE description, and the address is it. */}
-      {allowance !== null && allowance.dailyLimit > 0 && (
+      {allowance !== null && allowance.limit > 0 && (trialScans !== null || allowance.used !== null) && (
         <p className="text-sm text-muted-foreground">
           {trialScans === null ?
-            t('account.allowance.today', { used: allowance.usedToday, limit: allowance.dailyLimit })
+            t(allowance.period === 'week' ? 'account.allowance.thisWeek' : 'account.allowance.today', {
+              used: allowance.used ?? 0,
+              limit: allowance.limit,
+            })
           : t('account.allowance.trialScans', { left: trialScans.left, granted: trialScans.granted })}
           {/* THE DAYS, INSIDE THE SAME LINE'S BOX, reserved with the scans:
               a date that arrives after the first paint moves nothing below. */}
@@ -390,23 +395,29 @@ function IdentityCard({
   );
 }
 
-/** The allowance card's one line: none, a scan trial's count, or today's numbers. */
+/**
+ * The allowance card's one line: none, a scan trial's count, the count in the
+ * window, or the limit alone when this device cannot know the count (a weekly
+ * limit read without an `aiQuota`).
+ */
 function describeAllowance({
-  dailyLimit,
-  usedToday,
+  allowance,
   trialScans,
   t,
 }: {
-  dailyLimit: number;
-  usedToday: number;
+  allowance: ShownAllowance;
   trialScans: TrialScans | null;
   t: Translate;
 }): string {
-  if (dailyLimit === 0) return t('account.allowance.none');
+  if (allowance.limit === 0) return t('account.allowance.none');
   if (trialScans !== null) {
     return t('account.allowance.trialScans', { left: trialScans.left, granted: trialScans.granted });
   }
-  return t('account.allowance.body', { used: usedToday, limit: dailyLimit });
+  if (allowance.used === null) return t('account.allowance.limitWeek', { count: allowance.limit });
+  return t(allowance.period === 'week' ? 'account.allowance.bodyWeek' : 'account.allowance.body', {
+    used: allowance.used,
+    limit: allowance.limit,
+  });
 }
 
 /**
@@ -417,17 +428,16 @@ function describeAllowance({
  * one question it answers: "why did my scan stop working today".
  */
 function AllowanceCard({
-  dailyLimit,
-  usedToday,
+  allowance,
   expiresAt,
   door,
   plansAvailable,
   trialScans,
   trialDaysLeft: daysLeft,
 }: {
-  dailyLimit: number;
-  usedToday: number;
-  /** The scan trial that binds this account, or `null`. Its count replaces the per-day line (M253/05). */
+  /** The limit the proxy holds this account to, its window, the count in it and the reset (`shownAllowance`). */
+  allowance: ShownAllowance;
+  /** The scan trial that binds this account, or `null`. Its count replaces the per-window line (M253/05). */
   trialScans: TrialScans | null;
   /** That trial's days left (`trialDaysLeft`), or `null` for no day line. */
   trialDaysLeft: number | null;
@@ -452,19 +462,34 @@ function AllowanceCard({
   plansAvailable: boolean;
 }) {
   const { t, i18n } = useTranslation();
+  const resetLine = describeQuotaReset({
+    period: allowance.period,
+    resetsAt: allowance.resetsAt,
+    language: i18n.resolvedLanguage ?? i18n.language,
+    t,
+  });
   return (
     <SettingsSection
       label={t('account.allowance.title')}
-      description={describeAllowance({ dailyLimit, usedToday, trialScans, t })}
+      description={describeAllowance({ allowance, trialScans, t })}
     >
       {/* THE DAYS, NEXT TO THE SCANS the description states (owner decision
           2026-09-30). A child line and not a second description: a section
           carries one. Its box is reserved with the scans the description
           states, so a date that arrives later moves nothing. */}
-      {dailyLimit > 0 && trialScans !== null && (
+      {allowance.limit > 0 && trialScans !== null && (
         <p className="text-sm text-muted-foreground">
           <TrialDaysLeftLine daysLeft={daysLeft} />
         </p>
+      )}
+      {/* WHEN THE COUNT STARTS AGAIN, beside the count it bounds. A weekday and a
+          time in the reader's own zone, because the core resets at Monday 00:00
+          UTC, which is Sunday evening in some zones. Drawn from the first
+          paint of the card, which waits for the handshake and arrives with the
+          snapshot's quota already in it, so nothing below it moves. A scan
+          trial has no window to restart, so it draws none. */}
+      {allowance.limit > 0 && trialScans === null && resetLine !== null && (
+        <p className="text-sm text-muted-foreground">{resetLine}</p>
       )}
       {/* THE DATE, BESIDE THE NUMBER IT BOUNDS. A DATE and not a phrase: "in
           3 days" is a sentence baked in one language and computed against

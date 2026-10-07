@@ -37,6 +37,7 @@ import type { PrivateStoreSession } from './private-store';
 import type { StorageHealNotice } from './storage-heal';
 import type { SyncStateStore, KeyValueStorage } from './sync-state';
 import { assertDeviceMayOpen, browserStorage, releaseDeviceLockForOwner } from './sync-state';
+import { decodeAiLimitPeriod, decodeAiQuota, type AiLimitPeriod, type AiQuota } from '#app/lib/plans/ai-quota';
 import { decodeFreeDailyAiLimit } from '#app/lib/plans/free-grant';
 import { decodeTrialEndsAt, decodeTrialScans, withScansLeft, type TrialScans } from '#app/lib/plans/trial-scans';
 import { decodeHealthConsent, type HealthConsent } from '#app/lib/health-consent/health-consent';
@@ -130,6 +131,26 @@ export interface SyncSessionSnapshot {
      * the field reads `0`. OPTIONAL for the reason `trialScans` below is.
      */
     freeDailyAiLimit?: number | null;
+    /**
+     * The window `dailyAiLimit` counts over, `'day'` or `'week'` (2026-10-07).
+     * A core older than the field, and "not read yet", both read `'day'`,
+     * which is what every limit counted over before. OPTIONAL for the reason
+     * `trialScans` below is.
+     */
+    aiLimitPeriod?: AiLimitPeriod;
+    /** The window `freeDailyAiLimit` counts over. Absent reads `'day'`. OPTIONAL like `aiLimitPeriod`. */
+    freeAiLimitPeriod?: AiLimitPeriod;
+    /**
+     * What the proxy will hold the next request to: the limit, its window, the
+     * count in it and the instant it starts again (2026-10-07).
+     *
+     * `null` IS THREE THINGS: the core's "the proxy would refuse", "not read
+     * yet" and "a core older than the field". None of them is a number, and a
+     * reader falls back to the limits above rather than inventing one. RENDER
+     * IT, NEVER AUTHORIZE ON IT, and name no plan from it: see
+     * `#app/lib/plans/ai-quota`. OPTIONAL like `aiLimitPeriod`.
+     */
+    aiQuota?: AiQuota | null;
     /**
      * How many invitations this account may still send, or `null`.
      *
@@ -381,6 +402,9 @@ export function openSyncSession(next: SyncVault, initial: { lastSyncedAt: number
       // put `undefined` where every reader tests for `null`.
       allowanceExpiresAt: knownAccount?.allowanceExpiresAt ?? null,
       freeDailyAiLimit: knownAccount === null ? null : decodeFreeDailyAiLimit(knownAccount.freeDailyAiLimit),
+      aiLimitPeriod: decodeAiLimitPeriod(knownAccount?.aiLimitPeriod),
+      freeAiLimitPeriod: decodeAiLimitPeriod(knownAccount?.freeAiLimitPeriod),
+      aiQuota: decodeAiQuota(knownAccount?.aiQuota),
       invitesLeft: knownAccount?.invitesLeft ?? null,
       invitesNeedAPlan: knownAccount?.invitesNeedAPlan === true,
       trialScans: decodeTrialScans(knownAccount?.trialScans),

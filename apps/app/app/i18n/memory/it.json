@@ -1,4 +1,11 @@
 {
+  "002716cb00267983": {
+    "en": "Resets {{weekday}} at {{time}}.",
+    "path": "common:account.allowance.resetsWeek",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-07",
+    "it": "Si azzera {{weekday}} alle {{time}}."
+  },
   "003362659fa46152": {
     "en": "Saved.",
     "path": "common:account.name.saved",
@@ -5109,6 +5116,13 @@
     "at": "2026-09-14",
     "it": "Il tuo riepilogo giornaliero · openplate"
   },
+  "3cf95a634529279d": {
+    "en": "{{count}} AI scans a week",
+    "path": "common:plan.tiers.weeklyLimit_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-07",
+    "it": "{{count}} scansioni IA a settimana"
+  },
   "3d19483c4ed66401": {
     "en": "What's new",
     "path": "common:whatsNew.title",
@@ -5255,6 +5269,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "{{count}} fette di pane"
+  },
+  "3f17df275f6e472f": {
+    "en": "How many photos may be read for you, counted per day or per week.",
+    "path": "common:account.operatorSees.dailyAiLimit",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-07",
+    "it": "Quante foto possono essere analizzate per te, calcolate al giorno o a settimana."
   },
   "3f1e35171fb389e1": {
     "en": "Save this list",
@@ -5760,6 +5781,13 @@
     "at": "2026-09-19",
     "it": "Media per pasto"
   },
+  "450dc11da118902b": {
+    "en": "How many photos were read for you this week.",
+    "path": "common:account.operatorSees.aiUsedThisWeek",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-07",
+    "it": "Quante foto sono state analizzate per te questa settimana."
+  },
   "453ee374531ae42f": {
     "en": "Choose from library",
     "path": "common:scan.capture.chooseLibrary",
@@ -6124,6 +6152,13 @@
     "at": "2026-09-28",
     "it": "Il tuo browser chiede ai siti di non tracciarlo, quindi questo browser non invia nulla."
   },
+  "4a4d38299e06e864": {
+    "en": "You have used this week's AI scans. They come back on {{weekday}} at {{time}}, or see the plans.",
+    "path": "common:scan.errors.provider.allowanceSpentWeekPlans",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-07",
+    "it": "Hai esaurito le scansioni IA di questa settimana. Saranno di nuovo disponibili {{weekday}} alle {{time}}, oppure consulta i piani."
+  },
   "4a4f15af7af019f1": {
     "en": "One stateless container, no database to run and no secret to configure. The compose file is in the repository, and the whole thing is a download and one command.",
     "path": "common:landing.features.selfHost.body",
@@ -6221,6 +6256,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Le foto diventano macronutrienti, senza bisogno di chiavi"
+  },
+  "4b59291dd7abb6ea": {
+    "en": "The AI comes with this instance, so you bring no key and pay no provider. Your administrator sets how many photos may be read for you. Searching for a food never counts against that number, because only a photo has to be read.",
+    "path": "common:landing.setup.steps.connectManaged.body",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-07",
+    "it": "L'IA è inclusa in questa istanza, quindi non devi inserire alcuna chiave né pagare alcun provider. Il tuo amministratore stabilisce quante foto possono essere lette per te. La ricerca di un alimento non viene mai scalata da tale numero, perché solo le foto richiedono una lettura."
   },
   "4b7197262d44ef53": {
     "en": "Never resets",
@@ -6718,6 +6760,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Ti diamo il benvenuto su openplate"
+  },
+  "5101a57af3fd6726": {
+    "en": "Your AI scans are used up",
+    "path": "common:scan.errors.titles.quotaSpent",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-07",
+    "it": "Hai esaurito le scansioni IA"
   },
   "51168251f67038f0": {
     "en": "The plan page now lists the tiers a plan service sells, and a subscriber can switch between them.",
@@ -9890,6 +9939,13 @@
     "at": "2026-09-14",
     "it": "Fibre"
   },
+  "74f1d18da6db0946": {
+    "en": "{{count}} AI scan a week",
+    "path": "common:plan.tiers.weeklyLimit_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-07",
+    "it": "{{count}} scansione IA a settimana"
+  },
   "75226d68893f6fba": {
     "en": "May contain eggs",
     "path": "common:cautions.mayContain.eggs",
@@ -11808,6 +11864,13 @@
     "at": "2026-09-23",
     "it": "Finora hai registrato {{count}} pasto con l'IA."
   },
+  "89b9569b98539498": {
+    "en": "Up to {{count}} AI scan a week.",
+    "path": "common:account.allowance.limitWeek_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-07",
+    "it": "Fino a {{count}} scansione IA a settimana."
+  },
   "89bbbc31fabcfce5": {
     "en": "Entry updated.",
     "path": "common:entry.toast.updated",
@@ -13348,6 +13411,13 @@
     "at": "2026-09-23",
     "it": "Quota fissa"
   },
+  "99f122b18942b5cb": {
+    "en": "Up to {{count}} AI scans a week.",
+    "path": "common:account.allowance.limitWeek_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-07",
+    "it": "Fino a {{count}} scansioni IA a settimana."
+  },
   "99f58c571d8e721c": {
     "en": "Reading your items...",
     "path": "common:pantry.reading",
@@ -13564,6 +13634,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Nessuna voce ancora presente in questo diario."
+  },
+  "9c21f9c74d324266": {
+    "en": "Photo estimates this week: {{used}} of {{limit}}",
+    "path": "common:account.allowance.thisWeek",
+    "model": "hand-written",
+    "at": "2026-10-07",
+    "it": "Stime dalle foto questa settimana: {{used}} su {{limit}}"
   },
   "9c26b827083947d6": {
     "en": "g over today",
@@ -15350,6 +15427,13 @@
     "at": "2026-09-14",
     "it": "La condivisione richiede la password del tuo account. Accedi prima su questo dispositivo."
   },
+  "b1270fac15005c1e": {
+    "en": "Photos per week",
+    "path": "common:admin.edit.allowanceLabelWeek",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-07",
+    "it": "Foto a settimana"
+  },
   "b1668d82c1ce6645": {
     "en": "You've hit the provider's rate limit. Free-tier scans reset daily, or add credits on OpenRouter for more. Any credits you add go straight to OpenRouter (not openplate), are entirely optional, and are a spend-down balance, not a subscription.",
     "path": "common:scan.errors.openrouterRateLimit",
@@ -17023,6 +17107,13 @@
     "at": "2026-09-14",
     "it": "{{minutes}}m"
   },
+  "c647c5f3c87b0fbb": {
+    "en": "{{used}} of {{limit}} used this week.",
+    "path": "common:account.allowance.bodyWeek",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-07",
+    "it": "{{used}} su {{limit}} utilizzati questa settimana."
+  },
   "c6541dddc3947cc6": {
     "en": "More now holds Settings.",
     "path": "releases:v0_48_0.changed.02",
@@ -17870,6 +17961,13 @@
     "at": "2026-09-17",
     "it": "su {{left}} rimanenti"
   },
+  "d1532fb7b08ac5b0": {
+    "en": "{{used}} of {{limit}} this week",
+    "path": "common:admin.usageWeek",
+    "model": "hand-written",
+    "at": "2026-10-07",
+    "it": "{{used}} di {{limit}} questa settimana"
+  },
   "d163e11aacbdf235": {
     "en": "Could not make a sharing key.",
     "path": "common:sharing.identity.failed",
@@ -18290,6 +18388,13 @@
     "at": "2026-09-14",
     "it": "Archiviato solo su questo dispositivo"
   },
+  "d50295789e91fb3b": {
+    "en": "Resets at {{time}}.",
+    "path": "common:account.allowance.resetsDay",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-07",
+    "it": "Si azzera alle {{time}}."
+  },
   "d504b048972ad9fc": {
     "en": "Loading",
     "path": "common:admin.feedback.loading",
@@ -18380,6 +18485,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Buona, abbastanza lunga da essere davvero difficile da indovinare."
+  },
+  "d5d9f48aec7b5572": {
+    "en": "You have used this week's AI scans. They come back on {{weekday}} at {{time}}.",
+    "path": "common:scan.errors.provider.allowanceSpentWeek",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-07",
+    "it": "Hai esaurito le scansioni IA di questa settimana. Saranno di nuovo disponibili {{weekday}} alle {{time}}."
   },
   "d6097bdeb74edd76": {
     "en": "Sesame",
@@ -21782,6 +21894,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Hai ricevuto un invito"
+  },
+  "fb98fc13da6d2e1e": {
+    "en": "You have used this week's AI scans. They come back when the next week starts.",
+    "path": "common:scan.errors.provider.allowanceSpentWeekUndated",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-07",
+    "it": "Hai esaurito le scansioni IA di questa settimana. Saranno di nuovo disponibili all'inizio della prossima settimana."
   },
   "fba7d22f0c001a02": {
     "en": "Their last update: {{at}}",

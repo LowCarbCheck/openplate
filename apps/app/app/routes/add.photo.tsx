@@ -16,6 +16,7 @@ import type {
   IdentifiedFood,
   PlateIdentification,
   ScanTokenUsage,
+  SpentQuota,
   VisionFailureCause,
 } from '#app/services/vision';
 import { MACRO_SOURCE_VALUES, photoIntakeTask, textIntakeTask } from '#app/services/vision';
@@ -127,6 +128,7 @@ import { getCarbStatus, carbStatusBadgeClass } from '#app/utils/carb-status';
 import { cn } from '#app/lib/utils';
 import { CHIP_NEUTRAL } from '#app/components/list-row';
 import { hasPlansDoor } from '#app/lib/plans/plans-door';
+import { formatQuotaReset } from '#app/lib/plans/ai-quota';
 import { isPaidWindowLive } from '#app/lib/plans/free-grant';
 import { PlanOfferCompact } from '#app/components/plans/plan-offer-compact';
 import { bindingTrialScans, newIntakeId, type TrialScans } from '#app/lib/plans/trial-scans';
@@ -536,8 +538,10 @@ type IdentifyResult =
       modelId?: string;
       /** Set only for a typed `VisionProviderFailure`, drives cause-specific alert copy (see `UploadForm`). */
       failureCause?: VisionFailureCause;
-      /** The server's `Retry-After` in seconds, when it sent one. Only ever set on a `rate-limit`. */
+      /** The server's `Retry-After` in seconds, when it sent one. Set on a `rate-limit` and on an `ai-quota-spent`. */
       retryAfterSeconds?: number | null;
+      /** The window a spent allowance names (2026-10-07). Only ever set on an `ai-quota-spent`. */
+      quota?: SpentQuota | null;
       /** The configured provider at the time of this attempt, lets `UploadForm` phrase a `rate-limit` failure with OpenRouter-specific "free tier resets daily" copy without `failure-cause.ts` (the provider-neutral adapter layer) knowing about any one provider. */
       provider?: AiProviderType;
     };
@@ -999,6 +1003,7 @@ async function handleClientIdentify(formData: FormData): Promise<IdentifyResult>
     const usage = error instanceof VisionProviderError ? error.usage : undefined;
     const failureCause = error instanceof VisionProviderFailure ? error.failureCause : undefined;
     const retryAfterSeconds = error instanceof VisionProviderFailure ? error.retryAfterSeconds : undefined;
+    const quota = error instanceof VisionProviderFailure ? error.quota : undefined;
     // A `VisionProviderError`'s own message is authored in the provider-neutral
     // vision adapter layer (`app/services/vision/failure-cause.ts`), which this
     // route can't translate from here, see `describeFailureBody`, which
@@ -1027,6 +1032,7 @@ async function handleClientIdentify(formData: FormData): Promise<IdentifyResult>
       modelId: model,
       failureCause,
       retryAfterSeconds,
+      quota,
       provider,
     };
   }
@@ -1991,6 +1997,7 @@ function ScanFlow({
         error={failedIdentify?.error ?? silentFailure}
         failureCause={failedIdentify?.failureCause}
         retryAfterSeconds={failedIdentify?.retryAfterSeconds}
+        quota={failedIdentify?.quota}
         allowanceEndsAt={allowanceEndsAt}
         trialScansGranted={trialScansGranted}
         accountTrialScans={accountTrialScans}
@@ -2037,6 +2044,9 @@ const FAILURE_TITLE_KEY_BY_CAUSE = {
   // of capacity for the day.
   'allowance-expired': 'scan.errors.titles.allowanceExpired',
   'ai-instance-ceiling': 'scan.errors.titles.instanceCeiling',
+  // A SPENT WINDOW, day or week (2026-10-07). One headline for both: it names
+  // neither, because the body says which window and when it returns.
+  'ai-quota-spent': 'scan.errors.titles.quotaSpent',
   // THE DATELESS, COUNTLESS FORM (M253/05). `getFailureAlertTitle` swaps in
   // the counted title when the session knows how many scans were given.
   'trial-scans-spent': 'scan.errors.titles.trialScansSpentUncounted',
@@ -2138,6 +2148,10 @@ const FAILURE_BODY_KEY_BY_CAUSE = {
   // swaps the two rate-limit sentences on `Retry-After`.
   'allowance-expired': 'scan.errors.provider.allowanceExpired',
   'ai-instance-ceiling': 'scan.errors.provider.instanceCeiling',
+  // A SPENT WINDOW is not a fixed sentence: it says when the allowance returns,
+  // from the window the refusal names, so `describeFailureBody` composes it
+  // before this map is asked (2026-10-07).
+  'ai-quota-spent': undefined,
   // The free scans are used: a plan is the next step, and the food database
   // still answers without AI (M253/05).
   'trial-scans-spent': 'scan.errors.provider.trialScansSpent',
@@ -2181,34 +2195,37 @@ export function shouldOfferPlansDoor(input: {
   plansAvailable: boolean;
   /** The server's `Retry-After`, in seconds, when it sent one. Tells a spent day from a burst. */
   retryAfterSeconds?: number | null;
-  /** Whether a paid window is live on the account, which a spent day does not offer a plan against. */
+  /** Whether a paid window is live on the account, which a spent allowance does not offer a plan against. */
   hasPaidWindow?: boolean;
 }): boolean {
   if (!input.plansAvailable || input.failureCause === undefined) return false;
   if (PLAN_DOOR_CAUSES.has(input.failureCause)) return true;
-  return isSpentDayWithoutPaidWindow(input);
+  return isSpentAllowanceWithoutPaidWindow(input);
 }
 
 /**
- * Whether this refusal is the daily cap used up on an account that holds no
- * paid window (M2/02, M2/05).
+ * Whether this refusal is the allowance used up on an account that holds no
+ * paid window (M2/02, M2/05, 2026-10-07).
  *
- * THE PROXY SAYS IT WITH A `429` AND A `Retry-After` OF A MINUTE OR MORE (a
- * burst limit clears within the minute), and `describeFailureBody` already
- * reads the header that way. What changed is who is offered something: a
- * person with no paid window can answer the spent day with a plan, so the
- * screen offers the plan page. A person whose paid window is live has already
- * paid, and keeps the bare "try again tomorrow".
+ * TWO WAYS TO SAY IT. A `429 ai-quota-spent` names the window itself, so it is
+ * a spent allowance whatever `Retry-After` says. A core older than that code
+ * answers a spent day with a bare `429` and a `Retry-After` of a minute or
+ * more (a burst limit clears within the minute), and `describeFailureBody`
+ * reads the header that way. Either way, a person with no paid window can
+ * answer it with a plan, so the screen offers the plan page. A person whose
+ * paid window is live has already paid, and gets no offer. THE ACCOUNT'S PLAN
+ * IS NOT READ FROM THE QUOTA'S `kind`, which can say "free" for a payer.
  *
- * PURE AND EXPORTED so both inputs have a control case.
+ * PURE AND EXPORTED so every input has a control case.
  */
-export function isSpentDayWithoutPaidWindow(input: {
+export function isSpentAllowanceWithoutPaidWindow(input: {
   failureCause?: VisionFailureCause;
   retryAfterSeconds?: number | null;
   hasPaidWindow?: boolean;
 }): boolean {
-  if (input.failureCause !== 'rate-limit') return false;
   if (input.hasPaidWindow === true) return false;
+  if (input.failureCause === 'ai-quota-spent') return true;
+  if (input.failureCause !== 'rate-limit') return false;
   const retryAfter = input.retryAfterSeconds;
   return retryAfter !== null && retryAfter !== undefined && retryAfter >= RATE_LIMIT_MINUTE_SECONDS;
 }
@@ -2245,8 +2262,12 @@ export function describeFailureBody(
      * spent day only says to come back tomorrow, as it always did.
      */
     plansAvailable?: boolean;
-    /** Whether a paid window is live on the account. A spent day on a paid window offers no plan. */
+    /** Whether a paid window is live on the account. A spent allowance on a paid window offers no plan. */
     hasPaidWindow?: boolean;
+    /** The window a `429 ai-quota-spent` names (2026-10-07). It decides whether the sentence says a weekday or "tomorrow". */
+    quota?: SpentQuota | null;
+    /** An IANA zone for the weekday and time of a weekly reset, for a test that must not depend on the machine. Absent is the device's own. */
+    timeZone?: string;
   },
   t: Translate,
 ): string | undefined {
@@ -2260,10 +2281,17 @@ export function describeFailureBody(
       return t('scan.errors.provider.allowanceExpiredOn', { date: formatNumericDate(endsAt, params.language) });
     }
   }
+  // A SPENT ALLOWANCE THAT NAMES ITS WINDOW (2026-10-07). A day says what it
+  // always said. A week says WHEN it returns, a weekday and a time in the
+  // reader's own zone, and never "tomorrow": a person with a spent week would
+  // come back the next day and be refused again.
+  if (params.failureCause === 'ai-quota-spent' && params.quota !== null && params.quota !== undefined) {
+    return describeSpentQuota({ ...params, quota: params.quota }, t);
+  }
   // A MANAGED 429 IS TWO DIFFERENT SENTENCES, and only the header tells them
-  // apart: a burst limit clears within the minute, a spent daily allowance
-  // does not clear until tomorrow. Saying "wait a moment" for the second is
-  // the failure this branch exists to avoid.
+  // apart on a core that names no window: a burst limit clears within the
+  // minute, a spent daily allowance does not clear until tomorrow. Saying
+  // "wait a moment" for the second is the failure this branch exists to avoid.
   if (params.failureCause === 'rate-limit') {
     const retryAfter = params.retryAfterSeconds;
     if (retryAfter !== null && retryAfter !== undefined && retryAfter < RATE_LIMIT_MINUTE_SECONDS) {
@@ -2274,7 +2302,7 @@ export function describeFailureBody(
       // to an account with no paid window. The mechanism is unchanged: the
       // proxy's refusal, the header, the card below the alert.
       return t(
-        params.plansAvailable === true && isSpentDayWithoutPaidWindow(params) ?
+        params.plansAvailable === true && isSpentAllowanceWithoutPaidWindow(params) ?
           'scan.errors.provider.allowanceSpentPlans'
         : 'scan.errors.provider.allowanceSpent',
       );
@@ -2283,6 +2311,41 @@ export function describeFailureBody(
   const bodyKey = params.failureCause ? FAILURE_BODY_KEY_BY_CAUSE[params.failureCause] : undefined;
   if (bodyKey) return t(bodyKey);
   return params.error;
+}
+
+/**
+ * The sentence for a `429 ai-quota-spent`, by the window it names.
+ *
+ * `'day'` keeps the daily wording. `'week'` names the weekday and the time the
+ * allowance returns, read from `resetsAt` in the reader's zone, and says only
+ * that the week turns over for a body that carried no instant that parses. The
+ * plan page is named where the account has no paid window to lean on.
+ */
+function describeSpentQuota(
+  params: {
+    quota: SpentQuota;
+    language: string;
+    plansAvailable?: boolean;
+    hasPaidWindow?: boolean;
+    timeZone?: string;
+  },
+  t: Translate,
+): string {
+  const offersPlans =
+    params.plansAvailable === true &&
+    isSpentAllowanceWithoutPaidWindow({ failureCause: 'ai-quota-spent', hasPaidWindow: params.hasPaidWindow });
+  if (params.quota.period === 'day') {
+    return t(offersPlans ? 'scan.errors.provider.allowanceSpentPlans' : 'scan.errors.provider.allowanceSpent');
+  }
+  const moment =
+    params.quota.resetsAt === null ?
+      null
+    : formatQuotaReset({ resetsAt: params.quota.resetsAt, language: params.language, timeZone: params.timeZone });
+  if (moment === null) return t('scan.errors.provider.allowanceSpentWeekUndated');
+  return t(offersPlans ? 'scan.errors.provider.allowanceSpentWeekPlans' : 'scan.errors.provider.allowanceSpentWeek', {
+    weekday: moment.weekday,
+    time: moment.time,
+  });
 }
 
 /**
@@ -2307,6 +2370,7 @@ export function UploadForm({
   error,
   failureCause,
   retryAfterSeconds,
+  quota,
   allowanceEndsAt,
   trialScansGranted,
   accountTrialScans = null,
@@ -2333,8 +2397,10 @@ export function UploadForm({
   error?: string;
   /** Machine-readable reason `error` happened, picks the alert's headline (see `getFailureAlertTitle`). */
   failureCause?: VisionFailureCause;
-  /** The server's `Retry-After` in seconds, tells a burst limit from a spent daily allowance. */
+  /** The server's `Retry-After` in seconds, tells a burst limit from a spent allowance on a core that names no window. */
   retryAfterSeconds?: number | null;
+  /** The window a spent allowance names, or `null`/absent (2026-10-07). Says when the allowance returns. */
+  quota?: SpentQuota | null;
   /**
    * The account's allowance end date, or `null`.
    *
@@ -2637,6 +2703,7 @@ export function UploadForm({
                         language: i18n.language,
                         plansAvailable,
                         hasPaidWindow,
+                        quota,
                       },
                       t,
                     )

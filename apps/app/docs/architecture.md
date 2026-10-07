@@ -120,8 +120,8 @@ the instance uses LowCarbCheck's anonymous tier;
 
 An instance can set `INSTANCE_MODE=managed` (see
 [configuration.md](configuration.md#managed-instances)). That declares one thing: **an
-organization runs this instance, invites its people by email, and gives each one a daily AI
-allowance.** openplate-core is what carries that, the account it already holds for sync also
+organization runs this instance, invites its people by email, and gives each one an AI
+allowance, counted per day or per week.** openplate-core is what carries that, the account it already holds for sync also
 holds the allowance, so there is no second connection step and no second credential.
 
 To the browser it is unchanged: a signed-in account with an allowance scans through the AI
@@ -201,7 +201,7 @@ injected script exfiltrating a key that lives in the page. See
 | --- | --- | --- |
 | **Your browser** | The whole diary, in the clear, in IndexedDB. Your AI key. Cached plate photos. | Everything. It is your device. |
 | **openplate app server** | No database, no accounts, no diary. At most one secret: the operator's key for the food database. | Page requests, and the names of the foods you look up or scan, which it forwards to the food database. Never a photo, never your AI key, never a diary entry, never a sync blob. |
-| **openplate-core** (optional) | An email address, an authentication verifier, KDF parameters, the diary as ciphertext, and the escrowed recovery code that can unwrap it. On a managed instance, also each account's daily allowance and usage count. With the features above turned on, also what each of them lists. | Blob size, write timing, session metadata. On a managed instance, also the photo forwarded to the AI proxy, for as long as it takes to forward it, read once, not stored. |
+| **openplate-core** (optional) | An email address, an authentication verifier, KDF parameters, the diary as ciphertext, and the escrowed recovery code that can unwrap it. On a managed instance, also each account's allowance (per day or per week) and usage count. With the features above turned on, also what each of them lists. | Blob size, write timing, session metadata. On a managed instance, also the photo forwarded to the AI proxy, for as long as it takes to forward it, read once, not stored. |
 | **openplate-inference** (optional) | Nothing per user: no accounts, no sessions, no cookies. Model weights and a food dataset. | The photo you sent it, for as long as the request takes. With the default food source it makes no outbound call except the one-time weight download. With `FOOD_SOURCE=lcc` or `off` it sends food names out, never the photo. |
 | **LowCarbCheck food database** (on unless turned off) | A usage count per key, or per network address for a caller without one. | Food names and a language, from the app server, with the instance's key. Never a photo, and never who you are. |
 | **Cloud AI provider** (BYOK path) | Whatever their policy says. | The photo, and your key. Their terms apply, not ours. |

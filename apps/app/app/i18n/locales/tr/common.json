@@ -1306,7 +1306,7 @@
           "title": "Bir sağlayıcı bağla veya bu adımı atla"
         },
         "connectManaged": {
-          "body": "Yapay zeka bu örnekle birlikte gelir, bu yüzden anahtar getirmez ve sağlayıcıya ödeme yapmazsın. Yöneticin senin için her gün kaç fotoğraf okunabileceğini belirler. Yiyecek aramak bu sayıdan asla düşmez, çünkü yalnızca fotoğrafın okunması gerekir.",
+          "body": "Yapay zeka bu örnekle birlikte gelir, bu yüzden anahtar getirmen veya sağlayıcıya ödeme yapman gerekmez. Yöneticin senin için kaç fotoğrafın okunabileceğini belirler. Yiyecek aramak bu sayıdan asla düşmez, çünkü yalnızca fotoğrafın okunması gerekir.",
           "title": "Yapay zeka senin için hazırlandı bile"
         },
         "open": {
@@ -2034,7 +2034,10 @@
         "allowanceExpiredOn": "Fotoğraf tahminleri için kotan {{date}} tarihinde doldu. openplate içindeki diğer her şey çalışmaya devam eder.",
         "instanceCeiling": "Bu kurulum bugün okuyabileceği azami fotoğraf sayısına ulaştı. Yarın tekrar dene. Hesabında herhangi bir sorun yok.",
         "managedUpstream": "Bu kurulumun yapay zeka sağlayıcısı isteği reddetti. Burayı yöneten kişiden sağlayıcı yapılandırmasını kontrol etmesini iste.",
-        "allowanceSpentPlans": "Bugünkü yapay zeka taramalarını kullandın. Yarın tekrar dene veya planlara göz at."
+        "allowanceSpentPlans": "Bugünkü yapay zeka taramalarını kullandın. Yarın tekrar dene veya planlara göz at.",
+        "allowanceSpentWeek": "Bu haftaki yapay zeka taramalarını kullandın. {{weekday}} günü saat {{time}} olduğunda yenilenecek.",
+        "allowanceSpentWeekPlans": "Bu haftaki yapay zeka taramalarını kullandın. {{weekday}} günü saat {{time}} olduğunda yenilenecek. Ya da planlara göz at.",
+        "allowanceSpentWeekUndated": "Bu haftaki yapay zeka taramalarını kullandın. Bir sonraki hafta başladığında yenilenecek."
       },
       "readPhoto": "Fotoğraf okunamadı. Başka bir tane dene.",
       "titles": {
@@ -2054,6 +2057,7 @@
         "trialScansSpentUncounted": "Ücretsiz yapay zeka tarama haklarını kullandın",
         "trialDaysOver": "Ücretsiz günlerin sona erdi",
         "instanceCeiling": "Bu kurulumun bugünkü kapasitesi doldu",
+        "quotaSpent": "Yapay zeka taramaların tükendi",
         "managedUpstream": "Yapay zeka sağlayıcısı isteği reddetti"
       },
       "text": {
@@ -3232,6 +3236,12 @@
       "none": "Bu hesap için fotoğraf tahminleri etkinleştirilmemiş.",
       "askAdmin": "Bunu yöneticin belirler.",
       "today": "Bugünkü fotoğraf tahminleri: {{used}} / {{limit}}",
+      "thisWeek": "Bu haftaki fotoğraf tahminleri: {{used}} / {{limit}}",
+      "bodyWeek": "Bu hafta {{used}} / {{limit}} kullanıldı.",
+      "limitWeek_one": "Haftada {{count}} yapay zeka taramasına kadar.",
+      "limitWeek_other": "Haftada {{count}} yapay zeka taramasına kadar.",
+      "resetsWeek": "{{weekday}} günü saat {{time}} olduğunda sıfırlanır.",
+      "resetsDay": "Saat {{time}} olduğunda sıfırlanır.",
       "trialScans": "{{left}} / {{granted}} ücretsiz yapay zeka taraması kaldı.",
       "trialDaysLeft_one": "Ücretsiz deneme sürende {{count}} gün kaldı",
       "trialDaysLeft_other": "Ücretsiz deneme sürende {{count}} gün kaldı",
@@ -3252,7 +3262,8 @@
       "createdAt": "Hesabının oluşturulduğu gün.",
       "lastSeenAt": "En son ne zaman giriş yaptığın veya en son ne zaman bir fotoğrafın okunduğu.",
       "aiUsedToday": "Bugün senin için kaç fotoğrafın okunduğu.",
-      "dailyAiLimit": "Senin için her gün kaç fotoğrafın okunabileceği.",
+      "aiUsedThisWeek": "Bu hafta senin için kaç fotoğrafın okunduğu.",
+      "dailyAiLimit": "Senin için günlük veya haftalık olarak kaç fotoğrafın okunabileceği.",
       "role": "Bu örneği bizzat yönetme yetkinin olup olmadığı.",
       "suspendedAt": "Hesabının askıya alınıp alınmadığı.",
       "activity": "Ayrıca son {{days}} günün her birinde senin için kaç fotoğrafın okunduğunu da görebilirler. Daha eski günlük sayımlar silinir.",
@@ -3366,6 +3377,7 @@
       "actions": "İşlemler"
     },
     "usage": "{{used}} / {{limit}}",
+    "usageWeek": "Bu hafta {{used}} / {{limit}}",
     "usageNone": "Fotoğraf yok",
     "trialScansUsed": "{{granted}} haktan {{used}} tanesi kullanıldı",
     "lastSeen": {
@@ -3402,6 +3414,7 @@
       "save": "Kaydet",
       "cancel": "İptal",
       "allowanceLabel": "Gün başına fotoğraf",
+      "allowanceLabelWeek": "Hafta başına fotoğraf",
       "allowanceHint": "Ücretli bir plan veya ücretsiz yapay zeka taramaları etkinken geçerlidir. Bunu 0 yapmak bunları kapatır. Günlük ücretsiz fotoğraflar kalır.",
       "freeAllowanceLabel": "Günlük ücretsiz fotoğraflar",
       "freeAllowanceHint": "Ücretli plan olmadığında da kalırlar ve süreleri hiç bitmez. 0 değeri bunları kaldırır.",
@@ -3670,6 +3683,8 @@
       "legend": "Her planın neleri içerdiği",
       "dailyLimit_one": "Günde {{count}} yapay zeka taraması",
       "dailyLimit_other": "Günde {{count}} yapay zeka taraması",
+      "weeklyLimit_one": "Haftada {{count}} yapay zeka taraması",
+      "weeklyLimit_other": "Haftada {{count}} yapay zeka taraması",
       "noScans": "Yapay zeka taraması yok",
       "includes": "Şunları içerir: {{features}}.",
       "pricePerMonth": "Ayda {{price}}",

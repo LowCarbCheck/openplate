@@ -90,7 +90,16 @@ export const OPERATOR_VISIBILITY = {
   createdAt: { copyKey: 'account.operatorSees.createdAt' },
   lastSeenAt: { copyKey: 'account.operatorSees.lastSeenAt' },
   aiUsedToday: { copyKey: 'account.operatorSees.aiUsedToday' },
+  // THE WEEK'S COUNT (2026-10-07). An operator reads it against a weekly limit,
+  // so it is a fact about the person they see, and it gets a line of its own.
+  aiUsedThisWeek: { copyKey: 'account.operatorSees.aiUsedThisWeek' },
   dailyAiLimit: { copyKey: 'account.operatorSees.dailyAiLimit' },
+  // THE WINDOW OF THAT LIMIT HAS NO LINE OF ITS OWN: the `dailyAiLimit` line
+  // says the limit counts per day or per week, so a second sentence would only
+  // repeat it as if it were another fact.
+  aiLimitPeriod: {
+    noLine: 'the window of the dailyAiLimit limit, which that line already discloses in the same words',
+  },
   role: { copyKey: 'account.operatorSees.role' },
   suspendedAt: { copyKey: 'account.operatorSees.suspendedAt' },
   // THE TWO M212 FIELDS. Both are facts about this person's standing, both are

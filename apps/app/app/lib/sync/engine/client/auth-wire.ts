@@ -68,9 +68,13 @@ export interface AccountViewWire {
   email: string;
   displayName: string | null;
   role: AccountRole;
-  /** Requests per UTC day this account may put through the instance's AI proxy. `0` means no AI. */
+  /**
+   * Requests per window (`aiLimitPeriod`, a UTC day unless it says `'week'`)
+   * this account may put through the instance's AI proxy. `0` means no AI. The
+   * name is the wire's and stays, for compatibility.
+   */
   dailyAiLimit: number;
-  /** Requests spent so far on the current UTC day. */
+  /** Requests spent so far on the current UTC day, TODAY ONLY whatever the window. The window's count is `aiQuota.used`. */
   aiUsedToday: number;
   /**
    * When this account's AI allowance ends, or `null` for no end at all.
@@ -95,6 +99,28 @@ export interface AccountViewWire {
    * `decodeFreeDailyAiLimit`, because this interface is a cast, not a parse.
    */
   freeDailyAiLimit?: number;
+  /**
+   * The window `dailyAiLimit` counts over: a UTC `'day'`, or a UTC `'week'`
+   * from Monday 00:00 (2026-10-07, `PROTOCOL.md` §5.15). ABSENT on a core
+   * older than the field, which means `'day'`.
+   *
+   * RENDER IT, NEVER AUTHORIZE ON IT. Read only through `decodeAiLimitPeriod`,
+   * because this interface is a cast, not a parse.
+   */
+  aiLimitPeriod?: 'day' | 'week';
+  /** The window `freeDailyAiLimit` counts over. ABSENT on an older core, which means `'day'`. Same rule as `aiLimitPeriod`. */
+  freeAiLimitPeriod?: 'day' | 'week';
+  /**
+   * The grant the proxy applies to the NEXT request, with the count in its
+   * window and the instant it starts again, or `null` when the proxy would
+   * refuse (`PROTOCOL.md` §5.15). ABSENT on a core older than the field.
+   *
+   * RENDER IT, NEVER AUTHORIZE ON IT. Its `kind` can say `"free"` for an
+   * account that pays (the paid floor), so no screen names a plan from it.
+   * Read only through `decodeAiQuota`, because this interface is a cast, not a
+   * parse.
+   */
+  aiQuota?: AiQuotaWire | null;
   /** When an admin suspended this account, or `null`. A suspended account cannot log in, refresh, sync or scan. */
   suspendedAt: IsoTimestamp | null;
   /**
@@ -165,6 +191,19 @@ export interface AccountViewWire {
    */
   capabilities?: string[] | null;
   createdAt: IsoTimestamp;
+}
+
+/**
+ * `AccountView.aiQuota` on the wire (`AiQuotaView` in `PROTOCOL.md` §5.15).
+ * `kind` is typed so the shape matches the document and is never read: see
+ * `#app/lib/plans/ai-quota`.
+ */
+export interface AiQuotaWire {
+  kind: 'paid' | 'free' | 'trial';
+  limit: number;
+  period: 'day' | 'week';
+  used: number;
+  resetsAt: IsoTimestamp;
 }
 
 /** `AccountView.trialScans` on the wire: how many scans were given, and how many are left. */

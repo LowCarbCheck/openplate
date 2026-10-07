@@ -100,7 +100,9 @@ export function PersonEditor({ person, isBusy, onCancel, onSave }: PersonEditorP
           </select>
         </div>
         <div className="space-y-1">
-          <Label htmlFor={`limit-${person.id}`}>{t('admin.edit.allowanceLabel')}</Label>
+          <Label htmlFor={`limit-${person.id}`}>
+            {t(person.aiLimitPeriod === 'week' ? 'admin.edit.allowanceLabelWeek' : 'admin.edit.allowanceLabel')}
+          </Label>
           <Input
             id={`limit-${person.id}`}
             type="number"

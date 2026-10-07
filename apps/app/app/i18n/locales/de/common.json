@@ -1306,7 +1306,7 @@
           "title": "Einen Anbieter verbinden oder überspringen"
         },
         "connectManaged": {
-          "body": "Die KI ist Teil dieser Instanz, du brauchst keinen Schlüssel und bezahlst keinen Anbieter. Dein Administrator legt fest, wie viele Fotos täglich für dich gelesen werden dürfen. Die Suche nach einem Lebensmittel zählt nie dazu, weil nur Fotos gelesen werden müssen.",
+          "body": "Die KI ist Teil dieser Instanz, du brauchst keinen Schlüssel und bezahlst keinen Anbieter. Dein Administrator legt fest, wie viele Fotos für dich gelesen werden dürfen. Die Suche nach einem Lebensmittel zählt nie dazu, weil nur Fotos gelesen werden müssen.",
           "title": "Die KI ist bereits für dich eingerichtet"
         },
         "open": {
@@ -2034,7 +2034,10 @@
         "allowanceExpiredOn": "Dein Kontingent für Foto-Schätzungen endete am {{date}}. Alles andere in openplate funktioniert weiterhin.",
         "instanceCeiling": "Diese Instanz hat heute so viele Fotos verarbeitet wie möglich. Versuch es morgen noch einmal. Mit deinem Konto ist alles in Ordnung.",
         "managedUpstream": "Der KI-Anbieter für diese Instanz hat die Anfrage abgelehnt. Bitte die Person, die sie betreibt, ihre Anbieterkonfiguration zu prüfen.",
-        "allowanceSpentPlans": "Du hast die heutigen KI-Scans aufgebraucht. Versuche es morgen wieder oder sieh dir die Tarife an."
+        "allowanceSpentPlans": "Du hast die heutigen KI-Scans aufgebraucht. Versuche es morgen wieder oder sieh dir die Tarife an.",
+        "allowanceSpentWeek": "Du hast die KI-Scans dieser Woche aufgebraucht. Sie stehen am {{weekday}} um {{time}} wieder zur Verfügung.",
+        "allowanceSpentWeekPlans": "Du hast die KI-Scans dieser Woche aufgebraucht. Sie stehen am {{weekday}} um {{time}} wieder zur Verfügung, oder sieh dir die Tarife an.",
+        "allowanceSpentWeekUndated": "Du hast die KI-Scans dieser Woche aufgebraucht. Sie stehen wieder zur Verfügung, wenn die nächste Woche beginnt."
       },
       "readPhoto": "Das Foto konnte nicht gelesen werden. Versuche es mit einem anderen.",
       "titles": {
@@ -2054,6 +2057,7 @@
         "trialScansSpentUncounted": "Du hast deine kostenlosen KI-Scans aufgebraucht",
         "trialDaysOver": "Deine kostenlosen Tage sind vorbei",
         "instanceCeiling": "Diese Instanz hat heute keine Kapazitäten mehr",
+        "quotaSpent": "Deine KI-Scans sind aufgebraucht",
         "managedUpstream": "Der KI-Anbieter hat die Anfrage abgelehnt"
       },
       "text": {
@@ -3232,6 +3236,12 @@
       "none": "Foto-Schätzungen sind für dieses Konto nicht aktiviert.",
       "askAdmin": "Das legt deine Administration fest.",
       "today": "Foto-Schätzungen heute: {{used}} von {{limit}}",
+      "thisWeek": "Foto-Schätzungen diese Woche: {{used}} von {{limit}}",
+      "bodyWeek": "Diese Woche {{used}} von {{limit}} genutzt.",
+      "limitWeek_one": "Bis zu {{count}} KI-Scan pro Woche.",
+      "limitWeek_other": "Bis zu {{count}} KI-Scans pro Woche.",
+      "resetsWeek": "Wird am {{weekday}} um {{time}} zurückgesetzt.",
+      "resetsDay": "Wird um {{time}} zurückgesetzt.",
       "trialScans": "Noch {{left}} von {{granted}} kostenlosen KI-Scans übrig.",
       "trialDaysLeft_one": "Noch {{count}} Tag in deiner kostenlosen Testphase",
       "trialDaysLeft_other": "Noch {{count}} Tage in deiner kostenlosen Testphase",
@@ -3252,7 +3262,8 @@
       "createdAt": "Den Tag, an dem dein Konto erstellt wurde.",
       "lastSeenAt": "Wann du dich zuletzt angemeldet hast oder zuletzt ein Foto für dich ausgelesen wurde.",
       "aiUsedToday": "Wie viele Fotos heute für dich ausgelesen wurden.",
-      "dailyAiLimit": "Wie viele Fotos pro Tag für dich ausgelesen werden dürfen.",
+      "aiUsedThisWeek": "Wie viele Fotos diese Woche für dich ausgewertet wurden.",
+      "dailyAiLimit": "Wie viele Fotos für dich ausgewertet werden dürfen, gezählt pro Tag oder pro Woche.",
       "role": "Ob du diese Instanz selbst verwalten darfst.",
       "suspendedAt": "Ob dein Konto gesperrt ist.",
       "activity": "Außerdem ist zu sehen, wie viele Fotos an jedem der letzten {{days}} Tage für dich ausgelesen wurden. Ältere Tageswerte werden gelöscht.",
@@ -3366,6 +3377,7 @@
       "actions": "Aktionen"
     },
     "usage": "{{used}} von {{limit}}",
+    "usageWeek": "{{used}} von {{limit}} diese Woche",
     "usageNone": "Keine Fotos",
     "trialScansUsed": "{{used}} von {{granted}} verbraucht",
     "lastSeen": {
@@ -3402,6 +3414,7 @@
       "save": "Speichern",
       "cancel": "Abbrechen",
       "allowanceLabel": "Fotos pro Tag",
+      "allowanceLabelWeek": "Fotos pro Woche",
       "allowanceHint": "Gilt, während ein kostenpflichtiger Tarif oder kostenlose KI-Scans aktiv sind. Ein Wert von 0 schaltet diese ab. Tägliche kostenlose Fotos bleiben erhalten.",
       "freeAllowanceLabel": "Kostenlose Fotos pro Tag",
       "freeAllowanceHint": "Diese bleiben erhalten, wenn kein kostenpflichtiger Tarif aktiv ist, und sie laufen nie ab. Ein Wert von 0 entfernt sie.",
@@ -3670,6 +3683,8 @@
       "legend": "Was die einzelnen Tarife enthalten",
       "dailyLimit_one": "{{count}} KI-Scan pro Tag",
       "dailyLimit_other": "{{count}} KI-Scans pro Tag",
+      "weeklyLimit_one": "{{count}} KI-Scan pro Woche",
+      "weeklyLimit_other": "{{count}} KI-Scans pro Woche",
       "noScans": "Keine KI-Scans",
       "includes": "Enthält: {{features}}.",
       "pricePerMonth": "{{price}} pro Monat",

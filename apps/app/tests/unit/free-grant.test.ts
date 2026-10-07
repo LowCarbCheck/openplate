@@ -7,10 +7,15 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { adminUsage } from '../../app/lib/admin/admin-usage';
-import { decodeFreeDailyAiLimit, hasFreeGrant, shownDailyAiLimit } from '../../app/lib/plans/free-grant';
+import { decodeFreeDailyAiLimit, hasFreeGrant, shownAiLimit } from '../../app/lib/plans/free-grant';
 import { bindingTrialScans } from '../../app/lib/plans/trial-scans';
 
 const NOW = new Date('2026-10-01T12:00:00.000Z');
+
+/** The limit a screen names, without its window: what these cases were written about. */
+function shownLimit(input: Parameters<typeof shownAiLimit>[0]): number | null {
+  return shownAiLimit(input)?.limit ?? null;
+}
 const PAST = '2026-09-01T00:00:00.000Z';
 const FUTURE = '2026-11-01T00:00:00.000Z';
 
@@ -32,24 +37,24 @@ test('a grant is a number above zero, and not-read is none', () => {
 
 test('a screen names the free limit once a paid window ended above it', () => {
   const ended = { dailyAiLimit: 200, freeDailyAiLimit: 10, allowanceExpiresAt: PAST, now: NOW };
-  assert.equal(shownDailyAiLimit(ended), 10);
+  assert.equal(shownLimit(ended), 10);
   // THE CONTROL: while the paid window runs, its own limit is named.
-  assert.equal(shownDailyAiLimit({ ...ended, allowanceExpiresAt: FUTURE }), 200);
+  assert.equal(shownLimit({ ...ended, allowanceExpiresAt: FUTURE }), 200);
   // The boundary instant has ended, as in the proxy.
-  assert.equal(shownDailyAiLimit({ ...ended, allowanceExpiresAt: NOW.toISOString() }), 10);
+  assert.equal(shownLimit({ ...ended, allowanceExpiresAt: NOW.toISOString() }), 10);
 });
 
 test('a free grant with no paid limit is named, and everything else is drawn as before', () => {
-  assert.equal(shownDailyAiLimit({ dailyAiLimit: 0, freeDailyAiLimit: 10, allowanceExpiresAt: null, now: NOW }), 10);
+  assert.equal(shownLimit({ dailyAiLimit: 0, freeDailyAiLimit: 10, allowanceExpiresAt: null, now: NOW }), 10);
   // No free grant, or a core older than the field: the paid limit, as always.
-  assert.equal(shownDailyAiLimit({ dailyAiLimit: 20, freeDailyAiLimit: 0, allowanceExpiresAt: null, now: NOW }), 20);
+  assert.equal(shownLimit({ dailyAiLimit: 20, freeDailyAiLimit: 0, allowanceExpiresAt: null, now: NOW }), 20);
   assert.equal(
-    shownDailyAiLimit({ dailyAiLimit: 20, freeDailyAiLimit: undefined, allowanceExpiresAt: PAST, now: NOW }),
+    shownLimit({ dailyAiLimit: 20, freeDailyAiLimit: undefined, allowanceExpiresAt: PAST, now: NOW }),
     20,
   );
   // Not read yet stays not read.
   assert.equal(
-    shownDailyAiLimit({ dailyAiLimit: null, freeDailyAiLimit: 10, allowanceExpiresAt: null, now: NOW }),
+    shownLimit({ dailyAiLimit: null, freeDailyAiLimit: 10, allowanceExpiresAt: null, now: NOW }),
     null,
   );
 });

@@ -137,6 +137,13 @@ const MANAGED_BRANCH_KEYS = [
   'scan.capture.managedDescription',
   'account.allowance.title',
   'account.allowance.body',
+  // 2026-10-07: the weekly twins, and the line that says when a count starts again.
+  'account.allowance.thisWeek',
+  'account.allowance.bodyWeek',
+  'account.allowance.limitWeek_one',
+  'account.allowance.limitWeek_other',
+  'account.allowance.resetsWeek',
+  'account.allowance.resetsDay',
   'account.allowance.none',
   'account.allowance.askAdmin',
   'offline.bodyManaged',

@@ -45,6 +45,26 @@ export interface ManagedCoreStub {
   allowanceExpiresAt: string | null;
   /** `AccountView.dailyAiLimit`. */
   dailyAiLimit: number;
+  /**
+   * `AccountView.aiLimitPeriod` (2026-10-07): the window of `dailyAiLimit`, or
+   * absent to leave the key out, as a core older than the weekly limits does.
+   */
+  aiLimitPeriod?: 'day' | 'week';
+  /** `AccountView.aiUsedToday`, or absent to keep the fake core's own count. */
+  aiUsedToday?: number;
+  /**
+   * `AccountView.aiQuota` (2026-10-07): the grant the proxy would hold the
+   * next request to, `null` for a proxy that would refuse, or absent to leave
+   * the key out, as a core older than the field does. Its `kind` is on the
+   * wire and the app never reads it.
+   */
+  aiQuota?: {
+    kind: 'paid' | 'free' | 'trial';
+    limit: number;
+    period: 'day' | 'week';
+    used: number;
+    resetsAt: string;
+  } | null;
   /** `AccountView.invitesLeft`. */
   invitesLeft: number | null;
   /** `AccountView.invitesNeedAPlan` (M253/11), or `undefined` to leave the key out, as an older core does. */
@@ -132,7 +152,13 @@ function accountPatch(stub: ManagedCoreStub) {
     stub.invitesNeedAPlan === undefined ? withName : { ...withName, invitesNeedAPlan: stub.invitesNeedAPlan };
   const withConsent =
     stub.accountHealthConsent === undefined ? withInvites : { ...withInvites, healthConsent: stub.accountHealthConsent };
-  return stub.capabilities === undefined ? withConsent : { ...withConsent, capabilities: stub.capabilities };
+  const withCapabilities =
+    stub.capabilities === undefined ? withConsent : { ...withConsent, capabilities: stub.capabilities };
+  const withPeriod =
+    stub.aiLimitPeriod === undefined ? withCapabilities : { ...withCapabilities, aiLimitPeriod: stub.aiLimitPeriod };
+  const withUsed =
+    stub.aiUsedToday === undefined ? withPeriod : { ...withPeriod, aiUsedToday: stub.aiUsedToday };
+  return stub.aiQuota === undefined ? withUsed : { ...withUsed, aiQuota: stub.aiQuota };
 }
 
 /** The handshake's instance block, with `healthConsent` only when the stub names one. */

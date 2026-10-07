@@ -296,8 +296,8 @@ See [ADR-0010](../.adr/0010-hosted-analytics.md) for the decision and its reason
 ## Managed instances
 
 An instance that sets `INSTANCE_MODE=managed` is a **managed instance**: an administrator
-invites people by email, and each account carries a daily AI allowance, so signing in gives a
-person both the diary and the AI in one step. The hosted instances at beta.openplate.de and
+invites people by email, and each account carries an AI allowance, counted per day or per week
+as the core reports it, so signing in gives a person both the diary and the AI in one step. The hosted instances at beta.openplate.de and
 app.openplate.de use this mode. It is off by default: a self-hoster who sets nothing gets the
 open app.
 

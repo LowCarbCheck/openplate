@@ -122,6 +122,10 @@ describe('the sentences that were rewritten instead of twinned', () => {
     'scan.errors.provider.aiNotAllowed',
     'scan.errors.provider.rateLimitMinute',
     'scan.errors.provider.allowanceSpent',
+    'scan.errors.provider.allowanceSpentWeek',
+    'scan.errors.provider.allowanceSpentWeekPlans',
+    'scan.errors.provider.allowanceSpentWeekUndated',
+    'scan.errors.titles.quotaSpent',
     'scan.errors.titles.aiNotAllowed',
   ]) {
     it(`${key} no longer names a photograph`, () => {

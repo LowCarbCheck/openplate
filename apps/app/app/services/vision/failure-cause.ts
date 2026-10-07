@@ -17,6 +17,7 @@
  */
 import { z } from 'zod';
 
+import type { AiLimitPeriod } from '#app/lib/plans/ai-quota';
 import type { ScanTokenUsage } from './types';
 import { VisionProviderError } from './types';
 
@@ -141,7 +142,35 @@ export type VisionFailureCause =
    * it: their own allowance may be untouched, and the operator is the one out
    * of capacity.
    */
-  | 'ai-instance-ceiling';
+  | 'ai-instance-ceiling'
+  /**
+   * `429 {"code":"ai-quota-spent","period":"day"|"week",...}`, the account's
+   * allowance for the current window is used up (2026-10-07, `PROTOCOL.md`
+   * §5.19). `VisionProviderFailure.quota` carries the window, the count and the
+   * instant it starts again.
+   *
+   * NOT `rate-limit`, WHICH IS WHERE EVERY MANAGED 429 USED TO LAND, and told
+   * a spent day apart from a burst by the size of `Retry-After`. A weekly
+   * window made that guess wrong in the worst way: a person with a spent week
+   * was told "try again tomorrow". The body names the window now, so the
+   * screen says when the allowance returns and never guesses. A burst limit
+   * carries no such code and stays `rate-limit`.
+   */
+  | 'ai-quota-spent';
+
+/**
+ * What a `429 ai-quota-spent` body says about the window (2026-10-07).
+ *
+ * `used` and `limit` are the window's whole totals: today for a day, Monday to
+ * today for a week. `resetsAt` is the instant the count starts again, or
+ * `null` for a body that carried none that parses.
+ */
+export interface SpentQuota {
+  period: AiLimitPeriod;
+  used: number;
+  limit: number;
+  resetsAt: string | null;
+}
 
 /** Thrown by a vision adapter with a machine-readable `failureCause` alongside the display `message`. */
 export class VisionProviderFailure extends VisionProviderError {
@@ -162,6 +191,13 @@ export class VisionProviderFailure extends VisionProviderError {
    * (`isFeatureLabel`) and says nothing about one it does not.
    */
   readonly capability: string | null;
+  /**
+   * The window a `ai-quota-spent` refusal names, or `null` for every other
+   * cause and for a refusal whose body did not carry a window this build can
+   * read. A screen says when the allowance returns from `resetsAt`, and keeps
+   * the daily sentence for a `'day'`.
+   */
+  readonly quota: SpentQuota | null;
 
   constructor(
     failureCause: VisionFailureCause,
@@ -171,6 +207,7 @@ export class VisionProviderFailure extends VisionProviderError {
       usage?: ScanTokenUsage;
       retryAfterSeconds?: number | null;
       capability?: string | null;
+      quota?: SpentQuota | null;
     },
   ) {
     super(message, options);
@@ -178,6 +215,7 @@ export class VisionProviderFailure extends VisionProviderError {
     this.failureCause = failureCause;
     this.retryAfterSeconds = options?.retryAfterSeconds ?? null;
     this.capability = options?.capability ?? null;
+    this.quota = options?.quota ?? null;
   }
 }
 
@@ -197,6 +235,15 @@ const KnownErrorBodySchema = z.object({
   // The label a `capability-required` refusal names. A sibling of `error`, not
   // inside it: the managed proxy's flat body is `{"error":"...","capability":"..."}`.
   capability: z.string().optional().catch(undefined),
+  // THE MACHINE CODE OF A SENTENCE-BODIED REFUSAL (2026-10-07). The `429` for a
+  // spent allowance keeps `error` as the sentence it always was, so an older
+  // client and a log read the same text, and puts its code and its window in
+  // siblings. A client branches on `code`, never on the sentence.
+  code: z.string().optional().catch(undefined),
+  period: z.enum(['day', 'week']).optional().catch(undefined),
+  used: z.number().int().min(0).optional().catch(undefined),
+  limit: z.number().int().min(0).optional().catch(undefined),
+  resetsAt: z.string().optional().catch(undefined),
   error: z
     .union([
       z.string().transform((code) => ({ code })),
@@ -237,10 +284,24 @@ async function readErrorBody(response: Response): Promise<KnownErrorBody | null>
   }
 }
 
-async function is429CreditExhaustion(response: Response): Promise<boolean> {
-  const body = await readErrorBody(response);
+function isCreditExhaustionBody(body: KnownErrorBody | null): boolean {
   const code = body?.error?.code;
   return code !== undefined && CREDIT_ERROR_CODES.has(code);
+}
+
+/**
+ * The window a `429 ai-quota-spent` body names, or `null` for any other body.
+ *
+ * `null` ALSO FOR A BODY THAT SAYS THE CODE BUT NOT A WINDOW THIS BUILD KNOWS
+ * (a period that is neither day nor week, or counts that are not numbers): the
+ * response then falls through to the older reading of a managed `429`, which
+ * is what a client without this branch always did.
+ */
+function readSpentQuota(body: KnownErrorBody | null): SpentQuota | null {
+  if (body?.code !== AI_QUOTA_SPENT_CODE) return null;
+  if (body.period === undefined || body.used === undefined || body.limit === undefined) return null;
+  const resetsAt = body.resetsAt !== undefined && !Number.isNaN(Date.parse(body.resetsAt)) ? body.resetsAt : null;
+  return { period: body.period, used: body.used, limit: body.limit, resetsAt };
 }
 
 /**
@@ -259,6 +320,8 @@ const ALLOWANCE_EXPIRED_CODE = 'allowance-expired';
 const TRIAL_SCANS_SPENT_CODE = 'trial-scans-spent';
 const TRIAL_EXPIRED_CODE = 'trial-expired';
 const CAPABILITY_REQUIRED_CODE = 'capability-required';
+/** The `code` beside the sentence of a `429` for a spent allowance (`PROTOCOL.md` §5.19). */
+const AI_QUOTA_SPENT_CODE = 'ai-quota-spent';
 
 /** The marker on the instance-wide `503`, see `VisionFailureCause`. */
 const AI_INSTANCE_CEILING_CODE = 'ai-instance-ceiling';
@@ -300,6 +363,9 @@ const TRIAL_EXPIRED_MESSAGE = 'Your free days are over. Pick a plan to keep usin
 // No feature name: this module has no `t`, and the screen restates the refusal
 // with the name of the feature in the reader's language (`featureGate.closed`).
 const CAPABILITY_REQUIRED_MESSAGE = 'This feature is not included in your plan.';
+// No weekday and no time: this module has no `t` and no time zone, and the
+// screen composes the sentence from the window (`describeFailureBody`).
+const AI_QUOTA_SPENT_MESSAGE = 'Your AI scans are used up for now.';
 const AI_INSTANCE_CEILING_MESSAGE =
   'This instance has read all the photos it can today. Try again tomorrow. Nothing is wrong with your account.';
 
@@ -318,6 +384,8 @@ export interface HttpFailureClassification {
   retryAfterSeconds?: number | null;
   /** The feature label a `capability-required` refusal names, when the body carried one. */
   capability?: string;
+  /** The window a `ai-quota-spent` refusal names. Absent for every other cause. */
+  quota?: SpentQuota;
 }
 
 /** `Retry-After` as a number of seconds, or `null` for an absent or unparseable header. */
@@ -379,11 +447,26 @@ export async function classifyVisionHttpFailure(response: Response): Promise<Htt
     return { cause: 'model-not-found', message: MODEL_NOT_FOUND_MESSAGE };
   }
   if (response.status === 429) {
-    const isCreditExhaustion = await is429CreditExhaustion(response);
-    return isCreditExhaustion ?
+    // ONE BODY READ, as for the 403 above: a stream can be consumed once.
+    const body = await readErrorBody(response);
+    // A SPENT ALLOWANCE NAMES ITS WINDOW (2026-10-07), so the screen says when
+    // it returns instead of guessing from the size of `Retry-After`. Asked
+    // before the credit check, because a provider's quota code and this one
+    // are different things and only this one comes from the managed proxy.
+    const quota = readSpentQuota(body);
+    if (quota !== null) {
+      return {
+        cause: 'ai-quota-spent',
+        message: AI_QUOTA_SPENT_MESSAGE,
+        retryAfterSeconds: readRetryAfterSeconds(response),
+        quota,
+      };
+    }
+    return isCreditExhaustionBody(body) ?
         { cause: 'credit', message: CREDIT_MESSAGE }
-        // The header rides along so the screen can say "in a minute" or "try
-        // tomorrow" from the server's own advice rather than from a guess.
+        // The header rides along so the screen can say "in a minute" from the
+        // server's own advice rather than from a guess. A spent allowance of an
+        // older core carries no code and still reads by the header.
       : { cause: 'rate-limit', message: RATE_LIMIT_MESSAGE, retryAfterSeconds: readRetryAfterSeconds(response) };
   }
   if (response.status === HTTP_PAYLOAD_TOO_LARGE) {

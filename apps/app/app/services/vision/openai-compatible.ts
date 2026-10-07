@@ -372,6 +372,7 @@ export function createOpenAiCompatibleProvider(options: OpenAiCompatibleProvider
       throw new VisionProviderFailure(classification.cause, classification.message, {
         retryAfterSeconds: classification.retryAfterSeconds,
         capability: classification.capability ?? null,
+        quota: classification.quota ?? null,
       });
     }
 

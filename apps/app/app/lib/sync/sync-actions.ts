@@ -101,6 +101,7 @@ import {
 } from './sync-state';
 import { clearHomeHint } from '#app/lib/home-entry';
 import { releasePushForSignOut } from '#app/lib/push';
+import { decodeAiLimitPeriod, decodeAiQuota } from '#app/lib/plans/ai-quota';
 import { decodeFreeDailyAiLimit } from '#app/lib/plans/free-grant';
 import { decodeCapabilities } from '#app/lib/plans/capabilities';
 import { decodeTrialEndsAt, decodeTrialScans } from '#app/lib/plans/trial-scans';
@@ -1225,6 +1226,9 @@ function publishAccountView(account: AccountViewWire): void {
       aiUsedToday: account.aiUsedToday,
       allowanceExpiresAt: account.allowanceExpiresAt ?? null,
       freeDailyAiLimit: decodeFreeDailyAiLimit(account.freeDailyAiLimit),
+      aiLimitPeriod: decodeAiLimitPeriod(account.aiLimitPeriod),
+      freeAiLimitPeriod: decodeAiLimitPeriod(account.freeAiLimitPeriod),
+      aiQuota: decodeAiQuota(account.aiQuota),
       invitesLeft: account.invitesLeft ?? null,
       invitesNeedAPlan: account.invitesNeedAPlan === true,
       trialScans: decodeTrialScans(account.trialScans),

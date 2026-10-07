@@ -73,8 +73,8 @@ function renderStrip({
 describe('resolveAllowanceLine', () => {
   const base: AllowanceLineInput = {
     aiComesFromTheInstance: true,
-    dailyAiLimit: 20,
-    aiUsedToday: 3,
+    limit: 20,
+    used: 3,
     plansAvailable: false,
   };
 
@@ -87,23 +87,35 @@ describe('resolveAllowanceLine', () => {
   it('says nothing while the account view is still unread', () => {
     // `null` IS NOT ZERO. It is the moment after every reload, and "0 of 0
     // used today" there is a lie about somebody's allowance.
-    assert.deepEqual(resolveAllowanceLine({ ...base, dailyAiLimit: null, aiUsedToday: null }), { kind: 'none' });
+    assert.deepEqual(resolveAllowanceLine({ ...base, limit: null, used: null }), { kind: 'none' });
   });
 
   it('prints today against the cap when there is one', () => {
-    assert.deepEqual(resolveAllowanceLine(base), { kind: 'usage', used: 3, limit: 20 });
+    assert.deepEqual(resolveAllowanceLine(base), {
+      kind: 'usage',
+      used: 3,
+      limit: 20,
+      period: 'day',
+      resetsAt: null,
+    });
   });
 
   it('counts an unread usage figure as none used, never as the whole cap', () => {
-    assert.deepEqual(resolveAllowanceLine({ ...base, aiUsedToday: null }), { kind: 'usage', used: 0, limit: 20 });
+    assert.deepEqual(resolveAllowanceLine({ ...base, used: null }), {
+      kind: 'usage',
+      used: 0,
+      limit: 20,
+      period: 'day',
+      resetsAt: null,
+    });
   });
 
   it('names no allowance at all when the cap is zero and nothing is for sale', () => {
-    assert.deepEqual(resolveAllowanceLine({ ...base, dailyAiLimit: 0, aiUsedToday: 0 }), { kind: 'no-allowance' });
+    assert.deepEqual(resolveAllowanceLine({ ...base, limit: 0, used: 0 }), { kind: 'no-allowance' });
   });
 
   it('points at the plan instead when this instance sells one', () => {
-    assert.deepEqual(resolveAllowanceLine({ ...base, dailyAiLimit: 0, aiUsedToday: 0, plansAvailable: true }), {
+    assert.deepEqual(resolveAllowanceLine({ ...base, limit: 0, used: 0, plansAvailable: true }), {
       kind: 'plan',
     });
   });
@@ -113,12 +125,12 @@ describe('resolveAllowanceLine', () => {
     // door kind. Every input combination there is, so a new branch cannot add
     // one without this failing.
     for (const aiComesFromTheInstance of [false, true]) {
-      for (const dailyAiLimit of [null, 0, 1, 200]) {
+      for (const limit of [null, 0, 1, 200]) {
         for (const plansAvailable of [false, true]) {
           const line = resolveAllowanceLine({
             aiComesFromTheInstance,
-            dailyAiLimit,
-            aiUsedToday: 0,
+            limit,
+            used: 0,
             plansAvailable,
           });
           assert.ok(
@@ -135,7 +147,7 @@ describe('the strip a signed-in person sees', () => {
   const markup = renderStrip({
     state: { status: 'synced', lastSyncedAt: Date.now() },
     title: 'ada@example.org',
-    allowance: { kind: 'usage', used: 3, limit: 20 },
+    allowance: { kind: 'usage', used: 3, limit: 20, period: 'day', resetsAt: null },
   });
 
   it('is one tap target, and it opens the account page', () => {

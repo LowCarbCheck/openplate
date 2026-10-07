@@ -1306,7 +1306,7 @@
           "title": "Connecter un fournisseur, ou ignorer"
         },
         "connectManaged": {
-          "body": "L'IA est fournie avec cette instance, tu n'as donc aucune clé à apporter ni aucun fournisseur à payer. Ton administrateur fixe le nombre de photos qui peuvent être lues pour toi chaque jour. La recherche d'aliments n'est jamais décomptée de ce quota, car seules les photos nécessitent une lecture.",
+          "body": "L'IA est fournie avec cette instance, tu n'as donc aucune clé à apporter ni aucun fournisseur à payer. Ton administrateur définit le nombre de photos qui peuvent être lues pour toi. La recherche d'un aliment n'est jamais décomptée de ce quota, car seule une photo a besoin d'être lue.",
           "title": "L'IA est déjà configurée pour toi"
         },
         "open": {
@@ -2034,7 +2034,10 @@
         "allowanceExpiredOn": "Ton quota d'estimations par photo a pris fin le {{date}}. Tout le reste fonctionne toujours dans openplate.",
         "instanceCeiling": "Cette instance a traité toutes les photos possibles aujourd'hui. Réessaie demain. Ton compte n'a aucun problème.",
         "managedUpstream": "Le fournisseur d'IA de cette instance a rejeté la requête. Demande à la personne qui l'administre de vérifier sa configuration.",
-        "allowanceSpentPlans": "Tu as épuisé tes analyses par IA du jour. Réessaie demain, ou consulte les forfaits."
+        "allowanceSpentPlans": "Tu as épuisé tes analyses par IA du jour. Réessaie demain, ou consulte les forfaits.",
+        "allowanceSpentWeek": "Tu as utilisé tes analyses IA de la semaine. Elles reviennent le {{weekday}} à {{time}}.",
+        "allowanceSpentWeekPlans": "Tu as utilisé tes analyses IA de la semaine. Elles reviennent le {{weekday}} à {{time}}, ou consulte les forfaits.",
+        "allowanceSpentWeekUndated": "Tu as utilisé tes analyses IA de la semaine. Elles reviennent au début de la semaine prochaine."
       },
       "readPhoto": "Impossible de lire cette photo. Essaie avec une autre.",
       "titles": {
@@ -2054,6 +2057,7 @@
         "trialScansSpentUncounted": "Tu as utilisé tes scans IA gratuits",
         "trialDaysOver": "Tes jours gratuits sont terminés",
         "instanceCeiling": "Cette instance a atteint sa capacité maximale aujourd'hui",
+        "quotaSpent": "Tes analyses IA sont épuisées",
         "managedUpstream": "Le fournisseur d'IA a rejeté la requête"
       },
       "text": {
@@ -3232,6 +3236,12 @@
       "none": "Les estimations par photo ne sont pas activées pour ce compte.",
       "askAdmin": "C'est ton administrateur qui configure cela.",
       "today": "Estimations par photo aujourd'hui : {{used}} sur {{limit}}",
+      "thisWeek": "Estimations par photo cette semaine : {{used}} sur {{limit}}",
+      "bodyWeek": "{{used}} sur {{limit}} utilisés cette semaine.",
+      "limitWeek_one": "Jusqu'à {{count}} analyse IA par semaine.",
+      "limitWeek_other": "Jusqu'à {{count}} analyses IA par semaine.",
+      "resetsWeek": "Réinitialisation le {{weekday}} à {{time}}.",
+      "resetsDay": "Réinitialisation à {{time}}.",
       "trialScans": "{{left}} sur {{granted}} scans IA gratuits restants.",
       "trialDaysLeft_one": "Il te reste {{count}} jour d'essai gratuit",
       "trialDaysLeft_other": "Il te reste {{count}} jours d'essai gratuit",
@@ -3252,7 +3262,8 @@
       "createdAt": "Le jour où ton compte a été créé.",
       "lastSeenAt": "La date de ta dernière connexion, ou de la dernière analyse d'une photo.",
       "aiUsedToday": "Le nombre de photos analysées pour toi aujourd'hui.",
-      "dailyAiLimit": "Le nombre de photos qui peuvent être analysées pour toi chaque jour.",
+      "aiUsedThisWeek": "Nombre de photos analysées pour toi cette semaine.",
+      "dailyAiLimit": "Nombre de photos pouvant être analysées pour toi, décompté par jour ou par semaine.",
       "role": "Si tu peux administrer toi-même cette instance.",
       "suspendedAt": "Si ton compte est suspendu.",
       "activity": "Ces personnes peuvent aussi voir combien de photos ont été analysées pour toi lors de chacun des {{days}} derniers jours. Les décomptes quotidiens plus anciens sont supprimés.",
@@ -3366,6 +3377,7 @@
       "actions": "Actions"
     },
     "usage": "{{used}} sur {{limit}}",
+    "usageWeek": "{{used}} sur {{limit}} cette semaine",
     "usageNone": "Aucune photo",
     "trialScansUsed": "{{used}} sur {{granted}} utilisés",
     "lastSeen": {
@@ -3402,6 +3414,7 @@
       "save": "Enregistrer",
       "cancel": "Annuler",
       "allowanceLabel": "Photos par jour",
+      "allowanceLabelWeek": "Photos par semaine",
       "allowanceHint": "S'applique pendant un forfait payant ou des scans IA gratuits. Définir cette valeur sur 0 les désactive. Les photos gratuites quotidiennes restent actives.",
       "freeAllowanceLabel": "Photos gratuites par jour",
       "freeAllowanceHint": "Elles restent actives sans forfait payant et n'expirent jamais. Définir 0 les supprime.",
@@ -3670,6 +3683,8 @@
       "legend": "Ce que chaque forfait comprend",
       "dailyLimit_one": "{{count}} analyse par IA par jour",
       "dailyLimit_other": "{{count}} analyses par IA par jour",
+      "weeklyLimit_one": "{{count}} analyse IA par semaine",
+      "weeklyLimit_other": "{{count}} analyses IA par semaine",
       "noScans": "Aucune analyse par IA",
       "includes": "Comprend : {{features}}.",
       "pricePerMonth": "{{price}} par mois",
