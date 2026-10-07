@@ -1,4 +1,15 @@
 {
+  "v0_67_0": {
+    "date": "2026-10-07",
+    "changed": {
+      "01": "Das helle Farbschema zeichnet kein reines Weiß mehr.",
+      "02": "Das KI-Kontingent kann pro Woche zählen, und die App zeigt an, wann es wieder verfügbar ist.",
+      "03": "Das dunkle Farbschema ist nun heller als Fast-Schwarz."
+    },
+    "fixed": {
+      "01": "Aktualisierte Abhängigkeiten beheben die offenen Sicherheitswarnungen."
+    }
+  },
   "v0_66_0": {
     "date": "2026-10-06",
     "changed": {
@@ -12,17 +23,6 @@
     "date": "2026-10-05",
     "fixed": {
       "01": "Ein Ereignis, das vor dem Laden des Analytics-Skripts gesendet wird, enthält nicht mehr die echte Seitenadresse."
-    }
-  },
-  "v0_65_0": {
-    "date": "2026-10-05",
-    "added": {
-      "01": "Eine auf der Website gewählte Stufe bleibt nach der Registrierungs-E-Mail nun erhalten.",
-      "02": "Die Tarifseite zeigt ein gebuchtes Downgrade nun an und lässt dich deine Stufe behalten."
-    },
-    "fixed": {
-      "01": "Wird eine Karte bei einem Upgrade abgelehnt, weist das System nun darauf hin.",
-      "02": "Ein laufendes Fasten verschiebt den Header nicht mehr, wenn sein Chip erscheint."
     }
   }
 }

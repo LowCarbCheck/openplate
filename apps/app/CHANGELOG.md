@@ -11,11 +11,17 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+## [0.67.0] - 2026-10-07
+
 ### Changed
 
-- **The light theme no longer paints pure white.** Cards, popovers and the text on teal and red buttons use a soft off-white with a faint teal tint, so a card sits calmer on the page. The dark theme paints no pure black either, and it is lifted in this same release (see the dark theme bullet below). `tests/unit/pure-neutrals.test.ts` fails on a new pure black or pure white.
-- **The AI allowance can count per week, and the app says when it comes back.** The account page and the avatar menu read "N of M this week" with the weekday and time the count starts again, in the reader's own time zone, and a daily account keeps "today". A scan refused with `ai-quota-spent` now says on which weekday the scans return instead of "try again tomorrow", and only a daily refusal still says tomorrow. The plan page and the admin console name each limit per day or per week as the core reports it, and the app never hard-codes a number or a tier name. A core older than the weekly limits sends no window, and the app draws exactly what it drew before. The new strings are translated into German, French, Italian, Spanish and Turkish.
-- **The dark theme is lifted off near-black.** The page, the cards and the side rail sit a little lighter and keep their teal tint, so a dark screen reads as deep teal and not as a black hole. Text keeps its contrast: body text measures 17.7:1 on the page and 16.2:1 on a card, and the install splash colour follows the new page colour.
+- **The light theme no longer paints pure white.** Cards, popovers and the text on teal and red buttons use a soft off-white with a faint teal tint, so a card sits calmer on the page. The dark theme paints no pure black either, and it is lifted in this same release (see the dark theme bullet below). `tests/unit/pure-neutrals.test.ts` fails on a new pure black or pure white. ([aac8c045](https://github.com/LowCarbCheck/openplate/commit/aac8c045))
+- **The AI allowance can count per week, and the app says when it comes back.** The account page and the avatar menu read "N of M this week" with the weekday and time the count starts again, in the reader's own time zone, and a daily account keeps "today". A scan refused with `ai-quota-spent` now says on which weekday the scans return instead of "try again tomorrow", and only a daily refusal still says tomorrow. The plan page and the admin console name each limit per day or per week as the core reports it, and the app never hard-codes a number or a tier name. A core older than the weekly limits sends no window, and the app draws exactly what it drew before. The new strings are translated into German, French, Italian, Spanish and Turkish. ([39cee9db](https://github.com/LowCarbCheck/openplate/commit/39cee9db))
+- **The dark theme is lifted off near-black.** The page, the cards and the side rail sit a little lighter and keep their teal tint, so a dark screen reads as deep teal and not as a black hole. Text keeps its contrast: body text measures 17.7:1 on the page and 16.2:1 on a card, and the install splash colour follows the new page colour. ([aac8c045](https://github.com/LowCarbCheck/openplate/commit/aac8c045))
+
+### Fixed
+
+- **Dependency fixes clear the open security alerts.** `compression` moves to 1.8.2 and `proxy-addr` to 2.0.8, and `@tailwindcss/typography` to 0.5.20. Two build-time packages, `shell-quote` and `postcss-selector-parser`, are held at patched versions by overrides in `pnpm-workspace.yaml`. No setting changes. The release workflow now holds a read-only token, and a Dependabot config checks for updates every week. ([0dbde3eb](https://github.com/LowCarbCheck/openplate/commit/0dbde3eb))
 
 ## [0.66.0] - 2026-10-06
 

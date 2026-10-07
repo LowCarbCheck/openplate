@@ -1,4 +1,15 @@
 {
+  "v0_67_0": {
+    "date": "2026-10-07",
+    "changed": {
+      "01": "Açık tema artık tamamen beyaz boyamıyor.",
+      "02": "Yapay zeka kotası haftalık sayılabilir ve uygulama ne zaman yenileneceğini belirtir.",
+      "03": "Koyu tema tam siyahtan biraz açıldı."
+    },
+    "fixed": {
+      "01": "Bağımlılık düzeltmeleri açık güvenlik uyarılarını giderir."
+    }
+  },
   "v0_66_0": {
     "date": "2026-10-06",
     "changed": {
@@ -12,17 +23,6 @@
     "date": "2026-10-05",
     "fixed": {
       "01": "Analiz betiği yüklenmeden önce gönderilen bir olay, artık gerçek sayfa adresini taşımaz."
-    }
-  },
-  "v0_65_0": {
-    "date": "2026-10-05",
-    "added": {
-      "01": "Web sitesinde seçilen bir kademe artık kayıt e-postasından sonra da korunur.",
-      "02": "Plan sayfası artık planlanmış bir alt kademeye geçişi gösterir ve kademeni korumana izin verir."
-    },
-    "fixed": {
-      "01": "Yükseltme sırasında reddedilen bir kart artık durumu açıkça belirtir.",
-      "02": "Devam eden bir oruç, etiketi ekranda belirdiğinde artık üst bilgi alanını kaydırmaz."
     }
   }
 }

@@ -1,4 +1,15 @@
 {
+  "v0_67_0": {
+    "date": "2026-10-07",
+    "changed": {
+      "01": "The light theme no longer paints pure white.",
+      "02": "The AI allowance can count per week, and the app says when it comes back.",
+      "03": "The dark theme is lifted off near-black."
+    },
+    "fixed": {
+      "01": "Dependency fixes clear the open security alerts."
+    }
+  },
   "v0_66_0": {
     "date": "2026-10-06",
     "changed": {
@@ -12,17 +23,6 @@
     "date": "2026-10-05",
     "fixed": {
       "01": "An event sent before the analytics script loads no longer carries the real page address."
-    }
-  },
-  "v0_65_0": {
-    "date": "2026-10-05",
-    "added": {
-      "01": "A tier chosen on the website now survives the sign-up letter.",
-      "02": "The plan page now shows a booked downgrade and lets you keep your tier."
-    },
-    "fixed": {
-      "01": "A declined card on an upgrade now says so.",
-      "02": "A running fast no longer moves the header when its chip arrives."
     }
   }
 }

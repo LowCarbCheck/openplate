@@ -1693,6 +1693,13 @@
     "at": "2026-09-29",
     "it": "Ogni voce Annulla nell'intestazione torna a essere un pulsante, ora con un'icona e senza testo."
   },
+  "1319c5693413febc": {
+    "en": "The light theme no longer paints pure white.",
+    "path": "releases:v0_67_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-07",
+    "it": "Il tema chiaro non usa più il bianco puro."
+  },
   "131d79028e9850d6": {
     "en": "Plan cancelled.",
     "path": "common:fasting.toast.planCancelled",
@@ -2637,6 +2644,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-29",
     "it": "La prova gratuita ora termina dopo le scansioni gratuite o dopo i giorni stabiliti, a seconda di quale condizione si verifichi per prima."
+  },
+  "1cc8bec09b557ab5": {
+    "en": "Dependency fixes clear the open security alerts.",
+    "path": "releases:v0_67_0.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-07",
+    "it": "Le correzioni delle dipendenze risolvono gli avvisi di sicurezza aperti."
   },
   "1cc9d137eb1c2d3a": {
     "en": "Advanced: use a different provider",
@@ -5214,6 +5228,13 @@
     "at": "2026-09-14",
     "it": "Ancora nulla da mostrare. Una mattina senza elementi da segnalare non genera alcuna notifica."
   },
+  "3e6358c9ab1484c6": {
+    "en": "The dark theme is lifted off near-black.",
+    "path": "releases:v0_67_0.changed.03",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-07",
+    "it": "Il tema scuro è stato leggermente schiarito rispetto al quasi nero."
+  },
   "3e6750a1e926c8ee": {
     "en": "The number your diary shows first.",
     "path": "common:settings.mainGoal.lead",
@@ -6319,6 +6340,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-23",
     "it": "Scegli un piano per continuare."
+  },
+  "4c5d49bbf214788f": {
+    "en": "The AI allowance can count per week, and the app says when it comes back.",
+    "path": "releases:v0_67_0.changed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-07",
+    "it": "La quota IA può essere calcolata a settimana, e l'app indica quando si ripristina."
   },
   "4c7b99428402919b": {
     "en": "Open Insights",

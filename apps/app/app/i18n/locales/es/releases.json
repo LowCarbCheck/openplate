@@ -1,4 +1,15 @@
 {
+  "v0_67_0": {
+    "date": "2026-10-07",
+    "changed": {
+      "01": "El tema claro ya no muestra un blanco puro.",
+      "02": "La cuota de IA puede contar por semana, y la app indica cuándo se restablece.",
+      "03": "El tema oscuro se aclara respecto al negro casi puro."
+    },
+    "fixed": {
+      "01": "Las correcciones de dependencias resuelven las alertas de seguridad abiertas."
+    }
+  },
   "v0_66_0": {
     "date": "2026-10-06",
     "changed": {
@@ -12,17 +23,6 @@
     "date": "2026-10-05",
     "fixed": {
       "01": "Un evento enviado antes de que cargue el script de analítica ya no incluye la dirección real de la página."
-    }
-  },
-  "v0_65_0": {
-    "date": "2026-10-05",
-    "added": {
-      "01": "El nivel elegido en el sitio web ahora se mantiene tras el correo de registro.",
-      "02": "La página del plan ahora muestra un cambio a un nivel inferior programado y te permite conservar tu nivel."
-    },
-    "fixed": {
-      "01": "Si se rechaza una tarjeta al mejorar el plan, ahora se indica con claridad.",
-      "02": "Un ayuno en curso ya no desplaza la cabecera cuando aparece su etiqueta."
     }
   }
 }

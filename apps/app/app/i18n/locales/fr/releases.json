@@ -1,4 +1,15 @@
 {
+  "v0_67_0": {
+    "date": "2026-10-07",
+    "changed": {
+      "01": "Le thème clair n'affiche plus de blanc pur.",
+      "02": "Le quota d'IA peut être calculé par semaine, et l'application indique quand il se réinitialise.",
+      "03": "Le thème sombre s'éloigne du noir presque pur."
+    },
+    "fixed": {
+      "01": "Des corrections de dépendances éliminent les alertes de sécurité ouvertes."
+    }
+  },
   "v0_66_0": {
     "date": "2026-10-06",
     "changed": {
@@ -12,17 +23,6 @@
     "date": "2026-10-05",
     "fixed": {
       "01": "Un événement envoyé avant le chargement du script d'analyse ne transmet plus la véritable adresse de la page."
-    }
-  },
-  "v0_65_0": {
-    "date": "2026-10-05",
-    "added": {
-      "01": "Le niveau choisi sur le site web reste désormais actif après l'e-mail d'inscription.",
-      "02": "La page des forfaits affiche désormais le passage à un niveau inférieur planifié et te permet de conserver ton niveau."
-    },
-    "fixed": {
-      "01": "Le refus d'une carte lors d'un passage à un niveau supérieur est désormais explicitement indiqué.",
-      "02": "Un jeûne en cours ne déplace plus l'en-tête quand son badge apparaît."
     }
   }
 }

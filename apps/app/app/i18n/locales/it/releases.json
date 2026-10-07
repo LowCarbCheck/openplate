@@ -1,4 +1,15 @@
 {
+  "v0_67_0": {
+    "date": "2026-10-07",
+    "changed": {
+      "01": "Il tema chiaro non usa più il bianco puro.",
+      "02": "La quota IA può essere calcolata a settimana, e l'app indica quando si ripristina.",
+      "03": "Il tema scuro è stato leggermente schiarito rispetto al quasi nero."
+    },
+    "fixed": {
+      "01": "Le correzioni delle dipendenze risolvono gli avvisi di sicurezza aperti."
+    }
+  },
   "v0_66_0": {
     "date": "2026-10-06",
     "changed": {
@@ -12,17 +23,6 @@
     "date": "2026-10-05",
     "fixed": {
       "01": "Un evento inviato prima del caricamento dello script di analisi non include più l'indirizzo reale della pagina."
-    }
-  },
-  "v0_65_0": {
-    "date": "2026-10-05",
-    "added": {
-      "01": "Il livello scelto sul sito web ora rimane attivo anche dopo l'email di registrazione.",
-      "02": "La pagina del piano ora mostra un downgrade programmato e ti permette di mantenere il tuo livello."
-    },
-    "fixed": {
-      "01": "Se una carta viene rifiutata durante un passaggio a un livello superiore, ora viene indicato chiaramente.",
-      "02": "Un digiuno in corso non sposta più l'intestazione quando compare il relativo riquadro."
     }
   }
 }

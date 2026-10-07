@@ -1693,6 +1693,13 @@
     "at": "2026-09-29",
     "de": "Jedes Rückgängigmachen in der Kopfzeile ist wieder eine Schaltfläche, jetzt mit einem Symbol und ohne Text."
   },
+  "1319c5693413febc": {
+    "en": "The light theme no longer paints pure white.",
+    "path": "releases:v0_67_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-07",
+    "de": "Das helle Farbschema zeichnet kein reines Weiß mehr."
+  },
   "131d79028e9850d6": {
     "en": "Plan cancelled.",
     "path": "common:fasting.toast.planCancelled",
@@ -2637,6 +2644,13 @@
     "model": "hand-written",
     "at": "2026-09-29",
     "de": "Der kostenlose Testzeitraum endet jetzt nach den kostenlosen Scans oder nach der festgelegten Anzahl an Tagen, je nachdem, was zuerst eintritt."
+  },
+  "1cc8bec09b557ab5": {
+    "en": "Dependency fixes clear the open security alerts.",
+    "path": "releases:v0_67_0.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-07",
+    "de": "Aktualisierte Abhängigkeiten beheben die offenen Sicherheitswarnungen."
   },
   "1cc9d137eb1c2d3a": {
     "en": "Advanced: use a different provider",
@@ -5214,6 +5228,13 @@
     "at": "2026-09-14",
     "de": "Noch gibt es nichts zu sehen. Wenn es morgens nichts zu berichten gibt, kommt keine Benachrichtigung."
   },
+  "3e6358c9ab1484c6": {
+    "en": "The dark theme is lifted off near-black.",
+    "path": "releases:v0_67_0.changed.03",
+    "model": "hand-written",
+    "at": "2026-10-07",
+    "de": "Das dunkle Farbschema ist nun heller als Fast-Schwarz."
+  },
   "3e6750a1e926c8ee": {
     "en": "The number your diary shows first.",
     "path": "common:settings.mainGoal.lead",
@@ -6319,6 +6340,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-23",
     "de": "Wähle einen Tarif, um fortzufahren."
+  },
+  "4c5d49bbf214788f": {
+    "en": "The AI allowance can count per week, and the app says when it comes back.",
+    "path": "releases:v0_67_0.changed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-07",
+    "de": "Das KI-Kontingent kann pro Woche zählen, und die App zeigt an, wann es wieder verfügbar ist."
   },
   "4c7b99428402919b": {
     "en": "Open Insights",
