@@ -68,25 +68,37 @@ per-token rationale comments.
 
 | Token                  | Light                      | Dark                       | Usage                         |
 | ---------------------- | -------------------------- | -------------------------- | ----------------------------- |
-| `--background`         | `192 34% 96%` pale teal    | `192 24% 4.5%` teal-black  | page                          |
-| `--foreground`         | `200 18% 8%`               | `180 12% 97%`              | text (18:1 / 18:1)            |
-| `--card`               | white                      | `192 20% 8%`               | card surfaces                 |
+| `--background`         | `192 34% 96%` pale teal    | `192 22% 6.5%` teal-black  | page                          |
+| `--foreground`         | `200 18% 8%`               | `180 12% 97%`              | text (18:1 / 17.7:1)          |
+| `--card`               | `192 50% 98.5%`            | `192 18% 10%`              | card surfaces                 |
 | `--muted` / `--accent` | `192 26% 93%`              | `192 16% 15%`              | hover surfaces, subdued fills |
-| `--muted-foreground`   | `197 14% 38%`              | `190 12% 68%`              | secondary text (6:1 / 9:1)    |
+| `--muted-foreground`   | `197 14% 38%`              | `190 12% 68%`              | secondary text (6:1 / 8.7:1)  |
 | `--border` / `--input` | `192 22% 85%`              | `192 16% 17%`              | hairlines                     |
 | `--primary`            | `179 92% 25%`              | `172 70% 52%`              | CTAs, links, active nav       |
-| `--primary-foreground` | white                      | `187 90% 8%`               | text on primary               |
+| `--primary-foreground` | `192 50% 98.5%`            | `187 90% 8%`               | text on primary               |
 | `--destructive`        | `0 72% 45%`                | `0 70% 45%`                | delete/disconnect             |
+| `--destructive-foreground` | `192 50% 98.5%`        | `180 12% 97%`              | text on destructive           |
 | `--ring`               | same as `--primary`        | same as `--primary`        | focus rings                   |
 | `--accent-amber`       | `32 94% 31%` ochre         | `38 94% 62%`               | "over goal" text + ring arc   |
 | `--macro-carbs`        | `181 93% 32%`              | `172 70% 52%`              | ratio-bar fill / legend rule  |
-| `--macro-protein`      | `349 66% 50%`              | `349 82% 70%`              | ratio-bar fill / legend rule  |
-| `--macro-fat`          | `36 95% 38%`               | `38 94% 62%`               | ratio-bar fill / legend rule  |
+| `--macro-protein`      | `26 90% 36%` orange        | `30 95% 65%`               | ratio-bar fill / legend rule  |
+| `--macro-fat`          | `283 55% 44%` plum         | `283 80% 76%`              | ratio-bar fill / legend rule  |
 | `--macro-fiber`        | `125 34% 38%`              | `125 34% 62%`              | ratio-bar fill / legend rule  |
 
-`--accent-amber` and `--macro-fat` are deliberately separate tokens with different values: the
-first carries text (4.5:1 floor), the second is fill-only (3:1 floor) and can stay brighter. Macro
-color is never the only cue — every macro figure is also named, ordered, and position-coded.
+`--accent-amber` and the `--macro-*` tokens are deliberately separate tokens with different
+values. Amber means one thing, over a ceiling, so no macro wears amber or red: protein is orange
+and fat is plum (M216). Protein, fat and fiber clear the 4.5:1 text floor on their own theme's
+card; `--macro-carbs` is the mark teal and carries its own 3:1 floor (`macro-token-contrast.test.ts`).
+Macro color is never the only cue, every macro figure is also named, ordered, and position-coded.
+
+**No pure black and no pure white (owner, 2026-10-07).** No token, class or literal paints black or
+white at full strength in either theme. Light: the lightest value is `192 50% 98.5%` (card, popover,
+text on teal and on red); the darkest is the ink. Dark: the darkest is `--background`, the lightest
+is the ink. The dark page was lifted off near-black on 2026-10-07 (4.5% to 6.5% lightness, card 8% to 10%). Every neutral carries hue 192 at low saturation. Exceptions, each named in the test's
+allow list: shadows and scrims (black at an opacity), mask stops, the QR code, the mark's glyph and
+the notification badge, and third-party logos. `tests/unit/pure-neutrals.test.ts` fails on a new
+pure value. `192 50% 98.5%` is the darkest off-white that keeps `--macro-fiber` above 4.5:1 on the
+card (4.53:1), so a darker card needs that floor re-read, never lowered.
 
 Chart palette (from LCC, same value both modes): sky `#5899DA`, rose `#EE6868`, emerald `#19A979`,
 grape `#945ECF`, navy `#2F6497`, orange `#FF9F40`, yellow `#FFD700`, brown `#8B4513`.

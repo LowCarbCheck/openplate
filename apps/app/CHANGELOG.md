@@ -11,6 +11,12 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Changed
+
+- **The light theme no longer paints pure white.** Cards, popovers and the text on teal and red buttons use a soft off-white with a faint teal tint, so a card sits calmer on the page. The dark theme paints no pure black either, and it is lifted in this same release (see the dark theme bullet below). `tests/unit/pure-neutrals.test.ts` fails on a new pure black or pure white.
+- **The AI allowance can count per week, and the app says when it comes back.** The account page and the avatar menu read "N of M this week" with the weekday and time the count starts again, in the reader's own time zone, and a daily account keeps "today". A scan refused with `ai-quota-spent` now says on which weekday the scans return instead of "try again tomorrow", and only a daily refusal still says tomorrow. The plan page and the admin console name each limit per day or per week as the core reports it, and the app never hard-codes a number or a tier name. A core older than the weekly limits sends no window, and the app draws exactly what it drew before. The new strings are translated into German, French, Italian, Spanish and Turkish.
+- **The dark theme is lifted off near-black.** The page, the cards and the side rail sit a little lighter and keep their teal tint, so a dark screen reads as deep teal and not as a black hole. Text keeps its contrast: body text measures 17.7:1 on the page and 16.2:1 on a card, and the install splash colour follows the new page colour.
+
 ## [0.66.0] - 2026-10-06
 
 ### Changed

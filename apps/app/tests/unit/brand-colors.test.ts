@@ -41,8 +41,8 @@ const WEB_MANIFEST = join(ROOT, 'public/site.webmanifest');
  *
  * The saturation floor is what keeps `#ffffff` and `#000000` out: an achromatic colour has no
  * meaningful hue, so without the floor every white in the tree would read as whatever hue floating
- * point rounding handed it. It is deliberately LOW, at ten percent, because two of the five known
- * literals are near-blacks with a teal cast (`#101718`, `#090d0e`) and those are exactly the kind
+ * point rounding handed it. It is deliberately LOW, at ten percent, because one of the four known
+ * literals is a near-black with a teal cast (the manifest splash `#0d1314`) and that is exactly the kind
  * of quiet second opinion about the brand that this is meant to catch.
  */
 const HUE_MIN = 160;
@@ -90,7 +90,7 @@ function scanned(dir: string): string[] {
 
 /**
  * Where a teal was written and what it says. Six-digit hex only: the three-digit form cannot express
- * any of the five below, and no file in the tree uses it. Should one appear, it appears as a value
+ * any of the four below, and no file in the tree uses it. Should one appear, it appears as a value
  * this scan does not see, so the shorthand is expanded here rather than trusted not to be used.
  */
 function occurrences(): string[] {
@@ -121,7 +121,7 @@ interface KnownTeal {
 }
 
 /**
- * The five teal-ish literals openplate shipped on 2026-09-07, each one accounted for.
+ * The four teal-ish literals openplate carries, each one accounted for. Five shipped on 2026-09-07; the app.css comment quoting the dark card as hex went on 2026-10-07, when the comment started quoting the HSL triple instead.
  *
  * Three distinct values. That is the problem `openplate-brand` was created to end, and the entries
  * marked DISPUTED are its open questions, verbatim. None of them is resolved here.
@@ -136,13 +136,6 @@ const KNOWN: KnownTeal[] = [
       'nothing by itself, a comment is not a declaration.',
   },
   {
-    where: 'app/app.css',
-    value: '#101718',
-    note:
-      'The dark theme `--card`, quoted in a comment that explains how the adherence ramp was ' +
-      'validated against it. A near-black with a teal cast, not an accent.',
-  },
-  {
     where: 'app/root.tsx',
     value: '#0d968b',
     note:
@@ -151,10 +144,10 @@ const KNOWN: KnownTeal[] = [
   },
   {
     where: 'public/site.webmanifest',
-    value: '#090d0e',
+    value: '#0d1314',
     note:
-      'DISPUTED, open question 2. `background_color`, the install splash. The dark `--card` is ' +
-      '#101718; a splash and a surface are allowed to differ, it is just not clear these were CHOSEN to.',
+      'DISPUTED, open question 2. `background_color`, the install splash. It tracks the dark `--background`, ' +
+      '192 22% 6.5% since the 2026-10-07 lift (it was #090d0e at 4.5%); a splash and a surface are allowed to differ.',
   },
   {
     where: 'public/site.webmanifest',

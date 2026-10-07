@@ -20,8 +20,8 @@
  *
  * ── THE ONE EXEMPTION ──
  * `--macro-carbs` is the mark teal, frozen by `tests/unit/brand-colors.test.ts`
- * and owned by `openplate-brand`, not by this repo. It measures 3.40:1 on a
- * white card, below the text floor the other three clear. That is a brand
+ * and owned by `openplate-brand`, not by this repo. It measures 3.30:1 on the
+ * light card, below the text floor the other three clear. That is a brand
  * question for a person, so it is RECORDED here with its own floor rather than
  * quietly excluded, and the exemption itself is asserted to be the only one.
  */
@@ -139,7 +139,7 @@ const MACRO_TOKENS: MacroToken[] = [
     hue: [160, 200],
     note:
       'THE ONE EXEMPTION. The mark teal, frozen at `181 93% 32%` by brand-colors.test.ts and owned by ' +
-      'openplate-brand. It measures about 3.4:1 on a white card, below the text floor the other three ' +
+      'openplate-brand. It measures about 3.3:1 on the light card, below the text floor the other three ' +
       'clear. Moving it is a brand decision for a person, not a nudge in this repo.',
   },
   {
