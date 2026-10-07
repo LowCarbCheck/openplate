@@ -104,7 +104,7 @@ jobs:
 
       # `with:` paths are read from the repository root, not from the
       # `defaults` folder, so each one names `apps/app`.
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           package_json_file: apps/app/package.json
       - uses: actions/setup-node@v4
@@ -188,7 +188,7 @@ jobs:
 
       # `with:` paths are read from the repository root, not from the
       # `defaults` folder, so each one names `apps/app`.
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           package_json_file: apps/app/package.json
       - uses: actions/setup-node@v4

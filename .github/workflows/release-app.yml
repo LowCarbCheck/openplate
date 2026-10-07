@@ -661,7 +661,7 @@ jobs:
       # and lockfile, and no workspace at the root. Every path below names
       # `apps/app` for that reason.
       - name: Set up pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           package_json_file: apps/app/package.json
 
