@@ -92,7 +92,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         # FULL HISTORY. `tests/unit/translate-lib-provenance.test.ts` hashes
         # the vendored translator against its source in the private repository
         # LowCarbCheck/openplate-website at the commit its TRANSLATE_SOURCE.json
@@ -104,10 +104,10 @@ jobs:
 
       # `with:` paths are read from the repository root, not from the
       # `defaults` folder, so each one names `apps/app`.
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           package_json_file: apps/app/package.json
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version-file: apps/app/.nvmrc
           cache: pnpm
@@ -176,7 +176,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         # No `token:`. `actions/checkout` leaves the default `GITHUB_TOKEN` in
         # the checkout, and that is the token the push below uses. See the
         # header for why a PAT is not wanted here.
@@ -188,10 +188,10 @@ jobs:
 
       # `with:` paths are read from the repository root, not from the
       # `defaults` folder, so each one names `apps/app`.
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           package_json_file: apps/app/package.json
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version-file: apps/app/.nvmrc
           cache: pnpm
