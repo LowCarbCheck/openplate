@@ -41,7 +41,7 @@ const DESKTOP_WIDTHS = [640, 768, 1024] as const;
 /** The project site in the two languages this spec reads, written out rather than computed. */
 const SITE_BY_LANGUAGE = {
   de: 'https://openplate.de/',
-  en: 'https://openplate.de/en/',
+  en: 'https://openplate.de/en',
 } as const;
 
 const FOOTER_SITE_LINK = 'footer a[data-slot="footer-project-site"]';

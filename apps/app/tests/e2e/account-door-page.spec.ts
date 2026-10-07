@@ -68,17 +68,17 @@ type Language = (typeof LANGUAGES)[number];
 
 /**
  * THE PROJECT SITE IN EACH LANGUAGE, written out rather than computed. German owns the
- * unprefixed paths on openplate.de; every other language lives under its prefix, with the
- * trailing slash the static site needs (`app/i18n/language.ts` in LowCarbCheck/openplate-website). A spec that
+ * unprefixed paths on openplate.de; every other language lives under its prefix, with no
+ * trailing slash, the site's canonical form (`app/i18n/language.ts` in LowCarbCheck/openplate-website). A spec that
  * computed these with the app's own function would agree with any bug in it.
  */
 const SITE_BY_LANGUAGE = {
   de: 'https://openplate.de/',
-  en: 'https://openplate.de/en/',
-  fr: 'https://openplate.de/fr/',
-  it: 'https://openplate.de/it/',
-  es: 'https://openplate.de/es/',
-  tr: 'https://openplate.de/tr/',
+  en: 'https://openplate.de/en',
+  fr: 'https://openplate.de/fr',
+  it: 'https://openplate.de/it',
+  es: 'https://openplate.de/es',
+  tr: 'https://openplate.de/tr',
 } satisfies Record<Language, string>;
 
 /** A newsletter the managed server is told it has, so the old landing would draw the form. */

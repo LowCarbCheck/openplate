@@ -98,16 +98,20 @@ const PROJECT_SITE_PREFIXES = {
 /**
  * The same page on the project site, in the reader's language.
  *
- * `path` keeps whatever it ends with. The site is prerendered to one directory
- * per page, so its pages answer at a trailing slash (`/en/docs/app/`) and a
- * path without one costs a 301; pass the slash, as the constants below do.
+ * Site addresses have no trailing slash. That is the canonical form (canonical
+ * link, hreflang and sitemap all say so), and nginx answers a slash address
+ * with a 301 to the slashless one, so a slash costs a hop. Pass `path` without
+ * one, as the constants below do. The home page is `/` in German and the bare
+ * prefix in every other language, so `/` never leaves a slash after a prefix.
  *
  * @param language - the language the app is drawn in.
- * @param path - the canonical path, for example `/` or `/docs/app/import-from-yazio/`.
- * @returns the absolute URL, `https://openplate.de/` in German and `https://openplate.de/en/` in English.
+ * @param path - the canonical path, for example `/` or `/docs/app/import-from-yazio`.
+ * @returns the absolute URL, `https://openplate.de/` in German and `https://openplate.de/en` in English for the home page.
  */
 export function projectSiteUrl(language: LanguageCode, path: ProjectSitePath): string {
-  return `${PROJECT_SITE_URL}${PROJECT_SITE_PREFIXES[language]}${path}`;
+  const prefix = PROJECT_SITE_PREFIXES[language];
+  if (path === '/' && prefix !== '') return `${PROJECT_SITE_URL}${prefix}`;
+  return `${PROJECT_SITE_URL}${prefix}${path}`;
 }
 
 /**
@@ -126,7 +130,7 @@ export const SELF_HOSTING_DOCS_URL = `${PROJECT_SITE_URL}/docs/app/self-hosting`
  * reader's language through {@link projectSiteUrl}. `#https` is the anchor the
  * site draws for the guide's `## HTTPS` heading.
  */
-export const SELF_HOSTING_HTTPS_DOCS_PATH = '/docs/app/self-hosting/#https' satisfies ProjectSitePath;
+export const SELF_HOSTING_HTTPS_DOCS_PATH = '/docs/app/self-hosting#https' satisfies ProjectSitePath;
 
 /**
  * The guide to bringing a YAZIO diary over (M254/03), linked from the import
@@ -135,7 +139,7 @@ export const SELF_HOSTING_HTTPS_DOCS_PATH = '/docs/app/self-hosting/#https' sati
  * this repository at `/docs/app/<slug>` (`doc-routes.ts` in LowCarbCheck/openplate-website),
  * German at the root and every other language under its prefix.
  */
-export const YAZIO_IMPORT_DOCS_PATH = '/docs/app/import-from-yazio/' satisfies ProjectSitePath;
+export const YAZIO_IMPORT_DOCS_PATH = '/docs/app/import-from-yazio' satisfies ProjectSitePath;
 
 /*
  * `APP_VERSION` used to live here: a hand-copied mirror of `package.json`'s

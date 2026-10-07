@@ -39,6 +39,14 @@ import { SUPPORTED_LANGUAGES } from '../../app/i18n/language-prefs';
 
 const APP_DIR = fileURLToPath(new URL('../../app', import.meta.url));
 
+/**
+ * Whether a site URL's path ends in a slash. The query and the fragment do not count,
+ * and the German home, `https://openplate.de/`, is the one address allowed to.
+ */
+function endsInSlash(url: string): boolean {
+  return new URL(url).pathname.endsWith('/') && url !== 'https://openplate.de/';
+}
+
 /** Every source file under `app/`, recursively. */
 function sourceFiles(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -98,29 +106,41 @@ describe('projectSiteUrl', () => {
   });
 
   it('puts German at the root and every other language under its prefix', () => {
+    // The site has no trailing slash, so a prefixed home is the bare prefix.
     const expected = {
       de: 'https://openplate.de/',
-      en: 'https://openplate.de/en/',
-      fr: 'https://openplate.de/fr/',
-      it: 'https://openplate.de/it/',
-      es: 'https://openplate.de/es/',
-      tr: 'https://openplate.de/tr/',
+      en: 'https://openplate.de/en',
+      fr: 'https://openplate.de/fr',
+      it: 'https://openplate.de/it',
+      es: 'https://openplate.de/es',
+      tr: 'https://openplate.de/tr',
     };
     for (const language of SUPPORTED_LANGUAGES) {
       assert.equal(projectSiteUrl(language, '/'), expected[language], language);
     }
   });
 
-  it('keeps the path, its trailing slash and its anchor, after the prefix', () => {
-    assert.equal(
-      projectSiteUrl('en', YAZIO_IMPORT_DOCS_PATH),
-      'https://openplate.de/en/docs/app/import-from-yazio/',
-    );
-    assert.equal(projectSiteUrl('de', YAZIO_IMPORT_DOCS_PATH), 'https://openplate.de/docs/app/import-from-yazio/');
+  it('keeps the path and its anchor, after the prefix, with no trailing slash', () => {
+    assert.equal(projectSiteUrl('en', YAZIO_IMPORT_DOCS_PATH), 'https://openplate.de/en/docs/app/import-from-yazio');
+    assert.equal(projectSiteUrl('de', YAZIO_IMPORT_DOCS_PATH), 'https://openplate.de/docs/app/import-from-yazio');
     assert.equal(
       projectSiteUrl('fr', SELF_HOSTING_HTTPS_DOCS_PATH),
-      'https://openplate.de/fr/docs/app/self-hosting/#https',
+      'https://openplate.de/fr/docs/app/self-hosting#https',
     );
+  });
+
+  it('never ends a site path in a slash, the one exception being the German home', () => {
+    // nginx 301s every slash address to the slashless one, so each slash is a wasted hop.
+    for (const language of SUPPORTED_LANGUAGES) {
+      for (const path of ['/', YAZIO_IMPORT_DOCS_PATH, SELF_HOSTING_HTTPS_DOCS_PATH] as const) {
+        const url = projectSiteUrl(language, path);
+        assert.equal(endsInSlash(url), false, `${language} ${path} gave ${url}`);
+      }
+    }
+    // THE CONTROL: the old form is a violation by the same predicate, so the loop cannot pass vacuously.
+    assert.equal(endsInSlash('https://openplate.de/en/'), true);
+    assert.equal(endsInSlash('https://openplate.de/en/docs/app/import-from-yazio/#x'), true);
+    assert.equal(endsInSlash('https://openplate.de/'), false);
   });
 
   it('derives the self-hosting guide from the site, so a fork is still one edit', () => {

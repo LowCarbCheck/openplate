@@ -222,10 +222,10 @@ describe('the managed front page is the account door (M266)', () => {
   });
 
   it('links openplate.de in the reader\'s language, under the doors and in the footer', () => {
-    // The harness renders English, which lives under `/en/` on the site.
-    assert.equal(hrefCount(MANAGED, 'https://openplate.de/en/'), 2, MANAGED.slice(0, 400));
+    // The harness renders English, which lives under `/en` on the site, with no trailing slash.
+    assert.equal(hrefCount(MANAGED, 'https://openplate.de/en'), 2, MANAGED.slice(0, 400));
     // THE CONTROL: the open landing is the whole pitch and names no project site.
-    assert.equal(hrefCount(OPEN, 'https://openplate.de/en/'), 0);
+    assert.equal(hrefCount(OPEN, 'https://openplate.de/en'), 0);
     assert.ok(MANAGED.includes('data-slot="account-door-site-line"'));
     assert.ok(MANAGED.includes('data-slot="footer-project-site"'));
   });
