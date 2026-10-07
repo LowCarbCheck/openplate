@@ -189,7 +189,7 @@ test('a paying account the paid floor holds to its own free grant is not bounded
   try {
     const free = await freeAccount({ service, email: 'free@example.org', limit: 10 });
     const supporter = await freeAccount({ service, email: 'supporter@example.org', limit: 10 });
-    // Basic, 20 a week, is below the supporter's own 10 a day: the floor holds them to the free grant.
+    // A paid plan at 20 a week is below the supporter's own 10 a day: the floor holds them to the free grant.
     await makePaying({ accountId: supporter.account.id, limit: 20, period: 'week' });
 
     assert.equal((await scan(service, free.tokens.accessToken)).status, 200);

@@ -83,7 +83,7 @@ function expectedMoment(instant: Date): ExpectedMoment {
   };
 }
 
-/** A Plus-like account on a weekly limit: 13 of 40, resetting at the next Monday. The kind says "free" on purpose. */
+/** An account on a weekly paid plan: 13 of 40, resetting at the next Monday. The kind says "free" on purpose. */
 function weeklyStub(resetsAt: Date): ManagedCoreStub {
   return {
     ...trialAccountStub(0),

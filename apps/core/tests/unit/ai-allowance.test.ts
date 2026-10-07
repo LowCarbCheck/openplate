@@ -208,18 +208,18 @@ test('the scan trial is per day even when the period column says week', () => {
 
 // ── The paid floor (2026-10-07) ─────────────────────────────────────────────
 
-test('buying a plan never lowers the allowance: a Beta supporter on Basic keeps 10 a day, 70 a week over 20', () => {
+test('buying a plan never lowers the allowance: a Beta supporter on a paid plan at 20 a week keeps 10 a day, 70 a week over 20', () => {
   const betaSupporter = effectiveFreeAiLimit({ own: 10, instanceDefault: { limit: 10, period: 'week' } });
   assert.deepEqual(
     decide({ dailyAiLimit: 20, aiLimitPeriod: 'week', allowanceExpiresAt: FUTURE, freeAiLimit: betaSupporter }),
     { kind: 'free', limit: 10, period: 'day' },
   );
-  // Plus, 40 a week, is still less than 70: the same answer.
+  // A paid plan at 40 a week is still less than 70: the same answer.
   assert.deepEqual(
     decide({ dailyAiLimit: 40, aiLimitPeriod: 'week', allowanceExpiresAt: FUTURE, freeAiLimit: betaSupporter }),
     { kind: 'free', limit: 10, period: 'day' },
   );
-  // THE CONTROL: Max, 100 a week, is more than 70, so the plan counts.
+  // THE CONTROL: a paid plan at 100 a week is more than 70, so the plan counts.
   assert.deepEqual(
     decide({ dailyAiLimit: 100, aiLimitPeriod: 'week', allowanceExpiresAt: FUTURE, freeAiLimit: betaSupporter }),
     { kind: 'paid', limit: 100, period: 'week' },
@@ -247,7 +247,7 @@ test('the paid floor compares per week, keeps the paid grant on a tie, and leave
     }),
     { kind: 'free', limit: 3, period: 'day' },
   );
-  // THE CONTROL: the free default of the managed instance, 10 a week, never beats Basic.
+  // THE CONTROL: the free default of the managed instance, 10 a week, never beats a paid plan at 20 a week.
   assert.deepEqual(
     decide({
       dailyAiLimit: 20,

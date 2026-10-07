@@ -92,7 +92,7 @@ const t = translatorFor(EN);
 // The wire, as the protocol prints it
 // ---------------------------------------------------------------------------
 
-/** The `aiQuota` of §5.15's example: a Plus subscriber on a Wednesday, 13 of 40 this week. */
+/** The `aiQuota` of §5.15's example: a weekly plan of 40 on a Wednesday, 13 used this week. */
 const PROTOCOL_WEEK_QUOTA = {
   kind: 'paid',
   limit: 40,
@@ -219,7 +219,7 @@ describe('shownAllowance', () => {
   });
 
   it('draws the paid floor as the proxy counts it: a payer on the free grant shows the free limit and window', () => {
-    // A Beta supporter on Basic (20 a week) is counted on 10 a day, and the
+    // A Beta supporter on a paid plan at 20 a week is counted on 10 a day, and the
     // quota says so. The paid limit (20, week) must not be drawn instead.
     const shown = shownAllowance({
       dailyAiLimit: 20,
@@ -647,7 +647,7 @@ describe('the admin’s usage line', () => {
 
 describe('the account view', () => {
   it('accepts the protocol example, and an older core’s view without the three fields', () => {
-    const plus: AccountViewWire = {
+    const weeklyPlan: AccountViewWire = {
       id: 1,
       email: 'anna@example.org',
       displayName: null,
@@ -663,8 +663,8 @@ describe('the account view', () => {
       invitesLeft: null,
       createdAt: '2026-09-04T10:11:12.000Z',
     };
-    assert.equal(plus.aiQuota?.limit, 40);
-    const older: AccountViewWire = { ...plus };
+    assert.equal(weeklyPlan.aiQuota?.limit, 40);
+    const older: AccountViewWire = { ...weeklyPlan };
     delete older.aiLimitPeriod;
     delete older.freeAiLimitPeriod;
     delete older.aiQuota;

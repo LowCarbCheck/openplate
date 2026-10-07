@@ -257,14 +257,14 @@ test('a Beta supporter keeps ten a day on an instance whose free default is week
   }
 });
 
-test('a Beta supporter who buys Basic keeps ten a day: the paid floor, through the real proxy', async () => {
+test('a Beta supporter who buys a weekly plan keeps ten a day: the paid floor, through the real proxy', async () => {
   const service = await startInstance({
     standing: { ...NO_INSTANCE_STANDING, defaultFreeAiLimit: { limit: 10, period: 'week' } },
   });
   try {
     const supporter = await service.signupThroughInvite({ email: 'supporter@example.org', dailyAiLimit: 10 });
     const buyer = await service.signupThroughInvite({ email: 'buyer@example.org', dailyAiLimit: 10 });
-    // What the biller writes for Basic (20 a week) and for Max (100 a week).
+    // What the biller writes for a weekly plan of 20 and one of 100.
     // The own free grant of 10 a day stays on both rows.
     for (const [accountId, limit] of [
       [supporter.account.id, 20],
@@ -281,7 +281,7 @@ test('a Beta supporter who buys Basic keeps ten a day: the paid floor, through t
       await seedUsage({ accountId, day: '2026-10-06', count: 10 });
     }
 
-    // Basic: 20 a week would be spent. 10 a day (70 a week) is larger, so
+    // The plan of 20 a week would be spent. 10 a day (70 a week) is larger, so
     // today opens fresh, per day, exactly as before the purchase.
     const today = await scan(service, supporter.tokens.accessToken);
     assert.equal(today.status, 200);
@@ -295,11 +295,11 @@ test('a Beta supporter who buys Basic keeps ten a day: the paid floor, through t
       resetsAt: '2026-10-08T00:00:00.000Z',
     });
 
-    // THE CONTROL: Max is larger than 70 a week, so the plan counts, summed over the week.
-    const max = await scan(service, buyer.tokens.accessToken);
-    assert.equal(max.status, 200);
-    assert.equal(max.headers.get('x-quota-used'), '21');
-    assert.equal(max.headers.get('x-quota-limit'), '100');
+    // THE CONTROL: the plan of 100 is larger than 70 a week, so the plan counts, summed over the week.
+    const largerPlan = await scan(service, buyer.tokens.accessToken);
+    assert.equal(largerPlan.status, 200);
+    assert.equal(largerPlan.headers.get('x-quota-used'), '21');
+    assert.equal(largerPlan.headers.get('x-quota-limit'), '100');
   } finally {
     await service.close();
   }
