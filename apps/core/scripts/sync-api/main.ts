@@ -85,7 +85,10 @@ const USAGE = `core-api, the openplate-core admin CLI
     accounts get <id>          One account's metadata
     accounts delete <id> --yes Erase an account and everything attached to it
     accounts set-role <id> admin|member   Change what an account may do
-    accounts set-limit <id> <n>           Change its paid AI requests per UTC day
+    accounts set-limit <id> <n>           Change its paid AI requests per UTC day,
+                               or per week after set-period week
+    accounts set-period <id> day|week     Count the paid limit per UTC day, or
+                               per week from Monday 00:00 UTC
     accounts set-free-limit <id> <n>      Change its standing free AI requests per
                                UTC day, which apply when no paid window is live
                                and never end (0 takes the free grant away)
@@ -402,13 +405,20 @@ function print(line: string): void {
   process.stdout.write(`${line}\n`);
 }
 
-/** The PATCH body of the four one-value `accounts` commands. */
+/** The window argument of `accounts set-period` (2026-10-07), or a refusal before anything is sent. */
+function periodFrom(value: string): AccountPatchBody {
+  if (value === 'day' || value === 'week') return { aiLimitPeriod: value };
+  throw new CliError('accounts set-period needs day or week.');
+}
+
+/** The PATCH body of the five one-value `accounts` commands. */
 function patchFor(input: {
-  subcommand: 'set-role' | 'set-limit' | 'set-free-limit' | 'set-trial';
+  subcommand: 'set-role' | 'set-limit' | 'set-period' | 'set-free-limit' | 'set-trial';
   value: string;
 }): AccountPatchBody {
   if (input.subcommand === 'set-role') return roleFrom(input.value);
   if (input.subcommand === 'set-limit') return limitFrom(input.value);
+  if (input.subcommand === 'set-period') return periodFrom(input.value);
   if (input.subcommand === 'set-free-limit') return freeLimitFrom(input.value);
   return trialFrom(input.value);
 }
@@ -505,6 +515,7 @@ async function runAccounts(client: AdminClient, invocation: Invocation): Promise
   if (
     subcommand === 'set-role' ||
     subcommand === 'set-limit' ||
+    subcommand === 'set-period' ||
     subcommand === 'set-free-limit' ||
     subcommand === 'set-trial'
   ) {

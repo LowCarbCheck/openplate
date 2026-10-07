@@ -26,7 +26,7 @@
  */
 import type { Logger } from '../logger.js';
 import type { Mailer } from '../mail/mailer.js';
-import { utcDayKey } from '../lib/utc-day.js';
+import { utcDayKey, utcWeekStartDayKey } from '../lib/utc-day.js';
 import type { UpstreamBudgetRead, UpstreamBudgetSource, UpstreamKeyBudget } from './upstream-budget.js';
 import { errorFields } from '../log-error.js';
 
@@ -36,19 +36,11 @@ export const DEFAULT_AI_BUDGET_ALERT_FRACTION = 0.2;
 /** How often the timer reads the key when nobody opens the console. */
 export const BUDGET_WATCH_INTERVAL_MS = 15 * 60 * 1000;
 
-const MS_PER_DAY = 86_400_000;
-
 /** Whether this budget is under the alert line. A key with no limit, or no remainder reported, never is. */
 export function isBudgetLow(input: { budget: UpstreamKeyBudget; fraction: number }): boolean {
   const { limitUsd, remainingUsd } = input.budget;
   if (limitUsd === null || remainingUsd === null) return false;
   return remainingUsd < limitUsd * input.fraction;
-}
-
-/** The UTC Monday of the week `instant` falls in, as `YYYY-MM-DD`. */
-function utcWeekStart(instant: Date): string {
-  const daysSinceMonday = (instant.getUTCDay() + 6) % 7;
-  return utcDayKey(new Date(instant.getTime() - daysSinceMonday * MS_PER_DAY));
 }
 
 /** The name of the reset window a read made at `now` falls in. See the module header. */
@@ -58,7 +50,7 @@ export function budgetAlertPeriod(input: { budget: UpstreamKeyBudget; now: Date 
     case 'daily':
       return `daily:${utcDayKey(now)}`;
     case 'weekly':
-      return `weekly:${utcWeekStart(now)}`;
+      return `weekly:${utcWeekStartDayKey(now)}`;
     case 'monthly':
       return `monthly:${utcDayKey(now).slice(0, 7)}`;
     case null:

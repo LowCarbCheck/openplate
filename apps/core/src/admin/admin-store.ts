@@ -26,7 +26,7 @@
  * self-service path calls too, so the two erasure paths cannot drift apart.
  * See `server/admin-routes.ts`.
  */
-import type { AccountRole, SyncKeyRecordKind } from '../protocol.js';
+import type { AccountRole, AiLimitPeriod, SyncKeyRecordKind } from '../protocol.js';
 import type { AccountActivityCount, ActivityDay } from './account-activity.js';
 import type { PulseTotals } from '../pulse/pulse-store.js';
 import type { PushStats } from '../push/push-store.js';
@@ -51,8 +51,12 @@ export interface AdminAccountSummary {
   displayName: string | null;
   role: AccountRole;
   dailyAiLimit: number;
+  /** The window `dailyAiLimit` counts in (2026-10-07). */
+  aiLimitPeriod: AiLimitPeriod;
   /** AI requests spent on the current UTC day, a count, never a log of what was asked. */
   aiUsedToday: number;
+  /** AI requests spent from this week's Monday (UTC) to the current day, both included (2026-10-07). */
+  aiUsedThisWeek: number;
   /**
    * When this account's AI allowance ends, or `null` for no end at all. The
    * operator's own field: it is what they set, and the AI proxy is the only

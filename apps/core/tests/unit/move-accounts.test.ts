@@ -198,6 +198,21 @@ test('the drift check accepts a source without accounts.capabilities and refuses
   assert.match(refused[0] ?? '', /migration 0031/);
 });
 
+test('the drift check accepts a source without accounts.ai_limit_period and refuses a target without it', () => {
+  const full = currentSchema();
+  const withoutPeriod = new Map(full);
+  withoutPeriod.set(
+    'accounts',
+    new Set([...(full.get('accounts') ?? [])].filter((column) => column !== 'ai_limit_period')),
+  );
+  // Beta's database, older than the window, is a valid source.
+  assert.deepEqual(checkSchemas({ source: withoutPeriod, target: full }), []);
+
+  const refused = checkSchemas({ source: full, target: withoutPeriod });
+  assert.equal(refused.length, 1);
+  assert.match(refused[0] ?? '', /migration 0034/);
+});
+
 test('the drift check refuses an unknown table and an unknown column on either side', () => {
   const full = currentSchema();
   const withTable = new Map(full);

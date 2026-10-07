@@ -1,6 +1,6 @@
 /**
- * What one proxied chat body may carry INTO the model, and what it weighs
- * against the daily counters (2026-09-30).
+ * What one proxied chat body may carry INTO the model (2026-09-30), and what
+ * it counts against the AI limits (one, since 2026-10-07).
  *
  * WHY. `ai/chat-body-policy.ts` caps what one request may cost on the way
  * OUT: the answer, the reasoning, the number of answers. Nothing bounded the
@@ -9,17 +9,23 @@
  * in `ai-tiers.json` (`price.inputUsdPerMillion`) that is real money for one
  * request, and the daily counters counted it as one request like every plate
  * photograph. So two things live
- * here, both measured on the body AFTER the allow list, which is the body the
- * provider receives:
+ * here, the bound measured on the body AFTER the allow list, which is the
+ * body the provider receives:
  *
  *  1. A BOUND. More than `AI_MAX_IMAGE_PARTS` images, more than
  *     `AI_MAX_TEXT_BYTES` of text, or more than `AI_MAX_MESSAGES` messages is
  *     refused with `400 ai-request-too-large`, before any claim, reservation
  *     or upstream call. A refusal, not a rewrite: cutting a person's words or
  *     a photograph would send the model a different question.
- *  2. A WEIGHT. A request reserves `max(1, ceil(estimated input tokens /
- *     AI_UNIT_INPUT_TOKENS))` units of the account's daily allowance and of
- *     the instance ceilings, so the counters see size and not only count.
+ *  2. A WEIGHT OF ONE. Every request that passes the bound reserves exactly
+ *     {@link REQUEST_WEIGHT} unit of the account's allowance and of every
+ *     instance ceiling, whatever its size. Decided by the owner on
+ *     2026-10-07: one action a person starts is one scan, because the number
+ *     a plan advertises ("20 AI scans a week") must be the number a person
+ *     can count. Until then a request weighed `max(1, ceil(estimated input
+ *     tokens / AI_UNIT_INPUT_TOKENS))`, so a long text or a large pantry list
+ *     could take two. The BOUND above is now the only guard on size: a body
+ *     over it is refused and costs nothing, and a body under it is one.
  *
  * THE DEFAULTS ARE THE APP'S LARGEST REAL REQUEST (measured in `openplate`'s
  * `app/services/vision/` on 2026-10-06 from the committed vision contract, all
@@ -29,8 +35,7 @@
  * The text intake is 8.4 KB plus what the person typed, the recipe proposal
  * 4.3 KB plus one line per pantry item. So one image, exactly the app's
  * maximum; four messages, twice its two; and 48 KB of text, room for the
- * schema, the prompt and some 33 KB that a person typed or a pantry listed. A
- * plate scan then estimates at about 5,300 tokens, weight 1.
+ * schema, the prompt and some 33 KB that a person typed or a pantry listed.
  *
  * TEXT INCLUDES `response_format`. A JSON schema is input the model reads,
  * and a field the proxy forwards without counting is a field that carries a
@@ -40,7 +45,7 @@
  */
 import { asArray, asObject, asString, type JsonObject } from '../lib/json.js';
 
-/** What the instance lets one request carry in, and what one unit of the daily counters is worth. */
+/** What the instance lets one request carry in. */
 export interface ChatInputPolicy {
   /** `AI_MAX_IMAGE_PARTS`: the most `image_url` parts one request may carry. */
   maxImageParts: number;
@@ -48,10 +53,6 @@ export interface ChatInputPolicy {
   maxTextBytes: number;
   /** `AI_MAX_MESSAGES`: the most messages one request may carry. */
   maxMessages: number;
-  /** `AI_UNIT_INPUT_TOKENS`: the estimated input tokens one unit of the daily counters covers. */
-  unitInputTokens: number;
-  /** `AI_IMAGE_INPUT_TOKENS`: the input tokens one image is estimated at, whatever its size. */
-  imageInputTokens: number;
 }
 
 /** The default for `AI_MAX_IMAGE_PARTS`: the app sends one photograph per request. */
@@ -63,28 +64,20 @@ export const DEFAULT_AI_MAX_TEXT_BYTES = 48 * 1024;
 /** The default for `AI_MAX_MESSAGES`: the app sends a system message and a user message. */
 export const DEFAULT_AI_MAX_MESSAGES = 4;
 
-/**
- * The default for `AI_UNIT_INPUT_TOKENS`. A plate scan estimates at about
- * 5,300 tokens and a text intake at 2,000 to 4,000, so both weigh one unit;
- * a request near the 48 KB text bound weighs two.
- */
-export const DEFAULT_AI_UNIT_INPUT_TOKENS = 8192;
-
-/**
- * The default for `AI_IMAGE_INPUT_TOKENS`. The instance's model bills an image
- * by resolution tiers and not by bytes, about 1,100 tokens at its highest; 1500
- * leaves room for a model that bills a little more.
- */
-export const DEFAULT_AI_IMAGE_INPUT_TOKENS = 1500;
-
 /** Every default above, for the wiring and the tests. */
 export const DEFAULT_CHAT_INPUT_POLICY: ChatInputPolicy = {
   maxImageParts: DEFAULT_AI_MAX_IMAGE_PARTS,
   maxTextBytes: DEFAULT_AI_MAX_TEXT_BYTES,
   maxMessages: DEFAULT_AI_MAX_MESSAGES,
-  unitInputTokens: DEFAULT_AI_UNIT_INPUT_TOKENS,
-  imageInputTokens: DEFAULT_AI_IMAGE_INPUT_TOKENS,
 };
+
+/**
+ * The units one request reserves on the account's allowance and on every
+ * instance ceiling, and gives back wherever a unit is given back: ONE, for
+ * any body the bound let through (owner decision, 2026-10-07). A refused
+ * body reserves nothing.
+ */
+export const REQUEST_WEIGHT = 1;
 
 /** The refusal for a body over one of the bounds. The body names which one and its value. */
 export const AI_REQUEST_TOO_LARGE = 'ai-request-too-large';
@@ -98,9 +91,6 @@ export interface ChatInputSize {
   textBytes: number;
   messages: number;
 }
-
-/** The characters of text one token is estimated at. A rough figure, and the one the weight needs. */
-const BYTES_PER_TOKEN = 4;
 
 /** Counts one message's text bytes and image parts into `size`. */
 function addMessage(input: { size: ChatInputSize; message: JsonObject }): void {
@@ -144,18 +134,4 @@ export function findExceededInputLimit(input: {
   if (size.textBytes > policy.maxTextBytes) return { limit: 'text-bytes', max: policy.maxTextBytes };
   if (size.messages > policy.maxMessages) return { limit: 'messages', max: policy.maxMessages };
   return null;
-}
-
-/** The input tokens a body is estimated at before the call: text bytes over four, plus a fixed figure per image. */
-export function estimateInputTokens(input: { size: ChatInputSize; policy: ChatInputPolicy }): number {
-  return Math.ceil(input.size.textBytes / BYTES_PER_TOKEN) + input.size.imageParts * input.policy.imageInputTokens;
-}
-
-/**
- * The units one request reserves: `max(1, ceil(estimated input tokens /
- * AI_UNIT_INPUT_TOKENS))`. Never below one, so an empty body still counts as
- * the request it is.
- */
-export function requestWeight(input: { size: ChatInputSize; policy: ChatInputPolicy }): number {
-  return Math.max(1, Math.ceil(estimateInputTokens(input) / input.policy.unitInputTokens));
 }

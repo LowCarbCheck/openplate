@@ -316,10 +316,11 @@ proves a swap touches only the file.
 **Input is bounded too.** A request with more than one image, more than 48 KB
 of text (the schema in `response_format` included) or more than four messages
 is `400 ai-request-too-large` before anything is counted
-(`AI_MAX_IMAGE_PARTS`, `AI_MAX_TEXT_BYTES`, `AI_MAX_MESSAGES`). A request also
-weighs what it carries: one unit per 8192 estimated input tokens
-(`AI_UNIT_INPUT_TOKENS`, images at `AI_IMAGE_INPUT_TOKENS` each), never less
-than one, so a plate scan is one unit and a very long text is two.
+(`AI_MAX_IMAGE_PARTS`, `AI_MAX_TEXT_BYTES`, `AI_MAX_MESSAGES`). A request
+within those bounds counts as ONE unit against every AI limit, whatever its
+size: one action a person starts is one scan (since 2026-10-07). The old weight
+settings `AI_UNIT_INPUT_TOKENS` and `AI_IMAGE_INPUT_TOKENS` are no longer read,
+and the boot log warns when one is still set.
 
 **Check the tier file against OpenRouter.** `ai-tiers.json` writes down the model,
 the routing and the price of each tier. A price changes, or a provider drops off the
@@ -366,7 +367,8 @@ visible in the output:
 - On the EU host, a pin without a `/eu` suffix is a WARN, not a failure. It passes today,
   but nothing in the pin keeps the call in the EU.
 
-**The allowance is per account, per UTC day, and it defaults to zero.** A new
+**The allowance is per account, per UTC day unless you say per week, and it
+defaults to zero.** A new
 invite hands out no AI at all unless you say otherwise, so an operator who
 mints an ordinary invitation has not given away their provider key by accident:
 
@@ -379,15 +381,24 @@ pnpm core-api accounts set-free-limit 42 0   # or turn it off
 **An account has two daily limits.** The invite above writes a standing free
 grant (`freeDailyAiLimit`): it never ends and it is never scan gated. A paid
 window is the other one, a `dailyAiLimit` with an end date
-(`accounts set-limit` and `accounts set-expiry`, or the biller), and it wins
+(`accounts set-limit`, `accounts set-period` and `accounts set-expiry`, or the biller), and it wins
 while it runs. When it ends, the account falls back to its free grant, or to
 no AI without one. A `dailyAiLimit` with no date and no scan trial grants
 nothing since 2026-09-30: use `set-free-limit` for a grant with no end.
 
-Every proxied answer carries `X-Quota-Used` and `X-Quota-Limit`. An account at
-its limit gets a `429` naming the UTC midnight it resets at, with `Retry-After`
-in seconds. An account with an allowance of zero gets `403 ai-not-allowed`
-before any request leaves your host.
+**A paid limit counts per day or per week.** `aiLimitPeriod` on the account
+(`day` or `week`, written by the admin PATCH or the biller) says which. Every
+account starts on `day`. A week runs from Monday 00:00 UTC to the next Monday
+00:00 UTC, and the count is the sum of that week's days. An account's own free
+grant is always per day; the instance default can be either (below).
+
+Every proxied answer carries `X-Quota-Used` and `X-Quota-Limit`; for a weekly
+limit, `X-Quota-Used` is the week's sum. An account at its limit gets a `429`
+naming the instant it resets at (the next UTC midnight, or the next Monday
+00:00 UTC for a week), with `Retry-After` in seconds, and a body with `code`
+`ai-quota-spent`, `period`, `used`, `limit` and `resetsAt`. An account with an
+allowance of zero gets `403 ai-not-allowed` before any request leaves your
+host.
 
 **A unit is reserved before the call and given back only when the provider
 cannot have billed you.** A connection that never opened, a provider that
@@ -429,6 +440,12 @@ AI requests per UTC day, with no end date and no scan count. An own limit
 wins. A day used up answers `429` with `Retry-After`. Unset or 0 is off, and
 nothing changes. It takes the place of the scan trial below, so the boot stops
 if both are set.
+
+**Or a free weekly limit.** `DEFAULT_FREE_WEEKLY_AI_LIMIT` (1 to 10000) is the
+same grant counted per week: from Monday 00:00 UTC to the next Monday 00:00
+UTC, when the count starts again. A week used up answers `429` with
+`Retry-After` to that Monday. An account's own free limit stays per day. Set at
+most one of the two defaults; with both, the boot stops.
 
 **What each answer cost is logged.** On an OpenRouter upstream the proxy asks
 the provider to report usage. After an answer is delivered, the
@@ -489,6 +506,17 @@ from one network (an IPv6 /64, or one IPv4 address) may take of it, a tenth by
 default, so a few farmed accounts cannot use up the day for everybody else.
 People behind one IPv4 carrier NAT share one bucket. `pnpm core-api trials grant-lapsed --trial-days 3` gives the scans to
 day trials that ran out unpaid, as a dry run until you add `--apply`.
+
+**The free tier has the same two bounds, opt in.** A free grant (an own free
+limit, or `DEFAULT_FREE_DAILY_AI_LIMIT` or `DEFAULT_FREE_WEEKLY_AI_LIMIT`)
+replaces the trial, and with the trial settings gone free requests would share
+`AI_INSTANCE_DAILY_LIMIT` with paying people. `AI_FREE_INSTANCE_DAILY_LIMIT`
+caps what every free account together spends per UTC day and takes free
+requests out of `AI_INSTANCE_DAILY_LIMIT`, so that ceiling is the paying
+accounts' alone. `AI_FREE_NETWORK_DAILY_LIMIT` caps what one network spends on
+free grants per UTC day. Both are off when unset, so nothing changes for an
+instance that sets neither. A paying account that the paid floor holds to its
+own free limit is not free traffic.
 
 **Members can hand out an AI trial, if you let them.** Set
 `MEMBER_INVITE_DAILY_AI_LIMIT` and `MEMBER_INVITE_ALLOWANCE_DAYS`, both or
@@ -849,6 +877,7 @@ ADMIN_TOKEN=... pnpm core-api accounts get 42 --json
 ADMIN_TOKEN=... pnpm core-api accounts set-role 42 admin
 ADMIN_TOKEN=... pnpm core-api accounts set-free-limit 42 10
 ADMIN_TOKEN=... pnpm core-api accounts set-limit 42 200
+ADMIN_TOKEN=... pnpm core-api accounts set-period 42 week
 ADMIN_TOKEN=... pnpm core-api accounts suspend 42
 ADMIN_TOKEN=... pnpm core-api accounts reset-mail 42
 ADMIN_TOKEN=... pnpm core-api accounts delete 42 --yes

@@ -1,18 +1,22 @@
 /**
- * A heavy request on each grant, against real Postgres (2026-09-30).
+ * A large request on each grant, against real Postgres (2026-09-30, made one
+ * unit on 2026-10-07).
  *
  * TWO BRANCHES MEET IN ONE LINE of `ai/proxy.ts`. The cost pass made every
  * reservation carry a `weight`, the free-tier pass made `accounts/ai-allowance.ts`
- * pick the limit the reservation is held to. Each branch tested its half with
- * a weight of one or on one grant. This suite sends weight 2 down all three
- * grants and checks the same three things on each:
+ * pick the limit the reservation is held to. Until 2026-10-07 a request near
+ * the text bound weighed 2. The owner then decided that one action a person
+ * starts is ONE scan, whatever its size, so this suite now sends a 47 KB
+ * request, just under the 48 KB bound, down all three grants and checks:
  *
- *  - the reservation takes the weight, against the limit the grant picked
- *    (`X-Quota-Limit` names it, and the row holds the weight);
- *  - a weight that no longer fits the picked limit is 429, even where the
+ *  - the reservation takes ONE unit, against the limit the grant picked
+ *    (`X-Quota-Limit` names it, and the row holds the count);
+ *  - the request that no longer fits the picked limit is 429, even where the
  *    other limit on the row would have let it through;
- *  - a release gives the same weight back, on the account and on the ceiling
- *    the grant counts against.
+ *  - a release gives the one unit back, on the account and on the ceiling
+ *    the grant counts against;
+ *  - THE CONTROL: one byte over the bound is still 400 and counts nothing, so
+ *    the size bound, not a weight, is the guard on size.
  */
 import { test, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
@@ -26,8 +30,10 @@ import { startService, type HttpResponse, type ServiceHarness } from './service-
 const UPSTREAM_KEY = 'sk-the-operators-own-provider-key';
 const PEPPER = 'a-trial-address-pepper-that-is-long-enough-0123';
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
-/** About 10,000 estimated input tokens: two units of the default 8,192. */
-const HEAVY_TEXT_BYTES = 40_000;
+/** About 12,000 estimated input tokens: two units under the old weight, one now. Under the 48 KB bound. */
+const HEAVY_TEXT_BYTES = 47 * 1024;
+/** One byte over `AI_MAX_TEXT_BYTES`' default. */
+const OVERSIZE_TEXT_BYTES = 48 * 1024 + 1;
 
 let database: TestDatabase;
 let upstream: Server;
@@ -114,7 +120,7 @@ async function standingOf(accountId: number): Promise<{ dailyAiLimit: number; fr
   return row;
 }
 
-test('the free grant: weight 2 against freeDailyAiLimit, refused past it, released whole', async () => {
+test('the free grant: a large request is one unit against freeDailyAiLimit, refused past it, released whole', async () => {
   const service = await startWithCeilings();
   try {
     // An operator's invite without a trial writes the free grant, paid 0.
@@ -123,37 +129,40 @@ test('the free grant: weight 2 against freeDailyAiLimit, refused past it, releas
     const token = session.tokens.accessToken;
     assert.deepEqual(await standingOf(accountId), { dailyAiLimit: 0, freeDailyAiLimit: 5 });
 
-    // A provider refusal gives both units back, on the account and the instance.
+    // A provider refusal gives the unit back, on the account and the instance.
     upstreamStatus = 400;
     assert.equal((await complete(service, { token, textBytes: HEAVY_TEXT_BYTES })).status, 400);
     assert.equal(await usageOf(accountId), 0);
     assert.deepEqual(await instanceDay(), { count: 0, trialCount: 0 });
 
     upstreamStatus = 200;
-    const first = await complete(service, { token, textBytes: HEAVY_TEXT_BYTES });
-    assert.equal(first.status, 200);
-    assert.equal(first.headers.get('x-quota-used'), '2');
-    assert.equal(first.headers.get('x-quota-limit'), '5');
-    assert.equal((await complete(service, { token, textBytes: HEAVY_TEXT_BYTES })).status, 200);
-    assert.equal(await usageOf(accountId), 4);
+    for (let used = 1; used <= 5; used += 1) {
+      const response = await complete(service, { token, textBytes: HEAVY_TEXT_BYTES });
+      assert.equal(response.status, 200, `large request ${used}`);
+      assert.equal(response.headers.get('x-quota-used'), String(used));
+      assert.equal(response.headers.get('x-quota-limit'), '5');
+    }
+    assert.equal(await usageOf(accountId), 5);
 
-    // 4 + 2 > 5: refused, and the instance's two units go back.
+    // 5 + 1 > 5: refused, and the instance's unit goes back.
     const refused = await complete(service, { token, textBytes: HEAVY_TEXT_BYTES });
     assert.equal(refused.status, 429);
     assert.equal(refused.headers.get('x-quota-limit'), '5');
-    assert.equal(await usageOf(accountId), 4);
-    assert.deepEqual(await instanceDay(), { count: 4, trialCount: 0 });
+    assert.equal(await usageOf(accountId), 5);
+    assert.deepEqual(await instanceDay(), { count: 5, trialCount: 0 });
 
-    // THE CONTROL: one unit is left, and a light request takes it.
-    const light = await complete(service, { token, textBytes: 100 });
-    assert.equal(light.status, 200);
-    assert.equal(light.headers.get('x-quota-used'), '5');
+    // THE CONTROL: one byte over the bound is refused before any count.
+    const oversize = await complete(service, { token, textBytes: OVERSIZE_TEXT_BYTES });
+    assert.equal(oversize.status, 400);
+    assert.deepEqual(oversize.body, { error: 'ai-request-too-large', limit: 'text-bytes', max: 48 * 1024 });
+    assert.equal(await usageOf(accountId), 5);
+    assert.deepEqual(await instanceDay(), { count: 5, trialCount: 0 });
   } finally {
     await service.close();
   }
 });
 
-test('the paid window: weight 2 against dailyAiLimit, then held to the free limit once it ends', async () => {
+test('the paid window: a large request is one unit against dailyAiLimit, then held to the free limit once it ends', async () => {
   const service = await startWithCeilings();
   try {
     const session = await service.signupThroughInvite({ email: 'paid@example.org', dailyAiLimit: 1 });
@@ -167,16 +176,19 @@ test('the paid window: weight 2 against dailyAiLimit, then held to the free limi
 
     upstreamStatus = 400;
     assert.equal((await complete(service, { token, textBytes: HEAVY_TEXT_BYTES })).status, 400);
-    assert.equal(await usageOf(accountId), 0, 'the release gave back both units');
+    assert.equal(await usageOf(accountId), 0, 'the release gave back the unit');
     assert.deepEqual(await instanceDay(), { count: 0, trialCount: 0 });
 
     upstreamStatus = 200;
-    const paid = await complete(service, { token, textBytes: HEAVY_TEXT_BYTES });
-    assert.equal(paid.status, 200);
-    assert.equal(paid.headers.get('x-quota-used'), '2');
-    assert.equal(paid.headers.get('x-quota-limit'), '7');
+    for (let used = 1; used <= 4; used += 1) {
+      const paid = await complete(service, { token, textBytes: HEAVY_TEXT_BYTES });
+      assert.equal(paid.status, 200, `large request ${used}`);
+      assert.equal(paid.headers.get('x-quota-used'), String(used));
+      // THE CONTROL for the switch below: the fourth is past the free 3 and fits the paid 7.
+      assert.equal(paid.headers.get('x-quota-limit'), '7');
+    }
 
-    // The window ends. 2 + 2 fits the paid 7 still on the row, not the free 3.
+    // The window ends. 4 + 1 fits the paid 7 still on the row, not the free 3.
     await database.db
       .update(accounts)
       .set({ allowanceExpiresAt: new Date(service.now() - 1) })
@@ -184,23 +196,17 @@ test('the paid window: weight 2 against dailyAiLimit, then held to the free limi
     const refused = await complete(service, { token, textBytes: HEAVY_TEXT_BYTES });
     assert.equal(refused.status, 429);
     assert.equal(refused.headers.get('x-quota-limit'), '3');
-    assert.equal(await usageOf(accountId), 2);
-    assert.deepEqual(await instanceDay(), { count: 2, trialCount: 0 });
-
-    // THE CONTROL: a light request fits the free limit.
-    const light = await complete(service, { token, textBytes: 100 });
-    assert.equal(light.status, 200);
-    assert.equal(light.headers.get('x-quota-used'), '3');
-    assert.equal(light.headers.get('x-quota-limit'), '3');
+    assert.equal(await usageOf(accountId), 4);
+    assert.deepEqual(await instanceDay(), { count: 4, trialCount: 0 });
   } finally {
     await service.close();
   }
 });
 
-test('the scan trial: weight 2 on the account and the trial ceiling, released whole on both', async () => {
+test('the scan trial: a large request is one unit on the account and the trial ceiling, released whole on both', async () => {
   const service = await startWithCeilings();
   try {
-    const session = await service.signupThroughInvite({ email: 'trial@example.org', dailyAiLimit: 3, trialScans: 3 });
+    const session = await service.signupThroughInvite({ email: 'trial@example.org', dailyAiLimit: 3, trialScans: 10 });
     const accountId = session.account.id;
     const token = session.tokens.accessToken;
     assert.deepEqual(await standingOf(accountId), { dailyAiLimit: 3, freeDailyAiLimit: 0 });
@@ -213,26 +219,28 @@ test('the scan trial: weight 2 on the account and the trial ceiling, released wh
     });
     assert.equal(refusedUpstream.status, 400);
     assert.equal(await usageOf(accountId), 0);
-    assert.deepEqual(await instanceDay(), { count: 0, trialCount: 0 }, 'the trial ceiling got both units back');
+    assert.deepEqual(await instanceDay(), { count: 0, trialCount: 0 }, 'the trial ceiling got the unit back');
 
     upstreamStatus = 200;
-    const scanned = await complete(service, { token, textBytes: HEAVY_TEXT_BYTES, intakeId: 'intake000000000b' });
-    assert.equal(scanned.status, 200);
-    assert.equal(scanned.headers.get('x-quota-used'), '2');
-    assert.equal(scanned.headers.get('x-quota-limit'), '3');
+    for (const [index, intakeId] of ['intake000000000b', 'intake000000000c', 'intake000000000d'].entries()) {
+      const scanned = await complete(service, { token, textBytes: HEAVY_TEXT_BYTES, intakeId });
+      assert.equal(scanned.status, 200, intakeId);
+      assert.equal(scanned.headers.get('x-quota-used'), String(index + 1));
+      assert.equal(scanned.headers.get('x-quota-limit'), '3');
+    }
     // The trial has its own ceiling, so the instance's is not charged.
-    assert.deepEqual(await instanceDay(), { count: 0, trialCount: 2 });
+    assert.deepEqual(await instanceDay(), { count: 0, trialCount: 3 });
 
-    // 2 + 2 > 3: refused, the trial ceiling's units and the scan go back.
-    const refused = await complete(service, { token, textBytes: HEAVY_TEXT_BYTES, intakeId: 'intake000000000c' });
+    // 3 + 1 > 3: refused, the trial ceiling's unit and the scan go back.
+    const refused = await complete(service, { token, textBytes: HEAVY_TEXT_BYTES, intakeId: 'intake000000000e' });
     assert.equal(refused.status, 429);
-    assert.equal(await usageOf(accountId), 2);
-    assert.deepEqual(await instanceDay(), { count: 0, trialCount: 2 });
+    assert.equal(await usageOf(accountId), 3);
+    assert.deepEqual(await instanceDay(), { count: 0, trialCount: 3 });
     const [row] = await database.db
       .select({ used: accounts.trialScansUsed })
       .from(accounts)
       .where(eq(accounts.id, accountId));
-    assert.equal(row?.used, 1, 'only the delivered scan is spent');
+    assert.equal(row?.used, 3, 'only the delivered scans are spent');
   } finally {
     await service.close();
   }

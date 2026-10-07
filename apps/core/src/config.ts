@@ -44,11 +44,9 @@ import {
 import { DEFAULT_AI_BUDGET_ALERT_FRACTION } from './ai/budget-alert.js';
 import { defaultTrialNetworkDailyLimit } from './ai/trial-network.js';
 import {
-  DEFAULT_AI_IMAGE_INPUT_TOKENS,
   DEFAULT_AI_MAX_IMAGE_PARTS,
   DEFAULT_AI_MAX_MESSAGES,
   DEFAULT_AI_MAX_TEXT_BYTES,
-  DEFAULT_AI_UNIT_INPUT_TOKENS,
   type ChatInputPolicy,
 } from './ai/chat-input-bounds.js';
 import { isHealthConsentVersion } from './accounts/health-consent.js';
@@ -221,21 +219,23 @@ export interface ServiceConfig {
    */
   aiMaxOutputTokens: number;
   /**
-   * What one proxied request may carry IN, and what one unit of the daily
-   * counters covers (2026-09-30), each a positive integer with a default
-   * measured on the app's largest real request:
+   * What one proxied request may carry IN (2026-09-30), each a positive
+   * integer with a default measured on the app's largest real request:
    *
    *  - `AI_MAX_IMAGE_PARTS`, default {@link DEFAULT_AI_MAX_IMAGE_PARTS};
    *  - `AI_MAX_TEXT_BYTES`, default {@link DEFAULT_AI_MAX_TEXT_BYTES};
-   *  - `AI_MAX_MESSAGES`, default {@link DEFAULT_AI_MAX_MESSAGES};
-   *  - `AI_UNIT_INPUT_TOKENS`, default {@link DEFAULT_AI_UNIT_INPUT_TOKENS};
-   *  - `AI_IMAGE_INPUT_TOKENS`, default {@link DEFAULT_AI_IMAGE_INPUT_TOKENS}.
+   *  - `AI_MAX_MESSAGES`, default {@link DEFAULT_AI_MAX_MESSAGES}.
    *
-   * A body over one of the first three is refused before anything is
-   * counted; the last two set how many units a request weighs. See
-   * `ai/chat-input-bounds.ts` for the measurement and the arithmetic.
+   * A body over one of them is refused before anything is counted. A body
+   * under them counts ONE unit (2026-10-07), see `ai/chat-input-bounds.ts`.
    */
   aiInputPolicy: ChatInputPolicy;
+  /**
+   * What the boot log prints at warn level about a setting this service no
+   * longer reads but does not refuse: `AI_UNIT_INPUT_TOKENS` and
+   * `AI_IMAGE_INPUT_TOKENS` (2026-10-07). See {@link retiredSettingWarnings}.
+   */
+  retiredSettingWarnings: readonly string[];
   /** Requests per account in any trailing 60 seconds on the proxy route. `AI_RATE_LIMIT_PER_MINUTE`, default 20. */
   aiRateLimitPerMinute: number;
   /**
@@ -256,6 +256,19 @@ export interface ServiceConfig {
    * ZERO IS A BOOT FAILURE, not "off". See `parseAiInstanceDailyLimit`.
    */
   aiInstanceDailyLimit: number | null;
+  /**
+   * `AI_FREE_INSTANCE_DAILY_LIMIT` (2026-10-07): requests per UTC day for every
+   * account on a free grant together, or `null`, unset, for no such bound.
+   * Set, free requests count here and not against `aiInstanceDailyLimit`.
+   * See `ai/free-bound.ts`.
+   */
+  aiFreeInstanceDailyLimit: number | null;
+  /**
+   * `AI_FREE_NETWORK_DAILY_LIMIT` (2026-10-07): requests per UTC day one caller
+   * network may make on free grants, or `null`, unset, for no such bound. At
+   * most `aiFreeInstanceDailyLimit` where both are set. See `ai/free-bound.ts`.
+   */
+  aiFreeNetworkDailyLimit: number | null;
   /**
    * The low-budget alert line (`AI_BUDGET_ALERT_FRACTION`, 2026-09-30): the
    * operator gets one mail per reset period once the provider key has less
@@ -357,6 +370,19 @@ export interface ServiceConfig {
    * account happened to come through. See {@link parseDefaultFreeDailyAiLimit}.
    */
   defaultFreeDailyAiLimit: number;
+  /**
+   * The free AI requests per ISO week in UTC every account gets that has no
+   * free limit of its own (`DEFAULT_FREE_WEEKLY_AI_LIMIT`, 2026-10-07), or `0`
+   * for none, which is the default.
+   *
+   * THE WEEKLY SIBLING OF {@link defaultFreeDailyAiLimit}, and the two cannot
+   * both be set: one free default, one window. The week runs from Monday
+   * 00:00 UTC to the next Monday 00:00 UTC, and the count is the sum of
+   * `ai_usage_days` over it. Everything else is the daily default's rule: no
+   * end date, no scan gate, a boot failure beside a scan trial, and an
+   * account's own free limit (always per day) wins over it.
+   */
+  defaultFreeWeeklyAiLimit: number;
   /**
    * `DEFAULT_CAPABILITIES`: what an account with no capability record of its own
    * may do. `null`, which is unset or empty, means no check at all, which is
@@ -1484,6 +1510,52 @@ function parseAiInstanceDailyLimit(env: NodeJS.ProcessEnv): number | null {
 }
 
 /**
+ * A positive integer, or `null` when the variable is unset or empty. Zero is a
+ * boot failure for the reason `AI_INSTANCE_DAILY_LIMIT`'s is: it would refuse
+ * every free request rather than mean "off".
+ */
+function parseOptionalFreeLimit(input: { name: string; raw: string | undefined }): number | null {
+  const raw = input.raw?.trim();
+  if (raw === undefined || raw === '') return null;
+  const parsed = Number(raw);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    throw new Error(
+      `Invalid ${input.name}: expected a positive integer, got "${raw}". Zero would refuse every request on a ` +
+        'free grant; unset it for no bound.',
+    );
+  }
+  return parsed;
+}
+
+/**
+ * `AI_FREE_INSTANCE_DAILY_LIMIT` and `AI_FREE_NETWORK_DAILY_LIMIT`
+ * (2026-10-07), the opt-in bounds on free-grant traffic (`ai/free-bound.ts`).
+ * Each is optional and independent. Where both are set, a network's share
+ * above the whole free ceiling could never refuse anything the ceiling did
+ * not, so it is a boot failure; equal is allowed.
+ */
+/** The two free bounds as parsed, each `null` when unset. */
+interface ParsedFreeBound {
+  instance: number | null;
+  network: number | null;
+}
+
+function parseFreeBound(env: NodeJS.ProcessEnv): ParsedFreeBound {
+  const instance = parseOptionalFreeLimit({
+    name: 'AI_FREE_INSTANCE_DAILY_LIMIT',
+    raw: env.AI_FREE_INSTANCE_DAILY_LIMIT,
+  });
+  const network = parseOptionalFreeLimit({ name: 'AI_FREE_NETWORK_DAILY_LIMIT', raw: env.AI_FREE_NETWORK_DAILY_LIMIT });
+  if (instance !== null && network !== null && network > instance) {
+    throw new Error(
+      `AI_FREE_NETWORK_DAILY_LIMIT (${network}) is above AI_FREE_INSTANCE_DAILY_LIMIT (${instance}). ` +
+        'Set it to the free ceiling at most.',
+    );
+  }
+  return { instance, network };
+}
+
+/**
  * `AI_BUDGET_ALERT_FRACTION`: a share of the provider key's limit, above 0 and
  * below 1. `0` would never alert and `1` would alert on a full key, so both
  * are refused rather than read as "off" or "always".
@@ -1883,6 +1955,44 @@ function parseDefaultFreeDailyAiLimit(env: NodeJS.ProcessEnv, trial: TrialPolicy
   return limit;
 }
 
+/**
+ * `DEFAULT_FREE_WEEKLY_AI_LIMIT` (2026-10-07): an integer from 0 to
+ * `MAX_DAILY_AI_LIMIT`, where unset, empty and `0` all mean off.
+ *
+ * A BOOT FAILURE BESIDE THE DAILY DEFAULT, because an account with no free
+ * limit of its own could then be held to either, and BESIDE A SCAN TRIAL, for
+ * the reason {@link parseDefaultFreeDailyAiLimit} gives. Each message names
+ * both settings and says which to unset.
+ */
+function parseDefaultFreeWeeklyAiLimit(input: {
+  env: NodeJS.ProcessEnv;
+  trial: TrialPolicy | null;
+  defaultFreeDailyAiLimit: number;
+}): number {
+  // `env` by name, not `input.env`: the doc and compose scans read `(env, 'NAME'`.
+  const { env } = input;
+  const limit = parseNonNegativeInteger(env, 'DEFAULT_FREE_WEEKLY_AI_LIMIT', 0);
+  if (limit > MAX_DAILY_AI_LIMIT) {
+    throw new Error(`DEFAULT_FREE_WEEKLY_AI_LIMIT must be at most ${MAX_DAILY_AI_LIMIT} (got ${limit})`);
+  }
+  if (limit === 0) return 0;
+  if (input.defaultFreeDailyAiLimit > 0) {
+    throw new Error(
+      'DEFAULT_FREE_WEEKLY_AI_LIMIT and DEFAULT_FREE_DAILY_AI_LIMIT cannot both be set: an account with no free ' +
+        'limit of its own gets one free default, counted per week or per day. Unset one of them.',
+    );
+  }
+  if (input.trial !== null) {
+    throw new Error(
+      'DEFAULT_FREE_WEEKLY_AI_LIMIT and the scan trial (TRIAL_SCANS and TRIAL_DAILY_AI_LIMIT) cannot both be set: ' +
+        'the standing weekly limit replaces the trial, and an instance with both would grant a new account ' +
+        'whichever one its door wrote first. Unset DEFAULT_FREE_WEEKLY_AI_LIMIT to keep the trial, or unset ' +
+        'TRIAL_SCANS, TRIAL_DAILY_AI_LIMIT and anything that depends on them to keep the standing limit.',
+    );
+  }
+  return limit;
+}
+
 /** What `TRIAL_HASH_RETENTION_DAYS` is when unset: one year after the deletion. */
 export const DEFAULT_TRIAL_HASH_RETENTION_DAYS = 365;
 
@@ -1965,6 +2075,28 @@ function throwIfRemoved(env: NodeJS.ProcessEnv, name: string, because: string): 
 }
 
 /**
+ * The two weight settings (2026-10-07): every request now counts ONE unit,
+ * whatever its size (owner decision), so nothing reads them.
+ *
+ * A WARNING, NOT A REFUSAL, unlike {@link throwIfRemoved}. Every compose file
+ * and quadlet defaults file this repository shipped until 2026-10-07 set
+ * `AI_UNIT_INPUT_TOKENS=8192`, so a refusal would stop every self-hosted
+ * instance that upgrades the image and keeps its copied compose file. And the
+ * false belief it leaves is a mild one: an operator who thinks a long request
+ * costs two units has a person who pays one, while the size bounds
+ * (`AI_MAX_*`) still refuse an oversize body. The boot log names it once.
+ */
+function retiredSettingWarnings(env: NodeJS.ProcessEnv): readonly string[] {
+  return ['AI_UNIT_INPUT_TOKENS', 'AI_IMAGE_INPUT_TOKENS']
+    .filter((name) => env[name] !== undefined)
+    .map(
+      (name) =>
+        `${name} is no longer read: every AI request counts one unit whatever its size, and AI_MAX_IMAGE_PARTS, ` +
+        `AI_MAX_TEXT_BYTES and AI_MAX_MESSAGES bound the size. Delete it from the environment.`,
+    );
+}
+
+/**
  * Why `SMTP_SECURE` stays refused now that SMTP is back (2026-09-29): the port
  * decides TLS, and a switch an operator could leave on "false" is the plain
  * text this service no longer sends to another host.
@@ -2017,6 +2149,7 @@ function rejectRemovedEnvVars(env: NodeJS.ProcessEnv): void {
 /** Pure: builds the config from an arbitrary env bag. Throws on anything invalid, see the module header. */
 export function parseConfig(env: NodeJS.ProcessEnv): ServiceConfig {
   rejectRemovedEnvVars(env);
+  const freeBound = parseFreeBound(env);
 
   const serverSecret = required(env, 'SERVER_SECRET');
   if (serverSecret.length < MIN_SERVER_SECRET_LENGTH) {
@@ -2034,6 +2167,7 @@ export function parseConfig(env: NodeJS.ProcessEnv): ServiceConfig {
   // Read before the member door, which may grant it.
   const trial = parseTrial(env);
   const aiTrialInstanceDailyLimit = parseAiTrialInstanceDailyLimit(env, trial);
+  const defaultFreeDailyAiLimit = parseDefaultFreeDailyAiLimit(env, trial);
   const tokens = parseTokens(env);
   const capabilitySchemaMap = parseCapabilitySchemaMap(env.CAPABILITY_SCHEMA_MAP);
   const aiTiers = parseAiTiers({ env, capabilitySchemaMap });
@@ -2060,11 +2194,12 @@ export function parseConfig(env: NodeJS.ProcessEnv): ServiceConfig {
       maxImageParts: parsePositiveInteger(env, 'AI_MAX_IMAGE_PARTS', DEFAULT_AI_MAX_IMAGE_PARTS),
       maxTextBytes: parsePositiveInteger(env, 'AI_MAX_TEXT_BYTES', DEFAULT_AI_MAX_TEXT_BYTES),
       maxMessages: parsePositiveInteger(env, 'AI_MAX_MESSAGES', DEFAULT_AI_MAX_MESSAGES),
-      unitInputTokens: parsePositiveInteger(env, 'AI_UNIT_INPUT_TOKENS', DEFAULT_AI_UNIT_INPUT_TOKENS),
-      imageInputTokens: parsePositiveInteger(env, 'AI_IMAGE_INPUT_TOKENS', DEFAULT_AI_IMAGE_INPUT_TOKENS),
     },
+    retiredSettingWarnings: retiredSettingWarnings(env),
     aiRateLimitPerMinute: parsePositiveInteger(env, 'AI_RATE_LIMIT_PER_MINUTE', 20),
     aiInstanceDailyLimit: parseAiInstanceDailyLimit(env),
+    aiFreeInstanceDailyLimit: freeBound.instance,
+    aiFreeNetworkDailyLimit: freeBound.network,
     aiBudgetAlertFraction: parseAiBudgetAlertFraction(env),
     memberInvites: parseMemberInvites(env, trial),
     trial,
@@ -2073,7 +2208,8 @@ export function parseConfig(env: NodeJS.ProcessEnv): ServiceConfig {
       env,
       trialInstanceDailyLimit: aiTrialInstanceDailyLimit,
     }),
-    defaultFreeDailyAiLimit: parseDefaultFreeDailyAiLimit(env, trial),
+    defaultFreeDailyAiLimit,
+    defaultFreeWeeklyAiLimit: parseDefaultFreeWeeklyAiLimit({ env, trial, defaultFreeDailyAiLimit }),
     defaultCapabilities: parseDefaultCapabilities(env.DEFAULT_CAPABILITIES),
     capabilitySchemaMap,
     trialAddressPepper: parseTrialAddressPepper(env, trial),

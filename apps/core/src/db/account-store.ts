@@ -20,7 +20,7 @@
  *    it owns, inside Postgres, with no application-level cleanup that could be
  *    skipped or half-run. That is the self-serve erasure path.
  */
-import { and, eq, gt, inArray, isNotNull, isNull, lt, lte, ne, or, sql } from 'drizzle-orm';
+import { and, eq, gt, gte, inArray, isNotNull, isNull, lt, lte, ne, or, sql } from 'drizzle-orm';
 import type {
   AccountRecord,
   AccountStore,
@@ -110,6 +110,7 @@ function mapAccountRow(row: AccountRow): AccountRecord {
     displayName: row.displayName,
     role: row.role,
     dailyAiLimit: row.dailyAiLimit,
+    aiLimitPeriod: row.aiLimitPeriod,
     allowanceExpiresAt: row.allowanceExpiresAt,
     freeDailyAiLimit: row.freeDailyAiLimit,
     capabilities: row.capabilities,
@@ -507,6 +508,7 @@ export function createDrizzleAccountStore(db: Database, options: DrizzleAccountS
       const changes: Partial<typeof accounts.$inferInsert> = {};
       if (input.role !== undefined) changes.role = input.role;
       if (input.dailyAiLimit !== undefined) changes.dailyAiLimit = input.dailyAiLimit;
+      if (input.aiLimitPeriod !== undefined) changes.aiLimitPeriod = input.aiLimitPeriod;
       if (input.allowanceExpiresAt !== undefined) changes.allowanceExpiresAt = input.allowanceExpiresAt;
       if (input.freeDailyAiLimit !== undefined) changes.freeDailyAiLimit = input.freeDailyAiLimit;
       if (input.capabilities !== undefined) changes.capabilities = input.capabilities;
@@ -570,6 +572,20 @@ export function createDrizzleAccountStore(db: Database, options: DrizzleAccountS
       // No row means no request today, which is zero rather than an absence
       // the caller has to interpret.
       return row?.count ?? 0;
+    },
+
+    async aiUsageBetween(input: { accountId: number; fromDay: string; toDay: string }): Promise<number> {
+      const [row] = await db
+        .select({ total: sql<number>`coalesce(sum(${aiUsageDays.count}), 0)::int` })
+        .from(aiUsageDays)
+        .where(
+          and(
+            eq(aiUsageDays.accountId, input.accountId),
+            gte(aiUsageDays.day, input.fromDay),
+            lte(aiUsageDays.day, input.toDay),
+          ),
+        );
+      return row?.total ?? 0;
     },
 
     async redeemInviteAndCreateAccount(input: RedeemInviteAndCreateAccountInput): Promise<RedeemInviteResult> {

@@ -1,16 +1,15 @@
 /**
- * What one chat body carries in and what it weighs (2026-09-30), as pure
- * functions. The refusal and the reservation through the real handler are in
+ * What one chat body carries in (2026-09-30), as pure functions, and the one
+ * unit every request weighs (2026-10-07). The refusal and the reservation through the real handler are in
  * `ai-proxy.test.ts` and `tests/integration/ai-proxy.test.ts`.
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   DEFAULT_CHAT_INPUT_POLICY,
-  estimateInputTokens,
   findExceededInputLimit,
   measureChatInput,
-  requestWeight,
+  REQUEST_WEIGHT,
 } from '../../src/ai/chat-input-bounds.js';
 import type { JsonObject } from '../../src/lib/json.js';
 
@@ -39,7 +38,7 @@ function appPlateScan(input: { images: number } = { images: 1 }): JsonObject {
   };
 }
 
-test("the app's plate scan is inside every bound and weighs one unit", () => {
+test("the app's plate scan is inside every bound", () => {
   const size = measureChatInput(appPlateScan());
   assert.equal(size.messages, 2);
   assert.equal(size.imageParts, 1);
@@ -47,8 +46,6 @@ test("the app's plate scan is inside every bound and weighs one unit", () => {
   // counting its bytes would make every photograph over the bound.
   assert.ok(size.textBytes > 12_000 && size.textBytes < 12_300, `text was ${size.textBytes} bytes`);
   assert.equal(findExceededInputLimit({ size, policy: POLICY }), null);
-  assert.ok(estimateInputTokens({ size, policy: POLICY }) < POLICY.unitInputTokens);
-  assert.equal(requestWeight({ size, policy: POLICY }), 1);
 });
 
 test('a second image, a text over 48 KB and a fifth message are each named', () => {
@@ -89,16 +86,8 @@ test('text is counted in UTF-8 bytes, across names, parts and the response_forma
   assert.equal(findExceededInputLimit({ size: schemaOnly, policy: POLICY })?.limit, 'text-bytes');
 });
 
-test('the weight grows with the input, and is never below one', () => {
-  assert.equal(requestWeight({ size: { imageParts: 0, textBytes: 0, messages: 0 }, policy: POLICY }), 1);
-  // 40 KB of text is about 10,000 tokens: two units of 8,192.
-  assert.equal(requestWeight({ size: { imageParts: 0, textBytes: 40_000, messages: 2 }, policy: POLICY }), 2);
-  // The operator's own numbers decide it: a smaller unit makes the same request heavier.
-  assert.equal(
-    requestWeight({
-      size: { imageParts: 1, textBytes: 4_000, messages: 2 },
-      policy: { ...POLICY, unitInputTokens: 1_000, imageInputTokens: 1_500 },
-    }),
-    3,
-  );
+test('every request weighs one unit: one action a person starts is one scan (owner, 2026-10-07)', () => {
+  assert.equal(REQUEST_WEIGHT, 1);
+  // The size is bounded, not weighed: the policy has no unit any more, only the three bounds.
+  assert.deepEqual(Object.keys(POLICY).toSorted(), ['maxImageParts', 'maxMessages', 'maxTextBytes']);
 });

@@ -37,6 +37,15 @@
  * the counter negative, which would hand out free requests rather than merely
  * miscounting.
  *
+ * A WEEKLY LIMIT (2026-10-07) IS THE SAME COUNTER, SUMMED. The rows stay one
+ * per account per UTC day, so the admin activity strip, the retention sweep
+ * and the daily path are untouched. {@link AiQuotaStore.reserveWindow} sums
+ * the days of the week up to today and adds the weight to today's row, under
+ * a per-account advisory lock in one transaction: the check and the write are
+ * two statements there, and the lock is what makes them one decision, the
+ * way the `WHERE` makes the daily upsert one. A daily account never takes
+ * that lock: it keeps the one-statement reserve above, byte for byte.
+ *
  * THE SAME STORE OWNS THE INSTANCE-WIDE CEILING (M212 spec 02), in its own
  * section at the bottom of this file. It is the same one-statement upsert
  * against a table of one row per day, and the doc block down there says why
@@ -44,11 +53,27 @@
  * not a limit. It is here rather than in a second store because both halves
  * write counters this module is the only writer of.
  */
-import { and, eq, gt, isNotNull, lt, sql } from 'drizzle-orm';
+import { and, eq, gt, gte, isNotNull, lt, lte, sql } from 'drizzle-orm';
 import type { PgUpdateSetSource } from 'drizzle-orm/pg-core';
 import type { Database } from '../db/client.js';
-import { accounts, aiInstanceDays, aiTrialIntakes, aiTrialNetworkDays, aiUsageDays } from '../db/schema.js';
+import {
+  accounts,
+  aiFreeNetworkDays,
+  aiInstanceDays,
+  aiTrialIntakes,
+  aiTrialNetworkDays,
+  aiUsageDays,
+} from '../db/schema.js';
 import { INTAKE_REUSE_WINDOW_MS } from '../accounts/scan-trial.js';
+
+/**
+ * The advisory-lock namespace of the window reserve. Postgres advisory locks
+ * share ONE space per database, so the first argument keeps an account id
+ * here from colliding with an account id another feature locks on. The value
+ * is arbitrary and only has to stay put and differ from the others
+ * (`feedback-store.ts`, `push-store.ts`, `trial-mailbox.ts`).
+ */
+const AI_WINDOW_LOCK_NAMESPACE = 200_710;
 
 /**
  * The outcome of a reservation.
@@ -61,7 +86,7 @@ export type ReserveResult = { ok: true; used: number; limit: number } | { ok: fa
 
 /**
  * Refuses a weight that is not a whole number of units. Every weight comes
- * from `requestWeight`, which answers one or more; anything else is a wiring
+ * from `REQUEST_WEIGHT`, which is one; anything else is a wiring
  * bug, and a zero or a fraction reaching an upsert would reserve nothing.
  */
 function assertWeight(weight: number): void {
@@ -69,7 +94,7 @@ function assertWeight(weight: number): void {
     throw new Error(`a reservation weight must be a whole unit, got ${weight}`);
 }
 
-export interface AiQuotaStore extends AiInstanceCeilingStore, AiTrialScanStore {
+export interface AiQuotaStore extends AiInstanceCeilingStore, AiTrialScanStore, AiFreeBoundStore {
   /**
    * Takes `weight` units of the account's allowance for the given UTC day,
    * atomically, or none when they do not all fit under `limit`.
@@ -78,6 +103,25 @@ export interface AiQuotaStore extends AiInstanceCeilingStore, AiTrialScanStore {
    * module header on the insert branch.
    */
   reserve(input: { accountId: number; day: string; limit: number; weight: number }): Promise<ReserveResult>;
+  /**
+   * Takes `weight` units of a limit that counts over several days (a week,
+   * 2026-10-07): the days from `fromDay` to `day`, both included, are summed,
+   * and the weight is added to `day`'s row only when the sum plus the weight
+   * fits under `limit`. `used` is that sum after the reserve, or the limit on
+   * a refusal, exactly as {@link reserve} reports it.
+   *
+   * ONE DECISION PER ACCOUNT AT A TIME: a transaction-scoped advisory lock on
+   * the account is held from the sum to the write, so two parallel requests
+   * near the limit cannot both read the old sum. The give-back is the
+   * ordinary {@link release} on `day`, which lowers the sum by the same units.
+   */
+  reserveWindow(input: {
+    accountId: number;
+    fromDay: string;
+    day: string;
+    limit: number;
+    weight: number;
+  }): Promise<ReserveResult>;
   /** Gives `weight` units back. Floored at zero, and never throws out of the proxy's hands (see its `releaseQuietly`). */
   release(input: { accountId: number; day: string; weight: number }): Promise<void>;
   /** How many requests every account together spent on the given day. An operator statistic, never a limit. */
@@ -104,6 +148,8 @@ export function createDrizzleAiQuotaStore(db: Database): AiQuotaStore {
     // The scan trial's half (M253), from the bottom of this file, for the same
     // reason: one implementation of each, one store handed to the proxy.
     ...createDrizzleAiTrialScans(db),
+    // The opt-in free bounds (2026-10-07), the same way.
+    ...createDrizzleAiFreeBound(db),
 
     async reserve(input: { accountId: number; day: string; limit: number; weight: number }): Promise<ReserveResult> {
       assertWeight(input.weight);
@@ -127,6 +173,42 @@ export function createDrizzleAiQuotaStore(db: Database): AiQuotaStore {
       // the refusal reports the limit as spent, as it always has.
       if (!row) return { ok: false, used: input.limit, limit: input.limit };
       return { ok: true, used: row.count, limit: input.limit };
+    },
+
+    async reserveWindow(input: {
+      accountId: number;
+      fromDay: string;
+      day: string;
+      limit: number;
+      weight: number;
+    }): Promise<ReserveResult> {
+      assertWeight(input.weight);
+      // The guard the daily reserve has, for the same reason: a weight that
+      // can never fit is refused before anything is locked or written.
+      if (input.weight > input.limit) return { ok: false, used: input.limit, limit: input.limit };
+      return await db.transaction(async (tx): Promise<ReserveResult> => {
+        await tx.execute(sql`select pg_advisory_xact_lock(${AI_WINDOW_LOCK_NAMESPACE}, ${input.accountId})`);
+        const sums = await tx
+          .select({ total: sql<number>`coalesce(sum(${aiUsageDays.count}), 0)::int` })
+          .from(aiUsageDays)
+          .where(
+            and(
+              eq(aiUsageDays.accountId, input.accountId),
+              gte(aiUsageDays.day, input.fromDay),
+              lte(aiUsageDays.day, input.day),
+            ),
+          );
+        const spent = sums[0]?.total ?? 0;
+        if (spent + input.weight > input.limit) return { ok: false, used: input.limit, limit: input.limit };
+        await tx
+          .insert(aiUsageDays)
+          .values({ accountId: input.accountId, day: input.day, count: input.weight })
+          .onConflictDoUpdate({
+            target: [aiUsageDays.accountId, aiUsageDays.day],
+            set: { count: sql`${aiUsageDays.count} + ${input.weight}` },
+          });
+        return { ok: true, used: spent + input.weight, limit: input.limit };
+      });
     },
 
     async release(input: { accountId: number; day: string; weight: number }): Promise<void> {
@@ -627,6 +709,86 @@ export function createDrizzleAiTrialScans(db: Database): AiTrialScanStore {
 }
 
 /**
+ * The free bounds' counters (2026-10-07, `ai/free-bound.ts`), spread into
+ * {@link createDrizzleAiQuotaStore} like the trial's.
+ */
+export function createDrizzleAiFreeBound(db: Database): AiFreeBoundStore {
+  return {
+    // THE FREE BOUNDS (2026-10-07, `ai/free-bound.ts`): the same one-statement
+    // upserts as the trial's, on their own column and table. Called only where
+    // the setting is set, so an instance that sets neither writes nothing.
+    async reserveFreeInstance(input: { day: string; limit: number; weight: number }): Promise<ReserveResult> {
+      assertWeight(input.weight);
+      if (input.weight > input.limit) return { ok: false, used: input.limit, limit: input.limit };
+      const rows = await db
+        .insert(aiInstanceDays)
+        .values({ day: input.day, count: 0, freeCount: input.weight })
+        .onConflictDoUpdate({
+          target: aiInstanceDays.day,
+          set: { freeCount: sql`${aiInstanceDays.freeCount} + ${input.weight}` },
+          where: sql`${aiInstanceDays.freeCount} + ${input.weight} <= ${input.limit}`,
+        })
+        .returning({ count: aiInstanceDays.freeCount });
+      const row = rows[0];
+      if (!row) return { ok: false, used: input.limit, limit: input.limit };
+      return { ok: true, used: row.count, limit: input.limit };
+    },
+
+    async releaseFreeInstance(input: { day: string; weight: number }): Promise<void> {
+      assertWeight(input.weight);
+      await db
+        .update(aiInstanceDays)
+        .set({ freeCount: sql`greatest(${aiInstanceDays.freeCount} - ${input.weight}, 0)` })
+        .where(and(eq(aiInstanceDays.day, input.day), gt(aiInstanceDays.freeCount, 0)));
+    },
+
+    async reserveFreeNetwork(input: {
+      day: string;
+      networkHash: string;
+      limit: number;
+      weight: number;
+    }): Promise<ReserveResult> {
+      assertWeight(input.weight);
+      if (input.weight > input.limit) return { ok: false, used: input.limit, limit: input.limit };
+      const rows = await db
+        .insert(aiFreeNetworkDays)
+        .values({ day: input.day, networkHash: input.networkHash, count: input.weight })
+        .onConflictDoUpdate({
+          target: [aiFreeNetworkDays.day, aiFreeNetworkDays.networkHash],
+          set: { count: sql`${aiFreeNetworkDays.count} + ${input.weight}` },
+          where: sql`${aiFreeNetworkDays.count} + ${input.weight} <= ${input.limit}`,
+        })
+        .returning({ count: aiFreeNetworkDays.count });
+      const row = rows[0];
+      if (!row) return { ok: false, used: input.limit, limit: input.limit };
+      return { ok: true, used: row.count, limit: input.limit };
+    },
+
+    async releaseFreeNetwork(input: { day: string; networkHash: string; weight: number }): Promise<void> {
+      assertWeight(input.weight);
+      await db
+        .update(aiFreeNetworkDays)
+        .set({ count: sql`greatest(${aiFreeNetworkDays.count} - ${input.weight}, 0)` })
+        .where(
+          and(
+            eq(aiFreeNetworkDays.day, input.day),
+            eq(aiFreeNetworkDays.networkHash, input.networkHash),
+            gt(aiFreeNetworkDays.count, 0),
+          ),
+        );
+    },
+
+    async purgeFreeNetworkDaysBefore(input: { day: string }): Promise<number> {
+      const deleted = await db
+        .delete(aiFreeNetworkDays)
+        .where(lt(aiFreeNetworkDays.day, input.day))
+        .returning({ day: aiFreeNetworkDays.day });
+      return deleted.length;
+    },
+  };
+}
+
+/**
  * The scan trial's half of the quota store (M253). Declared below its
  * implementation for the reason `AiInstanceCeilingStore` is: read the
  * statements first.
@@ -687,4 +849,34 @@ export interface AiTrialScanStore {
   releaseTrialNetwork(input: { day: string; networkHash: string; weight: number }): Promise<void>;
   /** Deletes every network row before the given UTC day. Driven hourly by `ai/usage-retention.ts`. */
   purgeTrialNetworkDaysBefore(input: { day: string }): Promise<number>;
+}
+
+/**
+ * The counters of the opt-in free bounds (2026-10-07, `ai/free-bound.ts`).
+ * {@link AiQuotaStore} extends this for the reason it extends the trial's.
+ */
+export interface AiFreeBoundStore {
+  /**
+   * Counts one free-grant request against `AI_FREE_INSTANCE_DAILY_LIMIT`
+   * (`limit`), or none when it does not fit (2026-10-07). Called only where
+   * the limit is set.
+   */
+  reserveFreeInstance(input: { day: string; limit: number; weight: number }): Promise<ReserveResult>;
+  /** Gives one free-grant request back to the day, floored at zero. */
+  releaseFreeInstance(input: { day: string; weight: number }): Promise<void>;
+  /**
+   * Counts one free-grant request against its caller network's
+   * `AI_FREE_NETWORK_DAILY_LIMIT`, or none when it does not fit. Called only
+   * where the limit is set. `networkHash` is never an address.
+   */
+  reserveFreeNetwork(input: {
+    day: string;
+    networkHash: string;
+    limit: number;
+    weight: number;
+  }): Promise<ReserveResult>;
+  /** Gives one free-grant request back to its network's day, floored at zero. */
+  releaseFreeNetwork(input: { day: string; networkHash: string; weight: number }): Promise<void>;
+  /** Deletes every free network row before the given UTC day. Driven hourly by `ai/usage-retention.ts`. */
+  purgeFreeNetworkDaysBefore(input: { day: string }): Promise<number>;
 }

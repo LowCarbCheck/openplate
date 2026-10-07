@@ -67,16 +67,17 @@ import {
   parseTokenField,
 } from './auth-input.js';
 import { asString, type JsonObject, type JsonValue } from '../lib/json.js';
-import type { AccountView, InstanceHealthConsent } from '../protocol.js';
+import type { AccountView, AiQuotaView, InstanceHealthConsent } from '../protocol.js';
 import type { AccountEraseNotifier } from './erase-notifier.js';
 import type { MailRecipientEraser } from '../mail/recipient-eraser.js';
 import { SIGNUP_REQUEST_REFUSALS, readSignupIntent, type OpenSignupSurface } from './open-signup.js';
 import { isDisposableAddress } from './disposable-domains.js';
 import { trialKeyFor } from './trial-key.js';
-import { isUnpaidTrial, trialScansView } from './scan-trial.js';
+import { isUnpaidTrial, trialEndedBy, trialScansView } from './scan-trial.js';
 import { HEALTH_CONSENT_REQUIRED, healthConsentView, matchesHealthConsent } from './health-consent.js';
 import { PASSPHRASE_REJECTED } from './passphrase-gate.js';
-import { effectiveFreeDailyAiLimit } from './ai-allowance.js';
+import { aiAllowanceFor, effectiveFreeAiLimit, NO_FREE_AI_LIMIT, type AiLimitWindow } from './ai-allowance.js';
+import { quotaWindowOf } from '../ai/quota-window.js';
 import { effectiveCapabilities, toWireCapabilities } from '../lib/capabilities.js';
 import type { InstanceStanding } from './instance-standing.js';
 
@@ -297,6 +298,56 @@ function suspended<T>(): AuthOutcome<T> {
 }
 
 /**
+ * The allowance the proxy would apply to the account's next request, or
+ * `null` when it would refuse it for want of a grant (2026-10-07).
+ *
+ * THE PROXY'S OWN LADDER AND WINDOW, called with the same inputs, so the
+ * kind, the limit, the window and the reset instant here are the ones the
+ * proxy holds the next request to. `used` is summed over the same days the
+ * proxy sums. It reads no scan count: a spent trial is the proxy's refusal to
+ * make and the view's `trialScans` to show.
+ */
+async function aiQuotaOf(input: {
+  account: AccountRecord;
+  freeAiLimit: AiLimitWindow;
+  ctx: AuthContext;
+  now: Date;
+}): Promise<AiQuotaView | null> {
+  const { account, freeAiLimit, ctx, now } = input;
+  const allowance = aiAllowanceFor({
+    dailyAiLimit: account.dailyAiLimit,
+    aiLimitPeriod: account.aiLimitPeriod,
+    freeAiLimit,
+    allowanceExpiresAt: account.allowanceExpiresAt,
+    trialScans: account.trialScans,
+    now,
+  });
+  if (allowance.kind === 'refused') return null;
+  // A trial whose scans or days have run out is refused by the proxy before
+  // any count is read (`ai/proxy.ts`, 2c and 2d), so there is no quota to show.
+  if (allowance.kind === 'trial') {
+    const endedBy = trialEndedBy({
+      trialScans: account.trialScans,
+      trialScansUsed: account.trialScansUsed,
+      trialEndsAt: account.trialEndsAt,
+      allowanceExpiresAt: account.allowanceExpiresAt,
+      freeDailyAiLimit: freeAiLimit.limit,
+      now,
+    });
+    if (endedBy !== null) return null;
+  }
+  const window = quotaWindowOf({ period: allowance.period, now });
+  const used = await ctx.store.aiUsageBetween({ accountId: account.id, fromDay: window.fromDay, toDay: window.day });
+  return {
+    kind: allowance.kind,
+    limit: allowance.limit,
+    period: allowance.period,
+    used,
+    resetsAt: window.resetsAt.toISOString(),
+  };
+}
+
+/**
  * The ONE function that turns an account row into a response body, and it
  * names every field it emits.
  *
@@ -306,7 +357,16 @@ function suspended<T>(): AuthOutcome<T> {
  * from this one about which day "today" is.
  */
 async function toAccountView(account: AccountRecord, ctx: AuthContext): Promise<AccountView> {
-  const aiUsedToday = await ctx.store.aiUsageOn({ accountId: account.id, day: utcDayKey(ctx.now()) });
+  // ONE INSTANT for every field below, so `aiUsedToday` and `aiQuota` cannot
+  // fall on two sides of a midnight.
+  const now = ctx.now();
+  const aiUsedToday = await ctx.store.aiUsageOn({ accountId: account.id, day: utcDayKey(now) });
+  // THE FREE LIMIT THE PROXY ENFORCES, read once for the two fields that show it.
+  const freeAiLimit = effectiveFreeAiLimit({
+    own: account.freeDailyAiLimit,
+    instanceDefault: ctx.standing?.defaultFreeAiLimit ?? NO_FREE_AI_LIMIT,
+  });
+  const aiQuota = await aiQuotaOf({ account, freeAiLimit, ctx, now });
   const memberInvites = ctx.memberInvites ?? null;
   // COUNTED ONLY WHERE THE COUNT MEANS SOMETHING. An admin and an instance
   // with the feature off both report `null` (see `member-invites.ts` for why
@@ -323,16 +383,16 @@ async function toAccountView(account: AccountRecord, ctx: AuthContext): Promise<
     displayName: account.displayName,
     role: account.role,
     dailyAiLimit: account.dailyAiLimit,
+    aiLimitPeriod: account.aiLimitPeriod,
     aiUsedToday,
+    aiQuota,
     allowanceExpiresAt: account.allowanceExpiresAt?.toISOString() ?? null,
     // THE LIMIT THE PROXY ENFORCES, not the bare column: an account with no free
     // limit of its own is held to the instance's standing default, and a client
-    // that shows "N a day" must show that N. Equal to the column on an instance
-    // with no default.
-    freeDailyAiLimit: effectiveFreeDailyAiLimit({
-      own: account.freeDailyAiLimit,
-      instanceDefault: ctx.standing?.defaultFreeDailyAiLimit ?? 0,
-    }),
+    // that shows "N a day" or "N a week" must show that N, in that window. Equal
+    // to the column, per day, on an instance with no default.
+    freeDailyAiLimit: freeAiLimit.limit,
+    freeAiLimitPeriod: freeAiLimit.period,
     // THE CAPABILITIES THE PROXY CHECKS, not the bare record: the account's
     // own list, else the instance default, else `null` for "no check".
     capabilities: toWireCapabilities(
@@ -351,7 +411,7 @@ async function toAccountView(account: AccountRecord, ctx: AuthContext): Promise<
       isUnpaidTrial: isUnpaidTrial({
         trialScans: account.trialScans,
         allowanceExpiresAt: account.allowanceExpiresAt,
-        now: ctx.now(),
+        now,
       }),
     }),
     healthConsent: healthConsentView(account.healthConsent),

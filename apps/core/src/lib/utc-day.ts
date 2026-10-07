@@ -32,5 +32,35 @@ export function utcDayKey(instant: Date): string {
  * Pure, and UTC throughout, for the reasons in the module header.
  */
 export function utcDayKeyDaysBefore(instant: Date, days: number): string {
-  return utcDayKey(new Date(instant.getTime() - days * 24 * 60 * 60 * 1000));
+  return utcDayKey(new Date(instant.getTime() - days * MS_PER_DAY));
+}
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+/** Days from the UTC Monday of a week to a day of it: Monday 0, Sunday 6. */
+function daysSinceUtcMonday(instant: Date): number {
+  return (instant.getUTCDay() + 6) % 7;
+}
+
+/**
+ * The UTC Monday of the calendar week `instant` falls in, as `YYYY-MM-DD`.
+ *
+ * THE WEEK IS AN ISO WEEK IN UTC: it starts on Monday at 00:00 UTC and ends
+ * at the next Monday at 00:00 UTC. A weekly AI limit (2026-10-07) counts the
+ * days from this one to today, and the budget alert names its weekly period
+ * by it, so the two can never disagree about which week it is.
+ */
+export function utcWeekStartDayKey(instant: Date): string {
+  return utcDayKeyDaysBefore(instant, daysSinceUtcMonday(instant));
+}
+
+/** The next UTC midnight after `instant`: when a day's count starts again. */
+export function nextUtcMidnight(instant: Date): Date {
+  return new Date(Math.floor(instant.getTime() / MS_PER_DAY) * MS_PER_DAY + MS_PER_DAY);
+}
+
+/** The next Monday at 00:00 UTC after `instant`: when a week's count starts again. Monday itself resets at the next one. */
+export function nextUtcMonday(instant: Date): Date {
+  const startOfToday = Math.floor(instant.getTime() / MS_PER_DAY) * MS_PER_DAY;
+  return new Date(startOfToday + (7 - daysSinceUtcMonday(instant)) * MS_PER_DAY);
 }

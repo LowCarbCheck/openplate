@@ -23,7 +23,11 @@ export interface AccountView {
   displayName: string | null;
   role: string;
   dailyAiLimit: number;
+  /** The window `dailyAiLimit` counts in (2026-10-07). `'day'` for an older instance, which knows no other. */
+  aiLimitPeriod: 'day' | 'week';
   aiUsedToday: number;
+  /** The units since Monday 00:00 UTC (2026-10-07). An older instance sends none, and then it is today's count. */
+  aiUsedThisWeek: number;
   /** When the account's AI allowance ends, or `null` for no end at all. */
   allowanceExpiresAt: string | null;
   /** The standing free grant per UTC day (2026-09-30), `0` for none and for an older instance. */
@@ -125,7 +129,9 @@ function decodeAccount(value: JsonValue | undefined): AccountView {
     // useful than one that says `member` and `0`.
     role: asString(account?.role) ?? 'member',
     dailyAiLimit: asNumber(account?.dailyAiLimit) ?? 0,
+    aiLimitPeriod: asString(account?.aiLimitPeriod) === 'week' ? 'week' : 'day',
     aiUsedToday: asNumber(account?.aiUsedToday) ?? 0,
+    aiUsedThisWeek: asNumber(account?.aiUsedThisWeek) ?? asNumber(account?.aiUsedToday) ?? 0,
     allowanceExpiresAt: asString(account?.allowanceExpiresAt),
     freeDailyAiLimit: asNumber(account?.freeDailyAiLimit) ?? 0,
     trialScans: decodeTrialScans(account?.trialScans),
@@ -418,7 +424,7 @@ export function formatAccountTable(page: AccountPageView): string {
     const blob = account.blobBytes === null ? '—' : formatBytes(account.blobBytes);
     // An allowance of 0 is a dash rather than `0/0`: the account cannot use the
     // proxy at all, which reads differently from one that has spent its day.
-    const ai = account.dailyAiLimit === 0 ? '—' : `${account.aiUsedToday}/${account.dailyAiLimit}`;
+    const ai = account.dailyAiLimit === 0 ? '—' : paidUsage(account);
     const standing = account.suspendedAt === null ? 'active' : 'suspended';
     // A dash means NO END, which is what every self-hosted account has. It is
     // not the same as an expiry the operator cannot see.
@@ -439,13 +445,21 @@ export function formatAccountTable(page: AccountPageView): string {
   return [header, ...rows, '', `${page.accounts.length} of ${page.total} accounts (through ${shown}).`].join('\n');
 }
 
+/** The paid limit and what it counted, with a `/wk` mark for a weekly one, so a table row cannot read a week as a day. */
+function paidUsage(account: AccountView): string {
+  if (account.aiLimitPeriod === 'week') return `${account.aiUsedThisWeek}/${account.dailyAiLimit}/wk`;
+  return `${account.aiUsedToday}/${account.dailyAiLimit}`;
+}
+
 export function formatAccountDetail(account: AccountView): string {
   return [
     `id              ${account.id}`,
     `email           ${account.email}`,
     `name            ${account.displayName ?? '—'}`,
     `role            ${account.role}`,
-    `ai today        ${account.aiUsedToday} of ${account.dailyAiLimit}`,
+    account.aiLimitPeriod === 'week'
+      ? `ai this week    ${account.aiUsedThisWeek} of ${account.dailyAiLimit}, from Monday 00:00 UTC`
+      : `ai today        ${account.aiUsedToday} of ${account.dailyAiLimit}`,
     `ai allowance    ${account.allowanceExpiresAt === null ? 'no end date' : `ends ${account.allowanceExpiresAt}`}`,
     `free ai a day   ${account.freeDailyAiLimit === 0 ? 'none' : account.freeDailyAiLimit}`,
     `free scans      ${account.trialScans === null ? 'none' : `${account.trialScans.left} of ${account.trialScans.granted} left`}`,

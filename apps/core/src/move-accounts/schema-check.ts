@@ -8,11 +8,11 @@
  *
  *  - every table on either side is classified (`MOVED_TABLES` or `SKIPPED_TABLES`);
  *  - every moved table has exactly the columns `tables.ts` names, on both sides;
- *  - `accounts` may lack `label`, `free_daily_ai_limit` and `capabilities` on
- *    the SOURCE only (a source older than migrations 0024, 0026 and 0031),
- *    because the move sets all three and never reads them. The TARGET must
- *    have all three: deploy the core that carries migration 0031 to the
- *    target before the move.
+ *  - `accounts` may lack `label`, `free_daily_ai_limit`, `capabilities` and
+ *    `ai_limit_period` on the SOURCE only (a source older than migrations
+ *    0024, 0026, 0031 and 0034), because the move sets all four and never
+ *    reads them. The TARGET must have all four: deploy the core that carries
+ *    migration 0034 to the target before the move.
  */
 import {
   ACCOUNT_COLUMNS_ABSENT_FROM_OLDER_SOURCES,
@@ -98,6 +98,11 @@ function checkAccounts(input: { side: 'source' | 'target'; schema: SchemaColumns
   }
   if (input.side === 'target' && !actual.has('capabilities')) {
     return [`${difference}. Deploy the core that carries migration 0031 (accounts.capabilities) to the target first`];
+  }
+  if (input.side === 'target' && !actual.has('ai_limit_period')) {
+    return [
+      `${difference}. Deploy the core that carries migration 0034 (accounts.ai_limit_period) to the target first`,
+    ];
   }
   return [difference];
 }

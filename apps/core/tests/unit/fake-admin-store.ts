@@ -18,7 +18,7 @@ import type {
   ExpiringAllowancePage,
   ListAccountsInput,
 } from '../../src/admin/admin-store.js';
-import type { AccountRole, SyncKeyRecordKind } from '../../src/protocol.js';
+import type { AccountRole, AiLimitPeriod, SyncKeyRecordKind } from '../../src/protocol.js';
 import type { AccountActivityCount, ActivityDay } from '../../src/admin/account-activity.js';
 import type { HealthConsentRecord } from '../../src/accounts/health-consent.js';
 
@@ -42,7 +42,10 @@ export interface AdminSeedInput {
   displayName?: string | null;
   role?: AccountRole;
   dailyAiLimit?: number;
+  aiLimitPeriod?: AiLimitPeriod;
   aiUsedToday?: number;
+  /** Defaults to `aiUsedToday`: a seeded account spent nothing earlier in the week. */
+  aiUsedThisWeek?: number;
   allowanceExpiresAt?: Date | null;
   /** The standing free grant (2026-09-30). Absent is none. */
   freeDailyAiLimit?: number;
@@ -95,7 +98,9 @@ export function createFakeAdminStore(): FakeAdminStore {
         displayName: input.displayName ?? null,
         role: input.role ?? 'member',
         dailyAiLimit: input.dailyAiLimit ?? 0,
+        aiLimitPeriod: input.aiLimitPeriod ?? 'day',
         aiUsedToday: input.aiUsedToday ?? 0,
+        aiUsedThisWeek: input.aiUsedThisWeek ?? input.aiUsedToday ?? 0,
         // `null` is the default because it is the column's: no end date at all.
         allowanceExpiresAt: input.allowanceExpiresAt ?? null,
         freeDailyAiLimit: input.freeDailyAiLimit ?? 0,

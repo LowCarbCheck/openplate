@@ -182,14 +182,15 @@ import { pipeline } from 'node:stream/promises';
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
 import { Agent, fetch as undiciFetch, type Response as UpstreamResponse } from 'undici';
 import { asBoolean, asObject, asString, type JsonValue } from '../lib/json.js';
-import { utcDayKey } from '../lib/utc-day.js';
+import { nextUtcMidnight, utcDayKey } from '../lib/utc-day.js';
+import { AI_QUOTA_SPENT, quotaWindowOf, type QuotaWindow } from './quota-window.js';
 import type { Logger } from '../logger.js';
 import { getRequestSession } from '../server/bearer-auth.js';
 import type { AccountStore } from '../accounts/account-store.js';
 import { ACCOUNT_SUSPENDED } from '../accounts/auth-handlers.js';
 import { HEALTH_CONSENT_REQUIRED, holdsHealthConsent } from '../accounts/health-consent.js';
 import type { InstanceHealthConsent } from '../protocol.js';
-import type { AiQuotaStore, TrialClaim } from './quota-store.js';
+import type { AiQuotaStore, ReserveResult, TrialClaim } from './quota-store.js';
 import { scrubPayloads } from './scrub.js';
 import { listDroppedChatFields } from './chat-body-policy.js';
 import { policeChatBodyForTier, type ModelTiers } from './model-tiers.js';
@@ -197,7 +198,7 @@ import {
   AI_REQUEST_TOO_LARGE,
   findExceededInputLimit,
   measureChatInput,
-  requestWeight,
+  REQUEST_WEIGHT,
   type ChatInputPolicy,
 } from './chat-input-bounds.js';
 import { randomUUID } from 'node:crypto';
@@ -210,7 +211,8 @@ import {
   TRIAL_SCANS_SPENT,
   trialEndedBy,
 } from '../accounts/scan-trial.js';
-import { aiAllowanceFor, effectiveFreeDailyAiLimit } from '../accounts/ai-allowance.js';
+import { aiAllowanceFor, effectiveFreeAiLimit, isPaidWindowLive } from '../accounts/ai-allowance.js';
+import { isFreeTraffic, type FreeBound } from './free-bound.js';
 import type { InstanceStanding } from '../accounts/instance-standing.js';
 import { clientAddressKey } from '../lib/client-address.js';
 import { effectiveCapabilities } from '../lib/capabilities.js';
@@ -263,6 +265,13 @@ export interface ChatCompletionsDeps {
    */
   trialNetwork: TrialNetworkShare | null;
   /**
+   * The opt-in bounds on free-grant traffic (`AI_FREE_INSTANCE_DAILY_LIMIT`,
+   * `AI_FREE_NETWORK_DAILY_LIMIT`, 2026-10-07, `ai/free-bound.ts`). Each part
+   * `null` when unset; `NO_FREE_BOUND` for none. Required for the reason
+   * `instanceDailyLimit` is.
+   */
+  freeBound: FreeBound;
+  /**
    * The model tiers (`AI_TIERS_FILE`, `ai/model-tiers.ts`). Every request
    * resolves to ONE tier from its own schema name, and that tier's model,
    * output cap, routing and reasoning effort are what the forwarded body gets
@@ -280,10 +289,9 @@ export interface ChatCompletionsDeps {
    */
   maxOutputTokens: number;
   /**
-   * What one request may carry in, and what one unit of the daily counters
-   * covers (`AI_MAX_IMAGE_PARTS`, `AI_MAX_TEXT_BYTES`, `AI_MAX_MESSAGES`,
-   * `AI_UNIT_INPUT_TOKENS`, `AI_IMAGE_INPUT_TOKENS`, 2026-09-30). Required for
-   * the reason `bodyPolicy` is: see `ai/chat-input-bounds.ts`.
+   * What one request may carry in (`AI_MAX_IMAGE_PARTS`, `AI_MAX_TEXT_BYTES`,
+   * `AI_MAX_MESSAGES`, 2026-09-30). Required for the reason `bodyPolicy` is:
+   * see `ai/chat-input-bounds.ts`.
    */
   inputPolicy: ChatInputPolicy;
   /**
@@ -338,7 +346,6 @@ const TIMEOUT_CODES = new Set(['UND_ERR_HEADERS_TIMEOUT', 'UND_ERR_BODY_TIMEOUT'
 const MAX_CAUSE_DEPTH = 5;
 
 const MS_PER_SECOND = 1000;
-const MS_PER_DAY = 86_400_000;
 
 /**
  * The longest an upstream error body may be before this stops reading it. A
@@ -408,11 +415,6 @@ function requestsStreaming(body: JsonValue | undefined): boolean {
   return asBoolean(asObject(body)?.stream) ?? false;
 }
 
-/** Next UTC midnight after `now` — when a spent daily allowance comes back. */
-export function nextUtcMidnight(now: Date): Date {
-  return new Date(Math.floor(now.getTime() / MS_PER_DAY) * MS_PER_DAY + MS_PER_DAY);
-}
-
 function secondsUntil(input: { target: Date; now: Date }): number {
   return Math.max(1, Math.ceil((input.target.getTime() - input.now.getTime()) / MS_PER_SECOND));
 }
@@ -438,9 +440,13 @@ function createByteCounter(): ByteCounter {
   return { stream, total: (): number => total };
 }
 
+/** The unpaid counters a request takes besides the instance's: the scan trial's, the free tier's, or none. */
+type UnpaidBucket = 'trial' | 'free' | null;
+
 export function createChatCompletionsHandler(deps: ChatCompletionsDeps): RequestHandler {
   const {
     accounts,
+    freeBound,
     healthConsent,
     inputPolicy,
     instanceDailyLimit,
@@ -484,6 +490,24 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
    * `null`. One line per day, per process, for the reason the ceiling's is.
    */
   let networkRefusalLoggedForDay: string | null = null;
+
+  /** The UTC day whose first free-bound refusal has already been logged, per process, for the same reason. */
+  let freeRefusalLoggedForDay: string | null = null;
+
+  /**
+   * Says once, per UTC day, that free-grant traffic met one of its bounds
+   * (2026-10-07). No account, no address and no hash, for the reason the
+   * trial network's line carries none.
+   */
+  function logFreeRefusalOnce(input: { day: string; bound: 'instance' | 'network'; limit: number }): void {
+    if (freeRefusalLoggedForDay === input.day) return;
+    freeRefusalLoggedForDay = input.day;
+    logger.warn('Free-grant AI traffic reached its bound; free requests wait for the next UTC day', {
+      day: input.day,
+      bound: input.bound,
+      limit: input.limit,
+    });
+  }
 
   /**
    * Says once, per UTC day, that the instance is out of capacity.
@@ -534,7 +558,7 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
   async function releaseQuietly(input: {
     accountId: number;
     day: string;
-    isTrialDay: boolean;
+    bucket: UnpaidBucket;
     networkHash: string | null;
     weight: number;
   }): Promise<void> {
@@ -549,7 +573,7 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
     }
     await releaseInstanceQuietly({
       day: input.day,
-      isTrialDay: input.isTrialDay,
+      bucket: input.bucket,
       networkHash: input.networkHash,
       weight: input.weight,
     });
@@ -600,6 +624,44 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
   }
 
   /**
+   * The refusal for a spent allowance: 429, `Retry-After` and the two quota
+   * headers, and a body that names the window (2026-10-07).
+   *
+   * THE SENTENCE IS KEPT. `error` stays the sentence it always was for a day
+   * window, word for word, so an older client and an operator's log read what
+   * they read before; a week window says "weekly". The fields beside it are
+   * ADDITIVE and are the ones a client branches on: `code`, `period`, `used`,
+   * `limit`, `weight` and `resetsAt`, the instant the count starts again.
+   * `used` is the window's whole sum: today for a day, Monday to today for a
+   * week.
+   */
+  function sendQuotaRefusal(input: {
+    res: Response;
+    reservation: ReserveResult;
+    window: QuotaWindow;
+    weight: number;
+    requestedAt: Date;
+  }): void {
+    const { res, reservation, window, weight, requestedAt } = input;
+    const resetsAt = window.resetsAt.toISOString();
+    const word = window.period === 'week' ? 'weekly' : 'daily';
+    res.setHeader('Retry-After', String(secondsUntil({ target: window.resetsAt, now: requestedAt })));
+    res.setHeader('X-Quota-Used', String(reservation.used));
+    res.setHeader('X-Quota-Limit', String(reservation.limit));
+    res.status(429).json({
+      error:
+        `${word} quota spent: ${reservation.used} of ${reservation.limit} units used, ` +
+        `and this request needs ${weight}. It resets at ${resetsAt}.`,
+      code: AI_QUOTA_SPENT,
+      period: window.period,
+      used: reservation.used,
+      limit: reservation.limit,
+      weight,
+      resetsAt,
+    });
+  }
+
+  /**
    * Whether a request takes units of `AI_INSTANCE_DAILY_LIMIT` (2026-09-30).
    *
    * A SCAN-TRIAL REQUEST DOES NOT, WHERE THE TRIAL ACCOUNTS HAVE A CEILING OF
@@ -615,9 +677,13 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
    * set a bound on everything, and taking the trials out of it would leave
    * them bounded by nothing.
    */
-  function chargesInstance(isTrialDay: boolean): boolean {
+  function chargesInstance(bucket: UnpaidBucket): boolean {
     if (instanceDailyLimit === null) return false;
-    return !isTrialDay || trialInstanceDailyLimit === null;
+    // THE FREE CEILING (2026-10-07) takes free traffic out of the instance's
+    // the way the trial ceiling takes trial traffic out, and only where set.
+    if (bucket === 'trial') return trialInstanceDailyLimit === null;
+    if (bucket === 'free') return freeBound.instanceDailyLimit === null;
+    return true;
   }
 
   /**
@@ -628,18 +694,22 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
    */
   async function releaseInstanceQuietly(input: {
     day: string;
-    isTrialDay: boolean;
+    bucket: UnpaidBucket;
     networkHash: string | null;
     weight: number;
   }): Promise<void> {
     // The scan-trial accounts' count follows the instance's unit row for row
     // (M253): it is taken for every scan-trial request, set or not. So does
     // the network's share of it, where one is set (M270 spec 12).
-    if (input.isTrialDay) {
+    if (input.bucket === 'trial') {
       await releaseTrialDayQuietly({ day: input.day, weight: input.weight });
       await releaseTrialNetworkQuietly({ day: input.day, networkHash: input.networkHash, weight: input.weight });
     }
-    if (!chargesInstance(input.isTrialDay)) return;
+    // The free bounds' units, where they were taken (2026-10-07).
+    if (input.bucket === 'free') {
+      await releaseFreeQuietly({ day: input.day, networkHash: input.networkHash, weight: input.weight });
+    }
+    if (!chargesInstance(input.bucket)) return;
     try {
       await quota.releaseInstance({ day: input.day, weight: input.weight });
     } catch (cause) {
@@ -647,6 +717,27 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
         day: input.day,
         ...errorFields(cause),
       });
+    }
+  }
+
+  /**
+   * The free bounds' units of one request (2026-10-07), quietly for the reason
+   * `releaseQuietly` is: the free ceiling's where it is set, and the network's
+   * where one was taken (`networkHash` not `null`).
+   */
+  async function releaseFreeQuietly(input: { day: string; networkHash: string | null; weight: number }): Promise<void> {
+    if (freeBound.instanceDailyLimit !== null) {
+      try {
+        await quota.releaseFreeInstance({ day: input.day, weight: input.weight });
+      } catch (cause) {
+        logger.warn('Could not release a free day reservation', { day: input.day, ...errorFields(cause) });
+      }
+    }
+    if (input.networkHash === null) return;
+    try {
+      await quota.releaseFreeNetwork({ day: input.day, networkHash: input.networkHash, weight: input.weight });
+    } catch (cause) {
+      logger.warn('Could not release a free network reservation', { day: input.day, ...errorFields(cause) });
     }
   }
 
@@ -763,13 +854,14 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
     // (2026-10-05), read once so the allowance and the trial's end below judge
     // the same number. An instance with no standing default passes `0` here, so
     // the ladder reads the column alone, exactly as it always did.
-    const freeDailyAiLimit = effectiveFreeDailyAiLimit({
+    const freeAiLimit = effectiveFreeAiLimit({
       own: account.freeDailyAiLimit,
-      instanceDefault: standing.defaultFreeDailyAiLimit,
+      instanceDefault: standing.defaultFreeAiLimit,
     });
     const allowance = aiAllowanceFor({
       dailyAiLimit: account.dailyAiLimit,
-      freeDailyAiLimit,
+      aiLimitPeriod: account.aiLimitPeriod,
+      freeAiLimit,
       allowanceExpiresAt: account.allowanceExpiresAt,
       trialScans: account.trialScans,
       now: requestedAt,
@@ -851,8 +943,9 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
       return;
     }
     // THE UNITS THIS REQUEST RESERVES, on the account's allowance and on the
-    // ceiling it counts against, and gives back wherever a unit is given back.
-    const weight = requestWeight({ size: inputSize, policy: inputPolicy });
+    // ceiling it counts against, and gives back wherever a unit is given back:
+    // one, whatever the size the bound above let through (2026-10-07).
+    const weight = REQUEST_WEIGHT;
     const forwardedBody = Buffer.from(JSON.stringify(policedBody), 'utf8');
 
     // THE INTAKE ID (M253), checked for every account and before any row is
@@ -874,13 +967,24 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
     // stays the authority on the last scan, so that refusal is unchanged.
     // The instant is the one read above the allowance tests.
     const isTrialDay = allowance.kind === 'trial';
+    // WHICH UNPAID COUNTERS THIS REQUEST TAKES (2026-10-07): the trial's, the
+    // free tier's, or none for paid traffic. A paying account the paid floor
+    // holds to its own free grant is paid traffic (`ai/free-bound.ts`).
+    const bucket: UnpaidBucket = isTrialDay
+      ? 'trial'
+      : isFreeTraffic({
+            allowanceKind: allowance.kind,
+            isPaidWindowLive: isPaidWindowLive({ allowanceExpiresAt: account.allowanceExpiresAt, now: requestedAt }),
+          })
+        ? 'free'
+        : null;
     const endedBy = isTrialDay
       ? trialEndedBy({
           trialScans: account.trialScans,
           trialScansUsed: account.trialScansUsed,
           trialEndsAt: account.trialEndsAt,
           allowanceExpiresAt: account.allowanceExpiresAt,
-          freeDailyAiLimit,
+          freeDailyAiLimit: freeAiLimit.limit,
           now: requestedAt,
         })
       : null;
@@ -957,6 +1061,40 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
       }
     }
 
+    // 2g. THE FREE BOUNDS (2026-10-07), opt in, for free traffic only: one
+    // network's share first, then the free ceiling, the trial's order. Each
+    // refusal is the ceiling's 503 and takes no unit of the person's own.
+    if (bucket === 'free' && freeBound.network !== null) {
+      const hash = freeBound.network.hashNetwork({ networkKey: clientAddressKey(req), day });
+      const share = await quota.reserveFreeNetwork({
+        day,
+        networkHash: hash,
+        limit: freeBound.network.dailyLimit,
+        weight,
+      });
+      if (!share.ok) {
+        logFreeRefusalOnce({ day, bound: 'network', limit: freeBound.network.dailyLimit });
+        sendCeilingRefusal(res, requestedAt);
+        return;
+      }
+      networkHash = hash;
+    }
+    if (bucket === 'free' && freeBound.instanceDailyLimit !== null) {
+      const freeDay = await quota.reserveFreeInstance({ day, limit: freeBound.instanceDailyLimit, weight });
+      if (!freeDay.ok) {
+        if (networkHash !== null) {
+          try {
+            await quota.releaseFreeNetwork({ day, networkHash, weight });
+          } catch (cause) {
+            logger.warn('Could not release a free network reservation', { day, ...errorFields(cause) });
+          }
+        }
+        logFreeRefusalOnce({ day, bound: 'instance', limit: freeBound.instanceDailyLimit });
+        sendCeilingRefusal(res, requestedAt);
+        return;
+      }
+    }
+
     // 3a. THE WHOLE INSTANCE HAS A CEILING, and it is taken BEFORE the
     // account's unit. M212 spec 02.
     //
@@ -985,7 +1123,7 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
     // that has not set `AI_INSTANCE_DAILY_LIMIT` gets. A scan-trial request
     // skips it too where the trial accounts have their own ceiling, see
     // `chargesInstance`.
-    if (instanceDailyLimit !== null && chargesInstance(isTrialDay)) {
+    if (instanceDailyLimit !== null && chargesInstance(bucket)) {
       const instanceReservation = await quota.reserveInstance({ day, limit: instanceDailyLimit, weight });
       if (!instanceReservation.ok) {
         logCeilingRefusalOnce({ day, limit: instanceDailyLimit });
@@ -995,6 +1133,7 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
           await releaseTrialDayQuietly({ day, weight });
           await releaseTrialNetworkQuietly({ day, networkHash, weight });
         }
+        if (bucket === 'free') await releaseFreeQuietly({ day, networkHash, weight });
         await giveScanBackQuietly({ res, accountId: account.id, scan, undeliver: false });
         // A CODE, not a sentence, because a client has to BRANCH on this one:
         // "the operator is out of capacity today" is a different screen from
@@ -1007,23 +1146,30 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
 
     // 3b. Reserve BEFORE the upstream call. A refusal is a 429 with the reset
     // instant named, never a 500: being out of allowance is the system working.
-    const reservation = await quota.reserve({ accountId: account.id, day, limit: allowance.dailyLimit, weight });
+    //
+    // THE WINDOW IS THE GRANT'S (2026-10-07). A daily grant keeps the one
+    // statement upsert it always had, byte for byte; a weekly grant sums the
+    // days from Monday under a per-account lock (`quota-store.ts`). Both add
+    // the units to today's row, so a give-back below is the same release.
+    const window = quotaWindowOf({ period: allowance.period, now: requestedAt });
+    const reservation =
+      window.period === 'week'
+        ? await quota.reserveWindow({
+            accountId: account.id,
+            fromDay: window.fromDay,
+            day,
+            limit: allowance.limit,
+            weight,
+          })
+        : await quota.reserve({ accountId: account.id, day, limit: allowance.limit, weight });
     if (!reservation.ok) {
       // THE INSTANCE'S UNIT GOES BACK. It was taken a few lines above for a
       // request that is about to be refused and will never reach the provider,
       // so keeping it would let one account at its own limit eat the whole
       // instance's ceiling by retrying.
-      await releaseInstanceQuietly({ day, isTrialDay, networkHash, weight });
+      await releaseInstanceQuietly({ day, bucket, networkHash, weight });
       await giveScanBackQuietly({ res, accountId: account.id, scan, undeliver: false });
-      const resetAt = nextUtcMidnight(requestedAt);
-      res.setHeader('Retry-After', String(secondsUntil({ target: resetAt, now: requestedAt })));
-      res.setHeader('X-Quota-Used', String(reservation.used));
-      res.setHeader('X-Quota-Limit', String(reservation.limit));
-      res.status(429).json({
-        error:
-          `daily quota spent: ${reservation.used} of ${reservation.limit} units used, ` +
-          `and this request needs ${weight}. It resets at ${resetAt.toISOString()}.`,
-      });
+      sendQuotaRefusal({ res, reservation, window, weight, requestedAt });
       return;
     }
 
@@ -1052,7 +1198,7 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
       // TIMEOUT SITE 1 of 2 — `headersTimeout` lands HERE, together with every
       // connect-level failure. Nothing was served to us in either case, so the
       // reservation goes back, and so does the scan.
-      await releaseQuietly({ accountId: account.id, day, isTrialDay, networkHash, weight });
+      await releaseQuietly({ accountId: account.id, day, bucket, networkHash, weight });
       await giveScanBackQuietly({ res, accountId: account.id, scan, undeliver: false });
       const timedOut = isTimeoutError(cause);
       logger.warn('Upstream call failed before any response', {
@@ -1077,7 +1223,7 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
     // the request and then failed — the money may already be gone, so it stays
     // spent. See the table in the module header.
     if (upstream.status >= 400 && upstream.status < 500) {
-      await releaseQuietly({ accountId: account.id, day, isTrialDay, networkHash, weight });
+      await releaseQuietly({ accountId: account.id, day, bucket, networkHash, weight });
     }
 
     if (!upstream.ok) {

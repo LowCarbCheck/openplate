@@ -215,6 +215,44 @@ export function isAccountRole(value: JsonValue | undefined): value is AccountRol
 }
 
 /**
+ * The window an AI limit counts in (2026-10-07). PROTOCOL.md §5.19.
+ *
+ *  - `'day'`: one UTC calendar day, 00:00 UTC to the next 00:00 UTC. Every
+ *    limit had this window before the field existed, and every account still
+ *    has it unless something wrote `'week'`.
+ *  - `'week'`: one ISO week in UTC, Monday 00:00 UTC to the next Monday
+ *    00:00 UTC. The count is the sum of the days of that week.
+ *
+ * A WORD, NOT A NUMBER OF DAYS. A rolling seven days would reset a little at
+ * every midnight, which no person can predict; a calendar week resets once,
+ * at an instant a client can print.
+ */
+export type AiLimitPeriod = 'day' | 'week';
+
+/** Every valid {@link AiLimitPeriod}, for validation and exhaustive iteration. */
+export const AI_LIMIT_PERIODS: readonly AiLimitPeriod[] = ['day', 'week'];
+
+export function isAiLimitPeriod(value: JsonValue | undefined): value is AiLimitPeriod {
+  return value === 'day' || value === 'week';
+}
+
+/**
+ * The AI allowance in force for an account right now, as the proxy will count
+ * the next request. See {@link AccountView.aiQuota}.
+ */
+export interface AiQuotaView {
+  /** Which grant the proxy reads: a live paid window, the free grant, or the scan trial. */
+  kind: 'paid' | 'free' | 'trial';
+  /** Units the window allows. Always above `0`: no grant is `aiQuota: null`. */
+  limit: number;
+  period: AiLimitPeriod;
+  /** Units already counted in the current window: today for `'day'`, Monday to today for `'week'`. */
+  used: number;
+  /** The instant the count starts again: the next 00:00 UTC, or the next Monday 00:00 UTC. */
+  resetsAt: IsoTimestamp;
+}
+
+/**
  * WHAT USED TO BE HERE, AND WHY IT IS NOT (M192).
  *
  * `SignupMode` (`open` | `invite` | `closed`) stood here, was published on the
@@ -248,10 +286,37 @@ export interface AccountView {
   email: string;
   displayName: string | null;
   role: AccountRole;
-  /** AI requests allowed per UTC day. `0` means this account has no AI. */
+  /**
+   * The paid window's AI limit, counted per {@link AccountView.aiLimitPeriod}.
+   * `0` means no paid limit.
+   *
+   * THE NAME IS OLDER THAN THE PERIOD. Before 2026-10-07 every limit was per
+   * UTC day; now this number is per day or per week, and `aiLimitPeriod` says
+   * which. The key keeps its name so an older client still decodes the view.
+   */
   dailyAiLimit: number;
-  /** AI requests already spent on the current UTC day. */
+  /**
+   * The window `dailyAiLimit` counts in (2026-10-07): `'day'`, the default and
+   * what every account written before the field holds, or `'week'`.
+   * ADDITIVE: an older client ignores the key.
+   */
+  aiLimitPeriod: AiLimitPeriod;
+  /** AI requests already spent on the current UTC day. Today only, whatever the period. */
   aiUsedToday: number;
+  /**
+   * The allowance the proxy applies to the next request (2026-10-07), or
+   * `null` when it would refuse it for want of any grant (`ai-not-allowed`,
+   * `allowance-expired`).
+   *
+   * THE ONE FIELD A CLIENT NEEDS TO SAY "N OF M THIS WEEK, RESETS MONDAY".
+   * It is computed by the same ladder the proxy runs (`accounts/ai-allowance.ts`),
+   * so it already chose between the paid window, the free grant and the
+   * trial, and `used` is counted over the same window the proxy sums.
+   *
+   * A CLIENT MAY RENDER IT AND MUST NOT AUTHORIZE ON IT. It is a snapshot taken
+   * when this view was built. ADDITIVE: an older client ignores the key.
+   */
+  aiQuota: AiQuotaView | null;
   /**
    * When this account's AI allowance ends, or `null` for no end at all.
    *
@@ -273,8 +338,17 @@ export interface AccountView {
    *
    * A CLIENT MAY RENDER IT AND MUST NOT AUTHORIZE ON IT. ADDITIVE: an older
    * client ignores the key.
+   *
+   * PER `freeAiLimitPeriod` (2026-10-07): an account's own free limit is per
+   * day, and the instance default is per day or per week.
    */
   freeDailyAiLimit: number;
+  /**
+   * The window `freeDailyAiLimit` counts in (2026-10-07): `'day'` for an
+   * account's own free limit and for `DEFAULT_FREE_DAILY_AI_LIMIT`, `'week'`
+   * for `DEFAULT_FREE_WEEKLY_AI_LIMIT`. ADDITIVE: an older client ignores the key.
+   */
+  freeAiLimitPeriod: AiLimitPeriod;
   /**
    * The capabilities this account may use, as the proxy computes them: the
    * account's own record, else the instance default, else `null`.

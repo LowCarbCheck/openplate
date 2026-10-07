@@ -134,6 +134,10 @@ test('PATCH changes a role, an allowance and a name, and returns the AccountView
   // pins the one that WRITES, which is the newer surface.
   const view = asObject(asObject(changed.body)?.account);
   assert.deepEqual(Object.keys(view ?? {}).toSorted(), [
+    // The window of the paid limit (2026-10-07), "day" or "week".
+    'aiLimitPeriod',
+    // The units since Monday 00:00 UTC (2026-10-07), a count like aiUsedToday.
+    'aiUsedThisWeek',
     'aiUsedToday',
     'allowanceExpiresAt',
     'blob',
@@ -144,6 +148,8 @@ test('PATCH changes a role, an allowance and a name, and returns the AccountView
     'displayName',
     'email',
     // The standing free grant (2026-09-30), an operator's field.
+    // The window of the free grant (2026-10-07), "day" for an own record.
+    'freeAiLimitPeriod',
     'freeDailyAiLimit',
     // The person's health-data consent, read only here: see
     // `admin-no-forbidden-fields.test.ts` for why an operator may read it.

@@ -57,12 +57,14 @@ export interface MintInviteRequestBody {
 
 /**
  * The body of `PATCH /v1/admin/accounts/:id`. Every field optional and every
- * absent field meaning "leave it alone", which is what lets the CLI's four
+ * absent field meaning "leave it alone", which is what lets the CLI's
  * one-shot commands share one endpoint.
  */
 export interface AccountPatchBody {
   role?: string;
   dailyAiLimit?: number;
+  /** The window `dailyAiLimit` counts in (2026-10-07), `'day'` or `'week'`. Absent leaves it alone. */
+  aiLimitPeriod?: 'day' | 'week';
   /** An ISO instant, or `null` to clear the date. Absent leaves it alone. */
   allowanceExpiresAt?: string | null;
   /** The standing free grant per UTC day (2026-09-30), `0` to take it away. Absent leaves it alone. */

@@ -29,7 +29,7 @@
  * `IN (...)` each. A page is at most `MAX_ADMIN_PAGE_LIMIT` rows, and this
  * endpoint is called by one operator at human speed.
  */
-import { and, count, countDistinct, desc, eq, gt, gte, inArray, isNull, lte, sum } from 'drizzle-orm';
+import { and, count, countDistinct, desc, eq, gt, gte, inArray, isNull, lte, sql, sum } from 'drizzle-orm';
 import type {
   AdminAccountPage,
   AdminAccountSummary,
@@ -41,9 +41,9 @@ import type {
   ListAccountsInput,
 } from '../admin/admin-store.js';
 import type { AccountActivityCount, ActivityDay } from '../admin/account-activity.js';
-import type { AccountRole, SyncKeyRecordKind } from '../protocol.js';
+import type { AccountRole, AiLimitPeriod, SyncKeyRecordKind } from '../protocol.js';
 import type { Database } from './client.js';
-import { utcDayKey } from '../lib/utc-day.js';
+import { utcDayKey, utcWeekStartDayKey } from '../lib/utc-day.js';
 import { accounts, aiInstanceDays, aiUsageDays, signupInvites, syncBlobs, syncKeyRecords } from './schema.js';
 import { createDrizzlePulseStore } from '../pulse/pulse-store.js';
 import { createDrizzlePushStore } from '../push/push-store.js';
@@ -56,6 +56,7 @@ interface AccountIdentityRow {
   displayName: string | null;
   role: AccountRole;
   dailyAiLimit: number;
+  aiLimitPeriod: AiLimitPeriod;
   allowanceExpiresAt: Date | null;
   freeDailyAiLimit: number;
   capabilities: string[] | null;
@@ -82,6 +83,9 @@ const IDENTITY_COLUMNS = {
   displayName: accounts.displayName,
   role: accounts.role,
   dailyAiLimit: accounts.dailyAiLimit,
+  // The window the limit counts in (2026-10-07): the biller reads it back
+  // before it writes, and an operator sees which window a number is per.
+  aiLimitPeriod: accounts.aiLimitPeriod,
   // The end of the AI allowance (M212). An operator sets it and the AI proxy
   // is the only thing that reads it; it is on the user-facing `AccountView`
   // too, because the person whose trial ends has to be told when.
@@ -147,6 +151,35 @@ export function createDrizzleAdminStore(db: Database): AdminMetadataStore {
       summaries.set(row.accountId, { sizeBytes: row.sizeBytes, updatedAt: row.createdAt });
     }
     return summaries;
+  }
+
+  /**
+   * Each account's AI spend from `fromDay` to `toDay`, both included, for the
+   * given ids (2026-10-07): the week a weekly limit is held to. One grouped
+   * query for the whole page, like every helper here.
+   */
+  async function aiUsageBetween(input: {
+    accountIds: number[];
+    fromDay: string;
+    toDay: string;
+  }): Promise<Map<number, number>> {
+    const usage = new Map<number, number>();
+    if (input.accountIds.length === 0) return usage;
+
+    const rows = await db
+      .select({ accountId: aiUsageDays.accountId, total: sql<number>`coalesce(sum(${aiUsageDays.count}), 0)::int` })
+      .from(aiUsageDays)
+      .where(
+        and(
+          inArray(aiUsageDays.accountId, input.accountIds),
+          gte(aiUsageDays.day, input.fromDay),
+          lte(aiUsageDays.day, input.toDay),
+        ),
+      )
+      .groupBy(aiUsageDays.accountId);
+
+    for (const row of rows) usage.set(row.accountId, row.total);
+    return usage;
   }
 
   /** Today's AI spend per account, for the given ids. A count, never a log, see `db/schema.ts`. */
@@ -218,6 +251,13 @@ export function createDrizzleAdminStore(db: Database): AdminMetadataStore {
     const blobs = await blobSummaries(ids);
     const kinds = await keyRecordKinds(ids);
     const usage = await aiUsage(ids, day);
+    // The week the given day falls in: a day key is a UTC midnight, so the
+    // week start of that instant is the week start of the day.
+    const weekUsage = await aiUsageBetween({
+      accountIds: ids,
+      fromDay: utcWeekStartDayKey(new Date(`${day}T00:00:00.000Z`)),
+      toDay: day,
+    });
     const minted = await invitesMinted(ids);
 
     return identities.map((identity) => ({
@@ -226,7 +266,9 @@ export function createDrizzleAdminStore(db: Database): AdminMetadataStore {
       displayName: identity.displayName,
       role: identity.role,
       dailyAiLimit: identity.dailyAiLimit,
+      aiLimitPeriod: identity.aiLimitPeriod,
       aiUsedToday: usage.get(identity.id) ?? 0,
+      aiUsedThisWeek: weekUsage.get(identity.id) ?? 0,
       allowanceExpiresAt: identity.allowanceExpiresAt,
       freeDailyAiLimit: identity.freeDailyAiLimit,
       capabilities: identity.capabilities,

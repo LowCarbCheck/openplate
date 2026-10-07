@@ -8,7 +8,7 @@
  * is what the real store says for an instance with no trial accounts.
  * `tests/integration/scan-trial.test.ts` owns the real statements.
  */
-import type { AiTrialScanStore, ReserveResult, TrialClaim } from '../../src/ai/quota-store.js';
+import type { AiFreeBoundStore, AiTrialScanStore, ReserveResult, TrialClaim } from '../../src/ai/quota-store.js';
 
 export function createUnusedTrialScanStore(): AiTrialScanStore {
   return {
@@ -35,6 +35,32 @@ export function createUnusedTrialScanStore(): AiTrialScanStore {
       throw new Error('this suite has no scan-trial account, so nothing should give a network share back');
     },
     async purgeTrialNetworkDaysBefore(): Promise<number> {
+      return 0;
+    },
+  };
+}
+
+/**
+ * The free-bound half of an `AiQuotaStore` fake (2026-10-07), for suites that
+ * set no free bound. The reserves THROW, so a suite that reaches them without
+ * setting a bound fails loudly; the sweep answers zero, which is what the real
+ * store says for an instance that never wrote a row.
+ */
+export function createUnusedFreeBoundStore(): AiFreeBoundStore {
+  return {
+    async reserveFreeInstance(): Promise<ReserveResult> {
+      throw new Error('this suite sets no free ceiling, so nothing should take a unit of it');
+    },
+    async releaseFreeInstance(): Promise<void> {
+      throw new Error('this suite sets no free ceiling, so nothing should give a unit of it back');
+    },
+    async reserveFreeNetwork(): Promise<ReserveResult> {
+      throw new Error('this suite sets no free network bound, so nothing should take a unit of it');
+    },
+    async releaseFreeNetwork(): Promise<void> {
+      throw new Error('this suite sets no free network bound, so nothing should give a unit of it back');
+    },
+    async purgeFreeNetworkDaysBefore(): Promise<number> {
       return 0;
     },
   };

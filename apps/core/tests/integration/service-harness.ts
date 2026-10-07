@@ -14,6 +14,7 @@
  * the service either, so a helper that reached around the invite would be
  * testing a path that does not exist.
  */
+import { createFreeNetworkHasher } from '../../src/ai/free-bound.js';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { createApp } from '../../src/server/create-app.js';
@@ -325,6 +326,13 @@ export interface StartServiceOptions {
      * it, and every request here arrives from one loopback address.
      */
     trialNetworkDailyLimit?: number | null;
+    /** `AI_FREE_INSTANCE_DAILY_LIMIT` (2026-10-07). Absent is no free ceiling, the production default. */
+    freeInstanceDailyLimit?: number | null;
+    /**
+     * `AI_FREE_NETWORK_DAILY_LIMIT` (2026-10-07), keyed under the suite's
+     * server secret, as `main.ts` keys it. Absent is no free network bound.
+     */
+    freeNetworkDailyLimit?: number | null;
     /** The input bounds and the unit size (2026-09-30), over the production defaults. */
     inputPolicy?: Partial<ChatInputPolicy>;
     /**
@@ -681,6 +689,16 @@ export async function startService(options: StartServiceOptions): Promise<Servic
           // `null` by default for the reason `instanceDailyLimit` is (M253).
           trialInstanceDailyLimit: options.ai.trialInstanceDailyLimit ?? null,
           trialNetwork: trialNetworkOf(options),
+          freeBound: {
+            instanceDailyLimit: options.ai.freeInstanceDailyLimit ?? null,
+            network:
+              options.ai.freeNetworkDailyLimit == null
+                ? null
+                : {
+                    dailyLimit: options.ai.freeNetworkDailyLimit,
+                    hashNetwork: createFreeNetworkHasher(options.serverSecret ?? DEFAULT_TEST_SERVER_SECRET),
+                  },
+          },
           // The budget read (2026-09-30), as `main.ts` builds it: the real
           // counters always, and the key read only for an OpenRouter upstream,
           // which a fake upstream on a loopback port never is.

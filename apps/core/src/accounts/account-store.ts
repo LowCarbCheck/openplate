@@ -13,7 +13,7 @@
  * `rotateCredential` is the one method whose ATOMICITY is a correctness
  * requirement rather than an implementation detail — see its doc.
  */
-import type { AccountRole, SyncKeyRecordKind } from '../protocol.js';
+import type { AccountRole, AiLimitPeriod, SyncKeyRecordKind } from '../protocol.js';
 import type { JsonObject } from '../lib/json.js';
 import type { AccountTokenKind } from '../lib/tokens.js';
 import type { KdfDescriptor } from '../lib/kdf-descriptor.js';
@@ -27,8 +27,10 @@ export interface AccountRecord {
   displayName: string | null;
   /** `'admin'` or `'member'`. Carried from the invite at signup; changed only by an operator. */
   role: AccountRole;
-  /** AI requests allowed per UTC day. `0` means this account has no AI. */
+  /** The paid window's AI limit, counted per {@link AccountRecord.aiLimitPeriod}. `0` means none. */
   dailyAiLimit: number;
+  /** The window `dailyAiLimit` counts in (2026-10-07). `'day'` for every account nothing moved. */
+  aiLimitPeriod: AiLimitPeriod;
   /**
    * When this account's AI allowance ends, or `null` for no end at all.
    *
@@ -359,6 +361,12 @@ export interface AccountStore {
 
   /** How many AI requests this account has spent on the given UTC day (`lib/utc-day.ts`). Read-only here; spec 03 writes. */
   aiUsageOn(input: { accountId: number; day: string }): Promise<number>;
+  /**
+   * How many AI requests this account has spent from `fromDay` to `toDay`,
+   * both UTC days and both included (2026-10-07). The account view's half of
+   * the weekly sum the proxy reserves against (`ai/quota-window.ts`).
+   */
+  aiUsageBetween(input: { accountId: number; fromDay: string; toDay: string }): Promise<number>;
 
   insertTokens(tokens: NewTokenInput[]): Promise<void>;
   findToken(input: { kind: AccountTokenKind; tokenHash: string }): Promise<StoredToken | null>;
@@ -534,6 +542,8 @@ export interface UpdateStandingInput {
   trialScans?: number | null;
   role?: AccountRole;
   dailyAiLimit?: number;
+  /** The window `dailyAiLimit` counts in. Absent leaves it alone. Written by an operator and by the biller's credential. */
+  aiLimitPeriod?: AiLimitPeriod;
   /**
    * The new end of the AI allowance. Absent leaves it alone; `null` is a real
    * value that CLEARS it, exactly as `displayName: null` clears the name.

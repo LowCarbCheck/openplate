@@ -239,6 +239,20 @@
       "when": 1791154779573,
       "tag": "0033_trial_address_hashes_created_at",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1791374560664,
+      "tag": "0034_accounts_ai_limit_period",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1791377022664,
+      "tag": "0035_ai_free_bound",
+      "breakpoints": true
     }
   ]
 }

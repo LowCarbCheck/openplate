@@ -23,6 +23,7 @@
 import { test, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { startAdminHarness, type AdminHarness } from './admin-harness.js';
+import { asObject, type JsonValue } from '../../src/lib/json.js';
 import {
   DEFAULT_SERVICE_MAX_DAILY_AI_LIMIT,
   SERVICE_FIELD_REFUSAL,
@@ -290,8 +291,10 @@ test('an empty body from the billing principal is the ordinary empty-patch 400',
 
 // ── capabilities (2026-10-05): the third field the biller may write ─────────
 
-test('the biller may name exactly three fields, so a fourth is a decision and not an accident', () => {
+test('the biller may name exactly four fields, so a fifth is a decision and not an accident', () => {
   assert.deepEqual([...SERVICE_PRINCIPAL_PATCH_FIELDS].toSorted(), [
+    // 2026-10-07: the window the paid limit counts in.
+    'aiLimitPeriod',
     'allowanceExpiresAt',
     'capabilities',
     'dailyAiLimit',
@@ -352,4 +355,62 @@ test('the operator writes capabilities too, and reads the record back from the a
   const written = await patchAs({ token: ADMIN_TOKEN, body: { capabilities: ['recipes'] } });
   assert.equal(written.status, 200);
   assert.deepEqual((await harness.fakeAccounts.findAccountById(accountId))?.capabilities, ['recipes']);
+});
+
+// ── The window of the paid limit (2026-10-07) ───────────────────────────────
+
+test('the biller moves a paid limit to a week and back, and a PATCH of the limit alone keeps the window', async () => {
+  const weekly = await patchAs({
+    token: BILLING_TOKEN,
+    body: { dailyAiLimit: 40, aiLimitPeriod: 'week', allowanceExpiresAt: '2099-01-01T00:00:00.000Z' },
+  });
+  assert.equal(weekly.status, 200);
+  let account = await harness.fakeAccounts.findAccountById(accountId);
+  assert.equal(account?.dailyAiLimit, 40);
+  assert.equal(account?.aiLimitPeriod, 'week');
+
+  // The admin console always sends `dailyAiLimit`; naming it alone must not
+  // reset a weekly plan to a daily one.
+  const limitOnly = await patchAs({ token: ADMIN_TOKEN, body: { dailyAiLimit: 100 } });
+  assert.equal(limitOnly.status, 200);
+  account = await harness.fakeAccounts.findAccountById(accountId);
+  assert.equal(account?.dailyAiLimit, 100);
+  assert.equal(account?.aiLimitPeriod, 'week');
+
+  // THE CONTROL: naming the window moves it back.
+  const daily = await patchAs({ token: BILLING_TOKEN, body: { aiLimitPeriod: 'day' } });
+  assert.equal(daily.status, 200);
+  assert.equal((await harness.fakeAccounts.findAccountById(accountId))?.aiLimitPeriod, 'day');
+});
+
+test('a window that is not day or week is the ordinary 400 and writes nothing, for the biller and the operator alike', async () => {
+  for (const token of [BILLING_TOKEN, ADMIN_TOKEN]) {
+    for (const bad of ['month', 'Week', '', null, 7, ['week']]) {
+      const refused = await patchAs({ token, body: { dailyAiLimit: 99, aiLimitPeriod: bad } });
+      assert.equal(refused.status, 400, JSON.stringify(bad));
+    }
+  }
+  const account = await harness.fakeAccounts.findAccountById(accountId);
+  assert.equal(account?.aiLimitPeriod, 'day');
+  assert.equal(account?.dailyAiLimit, 20, 'the limit beside a bad window was not written either');
+});
+
+test('the billing read reports the window it wrote', async () => {
+  const written = await patchAs({ token: BILLING_TOKEN, body: { aiLimitPeriod: 'week' } });
+  assert.equal(written.status, 200);
+  harness.admin.seed({
+    id: accountId,
+    email: 'payer-read@example.org',
+    role: 'member',
+    dailyAiLimit: 20,
+    aiLimitPeriod: 'week',
+  });
+  const response = await harness.request({
+    method: 'GET',
+    path: `/v1/admin/accounts/${accountId}`,
+    token: BILLING_TOKEN,
+  });
+  assert.equal(response.status, 200);
+  const body: JsonValue = await response.json();
+  assert.equal(asObject(asObject(body)?.account)?.aiLimitPeriod, 'week');
 });

@@ -116,6 +116,7 @@ import { registerRotateDekRoute } from './rotate-dek-route.js';
 import { CHAT_COMPLETIONS_PATH, registerAiRoute } from '../ai/register-ai-route.js';
 import { NO_INSTANCE_STANDING } from '../accounts/instance-standing.js';
 import type { TrialNetworkShare } from '../ai/trial-network.js';
+import { NO_FREE_BOUND, type FreeBound } from '../ai/free-bound.js';
 import { FEEDBACK_API_PREFIX, registerFeedbackRoute } from '../feedback/register-feedback-route.js';
 import { registerPulseRoutes } from './register-pulse-routes.js';
 import type { PulseStore } from '../pulse/pulse-store.js';
@@ -244,6 +245,11 @@ export interface AiSurfaceOptions {
    * `TRIAL_ADDRESS_PEPPER`, M270 spec 12), or `null`/absent for no share.
    */
   trialNetwork?: TrialNetworkShare | null;
+  /**
+   * The opt-in bounds on free-grant traffic (2026-10-07, `ai/free-bound.ts`),
+   * or absent for none.
+   */
+  freeBound?: FreeBound;
   /**
    * The model tiers and the output ceiling every forwarded chat body gets
    * (M256). Required: see `ChatCompletionsDeps.tiers`.
@@ -687,6 +693,7 @@ export function createApp(options: CreateAppOptions): Express {
       instanceDailyLimit: ai.instanceDailyLimit,
       trialInstanceDailyLimit: ai.trialInstanceDailyLimit ?? null,
       trialNetwork: ai.trialNetwork ?? null,
+      freeBound: ai.freeBound ?? NO_FREE_BOUND,
       tiers: ai.tiers,
       maxOutputTokens: ai.maxOutputTokens,
       inputPolicy: ai.inputPolicy,

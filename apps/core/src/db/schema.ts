@@ -35,7 +35,13 @@ import {
   timestamp,
   uniqueIndex,
 } from 'drizzle-orm/pg-core';
-import type { AccountRole, InstanceLanguage, NutrientReferenceBasis, SyncKeyRecordKind } from '../protocol.js';
+import type {
+  AccountRole,
+  AiLimitPeriod,
+  InstanceLanguage,
+  NutrientReferenceBasis,
+  SyncKeyRecordKind,
+} from '../protocol.js';
 import type { InviteSource } from '../admin/invite-store.js';
 import type { AccountTokenKind } from '../lib/tokens.js';
 import type { KdfDescriptor } from '../lib/kdf-descriptor.js';
@@ -111,6 +117,26 @@ export const accounts = pgTable(
      * Spend is counted in `ai_usage_days`.
      */
     dailyAiLimit: integer('daily_ai_limit').default(0).notNull(),
+    /**
+     * The window `daily_ai_limit` counts in (2026-10-07): `'day'`, one UTC
+     * calendar day, or `'week'`, Monday 00:00 UTC to the next Monday 00:00 UTC
+     * (`protocol.ts`, `AiLimitPeriod`). The column's name is older than this
+     * one and says "daily"; this column is what says how the number counts.
+     *
+     * `'day'` IS THE DEFAULT AND THE BACKFILL. Every account that exists keeps
+     * the window it has always had: the migration adds the column with this
+     * default, so a Beta supporter or a subscriber of the old plan is counted
+     * per day exactly as before. Only a writer that names `'week'` moves an
+     * account: the biller for a tier plan, or an operator.
+     *
+     * IT GOVERNS THE PAID LIMIT ONLY. The scan trial is always per day, and
+     * the free grant has a window of its own (`accounts/ai-allowance.ts`).
+     *
+     * WRITTEN BY an operator (the admin PATCH) and by the biller's credential
+     * (`server/service-principal-scope.ts`). READ BY the AI proxy, which sums
+     * `ai_usage_days` over the window before it reserves a unit.
+     */
+    aiLimitPeriod: text('ai_limit_period').$type<AiLimitPeriod>().default('day').notNull(),
     /**
      * The instant this account's AI allowance ends, or `NULL` for no end at
      * all. `NULL` is what every account created before M212 has and what a
@@ -348,6 +374,9 @@ export const accounts = pgTable(
     // NULL, OR ONE TO FORTY CHARACTERS. An empty string is not a label, the
     // absence of one is `NULL`, and the bound is the one the admin write path
     // enforces first (`MAX_ACCOUNT_LABEL_LENGTH`).
+    // A WORD FROM A CLOSED SET. A stray value has no window the proxy could
+    // count in, so the database refuses it, the way the write paths do first.
+    check('accounts_ai_limit_period', sql`${table.aiLimitPeriod} IN ('day', 'week')`),
     check(
       'accounts_label_length',
       sql`${table.label} IS NULL OR char_length(${table.label}) BETWEEN 1 AND ${sql.raw(String(MAX_ACCOUNT_LABEL_LENGTH))}`,
@@ -719,6 +748,13 @@ export const aiInstanceDays = pgTable('ai_instance_days', {
    */
   trialCount: integer('trial_count').default(0).notNull(),
   /**
+   * The requests accounts on a FREE grant spent on this day (2026-10-07),
+   * counted and bounded only where `AI_FREE_INSTANCE_DAILY_LIMIT` is set, so
+   * an instance that sets nothing writes nothing here. Its own column for the
+   * reason `trialCount` has one. See `ai/free-bound.ts`.
+   */
+  freeCount: integer('free_count').default(0).notNull(),
+  /**
    * What the provider charged for the day's completions, in MICRO dollars (a
    * millionth of a dollar), summed from the `usage.cost` the provider reports
    * on each answer (`ai/usage-tap.ts`). Zero for a provider that reports none,
@@ -763,6 +799,31 @@ export const aiTrialNetworkDays = pgTable(
 
 export type InsertAiTrialNetworkDay = InferInsertModel<typeof aiTrialNetworkDays>;
 export type SelectAiTrialNetworkDay = InferSelectModel<typeof aiTrialNetworkDays>;
+
+/**
+ * ONE ROW PER CALLER NETWORK PER UTC DAY: the requests that network made on a
+ * FREE grant (2026-10-07), bounded by `AI_FREE_NETWORK_DAILY_LIMIT` so a few
+ * farmed free accounts on one network cannot spend what the free tier has
+ * for everybody. Written only where that limit is set. See `ai/free-bound.ts`.
+ *
+ * NO ADDRESS, for the reason `ai_trial_network_days` holds none:
+ * `network_hash` is an HMAC-SHA256 of the network key and the day under a key
+ * derived from `SERVER_SECRET` with its own label. It references nothing, and
+ * the hourly sweep (`ai/usage-retention.ts`) deletes every row before today.
+ */
+export const aiFreeNetworkDays = pgTable(
+  'ai_free_network_days',
+  {
+    /** The UTC calendar day, `YYYY-MM-DD`, the same day key `ai_instance_days` counts on. */
+    day: date('day', { mode: 'string' }).notNull(),
+    networkHash: text('network_hash').notNull(),
+    count: integer('count').default(0).notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.day, table.networkHash] })],
+);
+
+export type InsertAiFreeNetworkDay = InferInsertModel<typeof aiFreeNetworkDays>;
+export type SelectAiFreeNetworkDay = InferSelectModel<typeof aiFreeNetworkDays>;
 
 /**
  * ONE ROW PER PROVIDER BUDGET PERIOD IN WHICH THE OPERATOR WAS ALERTED

@@ -78,6 +78,8 @@ import { memberInviteFields, type MemberInvitePolicy } from '../accounts/member-
 import {
   NUTRIENT_REFERENCE_BASES,
   isAccountRole,
+  isAiLimitPeriod,
+  type AiLimitPeriod,
   isNutrientReferenceBasis,
   type AccountRole,
   type AccountView,
@@ -144,7 +146,13 @@ export const PAGING_REFUSAL = `limit must be 0-${MAX_ADMIN_PAGE_LIMIT} and offse
  * field added to one is a compile error until it is added here too. The two
  * extra fields are ADR-0001's operator facts, see `admin/admin-store.ts`.
  */
-interface AdminAccountView extends Omit<AccountView, 'capabilities'> {
+interface AdminAccountView extends Omit<AccountView, 'capabilities' | 'aiQuota'> {
+  /**
+   * AI requests spent from this week's Monday (UTC) to today (2026-10-07),
+   * the sum a weekly limit is held to. Beside `aiUsedToday`, so an operator
+   * can read either window whatever the account's `aiLimitPeriod` is.
+   */
+  aiUsedThisWeek: number;
   /**
    * The account's OWN capability record: `null` is no record, so the instance
    * default decides, and `[]` is a record that grants nothing. Not the effective
@@ -297,9 +305,14 @@ function toAccountView(input: {
     displayName: summary.displayName,
     role: summary.role,
     dailyAiLimit: summary.dailyAiLimit,
+    aiLimitPeriod: summary.aiLimitPeriod,
     aiUsedToday: summary.aiUsedToday,
+    aiUsedThisWeek: summary.aiUsedThisWeek,
     allowanceExpiresAt: summary.allowanceExpiresAt?.toISOString() ?? null,
+    // THE OWN COLUMN, which is always per day: the operator reads what was
+    // written. The instance's weekly default is the account view's to show.
     freeDailyAiLimit: summary.freeDailyAiLimit,
+    freeAiLimitPeriod: 'day',
     capabilities: toWireCapabilities(summary.capabilities),
     trialScans: trialScansView({ granted: summary.trialScans, used: summary.trialScansUsed }),
     trialEndsAt: summary.trialEndsAt?.toISOString() ?? null,
@@ -346,6 +359,8 @@ interface ServiceAccountView {
   id: number;
   allowanceExpiresAt: string | null;
   dailyAiLimit: number;
+  /** The window `dailyAiLimit` counts in (2026-10-07). The biller reads it back to decide whether a PATCH must move it. */
+  aiLimitPeriod: AiLimitPeriod;
   /** The account's OWN capability record, `null` for none. Not the effective value: the biller reads back what it wrote. */
   capabilities: string[] | null;
 }
@@ -356,6 +371,7 @@ function toServiceAccountView(summary: AdminAccountSummary): ServiceAccountView 
     id: summary.id,
     allowanceExpiresAt: summary.allowanceExpiresAt?.toISOString() ?? null,
     dailyAiLimit: summary.dailyAiLimit,
+    aiLimitPeriod: summary.aiLimitPeriod,
     capabilities: toWireCapabilities(summary.capabilities),
   };
 }
@@ -694,6 +710,13 @@ interface AccountPatch {
   role?: AccountRole;
   dailyAiLimit?: number;
   /**
+   * The window `dailyAiLimit` counts in (2026-10-07), `'day'` or `'week'`.
+   * Absent leaves it alone, so a PATCH that names only `dailyAiLimit` keeps
+   * the window the account has. Written by the operator AND by the biller's
+   * credential.
+   */
+  aiLimitPeriod?: AiLimitPeriod;
+  /**
    * When the AI allowance ends. Absent leaves it alone; `null` clears it, so
    * both are keyed on the property's PRESENCE rather than on its nullness.
    */
@@ -807,6 +830,10 @@ function parseAccountPatch(body: JsonValue): ParseAccountPatchResult {
       return { ok: false, reason: `dailyAiLimit must be an integer between 0 and ${MAX_DAILY_AI_LIMIT}` };
     }
     patch.dailyAiLimit = limit;
+  }
+  if (fields.aiLimitPeriod !== undefined) {
+    if (!isAiLimitPeriod(fields.aiLimitPeriod)) return { ok: false, reason: 'aiLimitPeriod must be "day" or "week"' };
+    patch.aiLimitPeriod = fields.aiLimitPeriod;
   }
   if (fields.allowanceExpiresAt !== undefined) {
     const expiry = parseAllowanceExpiresAt(fields.allowanceExpiresAt);
@@ -1293,7 +1320,7 @@ export function createAdminRoutes(options: AdminRoutesOptions): Router {
         // silence must never read as consent.
         res.status(400).json({
           error:
-            'a patch must name at least one of role, dailyAiLimit, allowanceExpiresAt, freeDailyAiLimit, capabilities, trialScans, suspended, displayName, label',
+            'a patch must name at least one of role, dailyAiLimit, aiLimitPeriod, allowanceExpiresAt, freeDailyAiLimit, capabilities, trialScans, suspended, displayName, label',
         });
         return;
       }
@@ -1305,6 +1332,7 @@ export function createAdminRoutes(options: AdminRoutesOptions): Router {
         label,
         role,
         dailyAiLimit,
+        aiLimitPeriod,
         freeDailyAiLimit,
         suspended,
         trialScans,
@@ -1335,6 +1363,7 @@ export function createAdminRoutes(options: AdminRoutesOptions): Router {
       if (
         role !== undefined ||
         dailyAiLimit !== undefined ||
+        aiLimitPeriod !== undefined ||
         allowanceExpiresAt !== undefined ||
         freeDailyAiLimit !== undefined ||
         capabilityRecord !== undefined ||
@@ -1346,6 +1375,7 @@ export function createAdminRoutes(options: AdminRoutesOptions): Router {
           accountId,
           role,
           dailyAiLimit,
+          aiLimitPeriod,
           allowanceExpiresAt,
           freeDailyAiLimit,
           capabilities: capabilityRecord,

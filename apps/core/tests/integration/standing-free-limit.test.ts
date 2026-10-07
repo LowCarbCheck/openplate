@@ -64,7 +64,7 @@ async function startInstance(input: { defaultFreeDailyAiLimit: number | null }):
     standing:
       input.defaultFreeDailyAiLimit === null
         ? null
-        : { ...NO_INSTANCE_STANDING, defaultFreeDailyAiLimit: input.defaultFreeDailyAiLimit },
+        : { ...NO_INSTANCE_STANDING, defaultFreeAiLimit: { limit: input.defaultFreeDailyAiLimit, period: 'day' } },
   });
 }
 

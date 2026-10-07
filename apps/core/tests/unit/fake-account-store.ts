@@ -211,6 +211,7 @@ export function createFakeAccountStore(): FakeAccountStore {
       // clears the name, so both are keyed on the property's presence.
       if (input.role !== undefined) account.role = input.role;
       if (input.dailyAiLimit !== undefined) account.dailyAiLimit = input.dailyAiLimit;
+      if (input.aiLimitPeriod !== undefined) account.aiLimitPeriod = input.aiLimitPeriod;
       if (input.allowanceExpiresAt !== undefined) account.allowanceExpiresAt = input.allowanceExpiresAt;
       if (input.freeDailyAiLimit !== undefined) account.freeDailyAiLimit = input.freeDailyAiLimit;
       if (input.capabilities !== undefined) account.capabilities = input.capabilities;
@@ -257,6 +258,18 @@ export function createFakeAccountStore(): FakeAccountStore {
       return aiUsage.get(`${input.accountId}:${input.day}`) ?? 0;
     },
 
+    async aiUsageBetween(input: { accountId: number; fromDay: string; toDay: string }): Promise<number> {
+      // Day keys are `YYYY-MM-DD`, so a string comparison is a date one.
+      let total = 0;
+      for (const [key, count] of aiUsage) {
+        const [accountId, day] = key.split(':');
+        if (Number(accountId) !== input.accountId || day === undefined) continue;
+        if (day < input.fromDay || day > input.toDay) continue;
+        total += count;
+      }
+      return total;
+    },
+
     seedAiUsage(input: { accountId: number; day: string; count: number }): void {
       aiUsage.set(`${input.accountId}:${input.day}`, input.count);
     },
@@ -301,6 +314,7 @@ export function createFakeAccountStore(): FakeAccountStore {
         displayName: input.account.displayName,
         role: invite.role,
         dailyAiLimit: memberGrant === null ? 0 : invite.dailyAiLimit,
+        aiLimitPeriod: 'day',
         freeDailyAiLimit: isMember ? 0 : invite.dailyAiLimit,
         // No seeded invite carries a capability record: the instance default decides.
         capabilities: null,

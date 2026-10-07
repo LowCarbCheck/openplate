@@ -26,12 +26,14 @@ import { scrubPayloads } from '../../src/ai/scrub.js';
 import type { AiQuotaStore, ReserveResult } from '../../src/ai/quota-store.js';
 import { createBearerAuthMiddleware } from '../../src/server/bearer-auth.js';
 import { utcDayKey } from '../../src/lib/utc-day.js';
-import type { JsonValue } from '../../src/lib/json.js';
+import { asObject, type JsonValue } from '../../src/lib/json.js';
+import type { AiLimitPeriod } from '../../src/protocol.js';
 import { hashToken } from '../../src/lib/tokens.js';
 import type { LogFields, Logger } from '../../src/logger.js';
 import { createAuthFixture, type AuthFixture } from './auth-context-fixture.js';
 import { photoBody, readLegacyCases } from './legacy-request-bodies.js';
-import { createUnusedTrialScanStore } from './fake-trial-scans.js';
+import { NO_FREE_BOUND } from '../../src/ai/free-bound.js';
+import { createUnusedFreeBoundStore, createUnusedTrialScanStore } from './fake-trial-scans.js';
 import { NO_INSTANCE_STANDING, type InstanceStanding } from '../../src/accounts/instance-standing.js';
 
 const servers: Server[] = [];
@@ -126,7 +128,7 @@ interface RecordingQuota extends AiQuotaStore {
   instanceDays: string[];
   /**
    * Every call in order, as `'instance-reserve'`, `'reserve'`,
-   * `'instance-release'`, `'release'`.
+   * `'reserve-window'`, `'instance-release'`, `'release'`.
    *
    * THE ORDER IS A PROPERTY, not a detail. "The instance's unit is taken
    * before the account's" cannot be observed from two counters: both are 1
@@ -137,6 +139,8 @@ interface RecordingQuota extends AiQuotaStore {
   weights: number[];
   /** Every cost the proxy added to the instance's day, in order (2026-10-05). */
   costs: { day: string; costMicroUsd: number }[];
+  /** The days every window reserve summed, in order (2026-10-07). */
+  windows: { fromDay: string; day: string }[];
 }
 
 function createRecordingQuota(
@@ -144,6 +148,7 @@ function createRecordingQuota(
 ): RecordingQuota {
   const store: RecordingQuota = {
     ...createUnusedTrialScanStore(),
+    ...createUnusedFreeBoundStore(),
     reserves: 0,
     releases: 0,
     count: 0,
@@ -154,6 +159,7 @@ function createRecordingQuota(
     calls: [],
     weights: [],
     costs: [],
+    windows: [],
     async reserveInstance(input: { day: string; limit: number; weight: number }): Promise<ReserveResult> {
       store.instanceReserves += 1;
       store.instanceDays.push(input.day);
@@ -182,6 +188,25 @@ function createRecordingQuota(
       store.weights.push(input.weight);
       // The real store's rule, reproduced: the limit is the predicate, and a
       // refusal reports the limit as spent.
+      if (store.count + input.weight > (options.failAt ?? input.limit)) {
+        return { ok: false, used: input.limit, limit: input.limit };
+      }
+      store.count += input.weight;
+      return { ok: true, used: store.count, limit: input.limit };
+    },
+    async reserveWindow(input: {
+      accountId: number;
+      fromDay: string;
+      day: string;
+      limit: number;
+      weight: number;
+    }): Promise<ReserveResult> {
+      store.reserves += 1;
+      store.calls.push('reserve-window');
+      store.weights.push(input.weight);
+      store.windows.push({ fromDay: input.fromDay, day: input.day });
+      // The real store's rule over one counter: `count` stands for the sum
+      // of the window's days, and a refusal reports the limit as spent.
       if (store.count + input.weight > (options.failAt ?? input.limit)) {
         return { ok: false, used: input.limit, limit: input.limit };
       }
@@ -227,6 +252,8 @@ async function startProxy(options: {
   dailyAiLimit?: number;
   /** When the account's paid AI window ends. Absent means no paid window, which is what a new account has. */
   allowanceExpiresAt?: Date;
+  /** The window the paid limit counts in. Absent is `'day'`, what every account nothing moved holds. Read only with `allowanceExpiresAt`. */
+  aiLimitPeriod?: AiLimitPeriod;
   /** The standing free grant beside a paid window. Absent means none. Read only with `allowanceExpiresAt`. */
   freeDailyAiLimit?: number;
   /**
@@ -271,6 +298,7 @@ async function startProxy(options: {
       accountId: account.id,
       allowanceExpiresAt: options.allowanceExpiresAt,
       dailyAiLimit: options.dailyAiLimit ?? 200,
+      aiLimitPeriod: options.aiLimitPeriod ?? 'day',
       freeDailyAiLimit: options.freeDailyAiLimit ?? 0,
     });
   }
@@ -313,6 +341,7 @@ async function startProxy(options: {
       instanceDailyLimit: options.instanceDailyLimit ?? null,
       trialInstanceDailyLimit: null,
       trialNetwork: null,
+      freeBound: NO_FREE_BOUND,
       // The production wiring's shape with no model: the caller's model
       // passes, and the output ceiling is still written in (M256).
       tiers: options.tiers ?? legacyModelTiers({}),
@@ -890,6 +919,103 @@ test('a spent allowance is 429 with a Retry-After to the next UTC midnight', asy
   await harness.close();
 });
 
+// ── The window of a limit (2026-10-07) ─────────────────────────────────────
+
+/** The fixture clock is Tuesday 2026-08-04T10:00:00Z: the week began Monday 2026-08-03, and resets Monday 2026-08-10. */
+const SECONDS_TO_NEXT_MONDAY = (5 * 24 + 14) * 60 * 60;
+
+test('a weekly paid limit sums the week from Monday, and a spent week is a 429 to the next Monday', async () => {
+  const upstream = await startFakeUpstream();
+  const quota = createRecordingQuota();
+  const harness = await startProxy({
+    upstreamBaseUrl: upstream.baseUrl,
+    dailyAiLimit: 20,
+    aiLimitPeriod: 'week',
+    allowanceExpiresAt: new Date('2026-09-01T00:00:00.000Z'),
+    quota,
+  });
+
+  const first = await postCompletion(harness);
+  assert.equal(first.status, 200);
+  assert.deepEqual(quota.calls, ['reserve-window'], 'a weekly grant takes the window reserve, never the daily one');
+  assert.deepEqual(quota.windows, [{ fromDay: '2026-08-03', day: '2026-08-04' }]);
+  assert.equal(first.headers.get('x-quota-limit'), '20');
+
+  quota.count = 20;
+  const spent = await postCompletion(harness);
+  assert.equal(spent.status, 429);
+  assert.equal(Number(spent.headers.get('retry-after')), SECONDS_TO_NEXT_MONDAY);
+  const body: JsonValue = await spent.json();
+  assert.deepEqual(body, {
+    error: 'weekly quota spent: 20 of 20 units used, and this request needs 1. It resets at 2026-08-10T00:00:00.000Z.',
+    code: 'ai-quota-spent',
+    period: 'week',
+    used: 20,
+    limit: 20,
+    weight: 1,
+    resetsAt: '2026-08-10T00:00:00.000Z',
+  });
+  assert.equal(upstream.received.length, 1, 'the refused request must not reach the provider');
+
+  await harness.close();
+});
+
+test('CONTROL: a daily paid limit, the old plan, keeps the daily reserve and the reset at midnight', async () => {
+  const upstream = await startFakeUpstream();
+  const quota = createRecordingQuota();
+  const harness = await startProxy({
+    upstreamBaseUrl: upstream.baseUrl,
+    dailyAiLimit: 25,
+    allowanceExpiresAt: new Date('2026-09-01T00:00:00.000Z'),
+    quota,
+  });
+
+  const first = await postCompletion(harness);
+  assert.equal(first.status, 200);
+  assert.deepEqual(quota.calls, ['reserve'], 'a daily grant keeps the one statement reserve');
+  assert.deepEqual(quota.windows, []);
+
+  quota.count = 25;
+  const spent = await postCompletion(harness);
+  assert.equal(spent.status, 429);
+  assert.equal(Number(spent.headers.get('retry-after')), 14 * 60 * 60);
+  const body = asObject(await spent.json());
+  // The sentence is the one every older client and log line has read, word for word.
+  assert.equal(
+    body?.error,
+    'daily quota spent: 25 of 25 units used, and this request needs 1. It resets at 2026-08-05T00:00:00.000Z.',
+  );
+  assert.equal(body?.period, 'day');
+  assert.equal(body?.resetsAt, '2026-08-05T00:00:00.000Z');
+
+  await harness.close();
+});
+
+test('a weekly instance default holds a new account per week, and an own daily free limit stays per day', async () => {
+  const upstream = await startFakeUpstream();
+  const weeklyDefault = { ...NO_INSTANCE_STANDING, defaultFreeAiLimit: { limit: 10, period: 'week' as const } };
+  const fresh = await startProxy({ upstreamBaseUrl: upstream.baseUrl, dailyAiLimit: 0, standing: weeklyDefault });
+  const freshResponse = await postCompletion(fresh);
+  assert.equal(freshResponse.status, 200);
+  assert.equal(freshResponse.headers.get('x-quota-limit'), '10');
+  assert.deepEqual(fresh.quota.calls, ['reserve-window']);
+  await fresh.close();
+
+  // THE CONTROL, a Beta supporter: ten a day of their own, on the same weekly instance.
+  const supporter = await startProxy({
+    upstreamBaseUrl: upstream.baseUrl,
+    dailyAiLimit: 0,
+    freeDailyAiLimit: 10,
+    allowanceExpiresAt: new Date('2026-08-01T00:00:00.000Z'),
+    standing: weeklyDefault,
+  });
+  const supporterResponse = await postCompletion(supporter);
+  assert.equal(supporterResponse.status, 200);
+  assert.equal(supporterResponse.headers.get('x-quota-limit'), '10');
+  assert.deepEqual(supporter.quota.calls, ['reserve'], 'an own free limit is counted per day');
+  await supporter.close();
+});
+
 // ── The instance's standing free limit (2026-10-05) ────────────────────────
 
 test('an account with no AI of its own is held to the instance default, and refused at it with a 429', async () => {
@@ -900,7 +1026,7 @@ test('an account with no AI of its own is held to the instance default, and refu
   const harness = await startProxy({
     upstreamBaseUrl: upstream.baseUrl,
     dailyAiLimit: 0,
-    standing: { ...NO_INSTANCE_STANDING, defaultFreeDailyAiLimit: 3 },
+    standing: { ...NO_INSTANCE_STANDING, defaultFreeAiLimit: { limit: 3, period: 'day' } },
   });
 
   const first = await postCompletion(harness);
@@ -941,7 +1067,7 @@ test('an own free limit is kept whatever the default is, and a live paid window 
     dailyAiLimit: 200,
     freeDailyAiLimit: 10,
     allowanceExpiresAt: new Date('2026-08-04T09:00:00.000Z'),
-    standing: { ...NO_INSTANCE_STANDING, defaultFreeDailyAiLimit: 3 },
+    standing: { ...NO_INSTANCE_STANDING, defaultFreeAiLimit: { limit: 3, period: 'day' } },
   });
   const ownResponse = await postCompletion(own);
   assert.equal(ownResponse.status, 200);
@@ -952,7 +1078,7 @@ test('an own free limit is kept whatever the default is, and a live paid window 
     upstreamBaseUrl: upstream.baseUrl,
     dailyAiLimit: 200,
     allowanceExpiresAt: new Date('2026-08-05T09:00:00.000Z'),
-    standing: { ...NO_INSTANCE_STANDING, defaultFreeDailyAiLimit: 3 },
+    standing: { ...NO_INSTANCE_STANDING, defaultFreeAiLimit: { limit: 3, period: 'day' } },
   });
   const paidResponse = await postCompletion(paid);
   assert.equal(paidResponse.status, 200);
@@ -966,7 +1092,7 @@ test('a paid period that ended falls back to the instance default, not to allowa
     upstreamBaseUrl: upstream.baseUrl,
     dailyAiLimit: 200,
     allowanceExpiresAt: new Date('2026-08-04T09:00:00.000Z'),
-    standing: { ...NO_INSTANCE_STANDING, defaultFreeDailyAiLimit: 3 },
+    standing: { ...NO_INSTANCE_STANDING, defaultFreeAiLimit: { limit: 3, period: 'day' } },
   });
 
   const response = await postCompletion(harness);
@@ -1413,7 +1539,7 @@ test('a successful call stamps last_seen_at, and a failed one does not', async (
   await harness.close();
 });
 
-// ── What one request carries in, and what it weighs (2026-09-30) ────────────
+// ── What one request carries in (2026-09-30), and its one unit (2026-10-07) ─
 
 /** One user message of `bytes` characters of text, as a body. */
 function textRequest(bytes: number): JsonValue {
@@ -1463,45 +1589,54 @@ test('a body over an input bound is 400 ai-request-too-large, naming the bound, 
   await harness.close();
 });
 
-test('a heavy request reserves its weight on the account and the instance, and a 4xx gives the same weight back', async () => {
+test('a large request, a long pantry list near the text bound, counts ONE unit on the account and the instance (2026-10-07)', async () => {
   const upstream = await startFakeUpstream();
   const harness = await startProxy({ upstreamBaseUrl: upstream.baseUrl, dailyAiLimit: 10, instanceDailyLimit: 10 });
 
-  // About 10,000 estimated tokens: two units of 8,192.
-  const heavy = await postCompletion(harness, textRequest(40_000));
-  assert.equal(heavy.status, 200);
-  assert.equal(heavy.headers.get('x-quota-used'), '2');
+  // 47 KB of text, about 12,000 estimated tokens: two units under the old
+  // weight, one now. One action a person starts is one scan.
+  const large = await postCompletion(harness, textRequest(47 * 1024));
+  assert.equal(large.status, 200);
+  assert.equal(large.headers.get('x-quota-used'), '1');
+  assert.equal(harness.quota.count, 1);
+  assert.equal(harness.quota.instanceCount, 1);
+
+  const small = await postCompletion(harness, textRequest(100));
+  assert.equal(small.headers.get('x-quota-used'), '2');
+  assert.deepEqual(harness.quota.weights, [1, 1]);
+
+  // THE CONTROL: one byte over the text bound is still refused, and counts nothing.
+  const oversize = await postCompletion(harness, textRequest(48 * 1024 + 1));
+  assert.equal(oversize.status, 400);
   assert.equal(harness.quota.count, 2);
   assert.equal(harness.quota.instanceCount, 2);
-
-  // THE CONTROL: a plate-scan-sized request is one unit.
-  const light = await postCompletion(harness, textRequest(12_000));
-  assert.equal(light.headers.get('x-quota-used'), '3');
-  assert.deepEqual(harness.quota.weights, [2, 1]);
+  assert.equal(upstream.received.length, 2);
 
   await harness.close();
 
   const refusing = await startFakeUpstream(() => ({ status: 400, body: '{}' }));
   const released = await startProxy({ upstreamBaseUrl: refusing.baseUrl, dailyAiLimit: 10, instanceDailyLimit: 10 });
-  assert.equal((await postCompletion(released, textRequest(40_000))).status, 400);
-  assert.equal(released.quota.count, 0, 'the release gave back both units, not one');
+  assert.equal((await postCompletion(released, textRequest(47 * 1024))).status, 400);
+  assert.equal(released.quota.count, 0, 'the release gave back the one unit');
   assert.equal(released.quota.instanceCount, 0);
   await released.close();
 });
 
-test('a weight that does not fit what is left of the allowance is 429, and the instance units go back', async () => {
+test('with one unit left a large request still fits, and the next one is 429 needing one', async () => {
   const upstream = await startFakeUpstream();
   const harness = await startProxy({ upstreamBaseUrl: upstream.baseUrl, dailyAiLimit: 2, instanceDailyLimit: 10 });
 
   assert.equal((await postCompletion(harness, textRequest(100))).status, 200);
-  const refused = await postCompletion(harness, textRequest(40_000));
+  assert.equal((await postCompletion(harness, textRequest(47 * 1024))).status, 200);
+  const refused = await postCompletion(harness, textRequest(100));
   assert.equal(refused.status, 429);
   // SAFETY: the handler answers every refusal as a JSON object, and a body
   // that did not parse would throw here rather than reach the assertion.
-  const body = (await refused.json()) as { error?: string };
-  assert.match(body.error ?? '', /units used, and this request needs 2/);
-  assert.equal(harness.quota.instanceCount, 1, 'the heavy request took nothing from the instance in the end');
-  assert.equal(upstream.received.length, 1);
+  const body = (await refused.json()) as { error?: string; weight?: number };
+  assert.match(body.error ?? '', /2 of 2 units used, and this request needs 1/);
+  assert.equal(body.weight, 1);
+  assert.equal(harness.quota.instanceCount, 2, 'the refused request took nothing from the instance in the end');
+  assert.equal(upstream.received.length, 2);
 
   await harness.close();
 });

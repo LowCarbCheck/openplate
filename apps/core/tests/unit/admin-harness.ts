@@ -38,7 +38,7 @@ import {
 } from './feedback-harness.js';
 import type { FeedbackReportDetail } from '../../src/feedback/feedback-admin-store.js';
 import { createFakeBlobRollbackStore, type FakeBlobRollbackStore } from './fake-blob-rollback-store.js';
-import { createUnusedTrialScanStore } from './fake-trial-scans.js';
+import { createUnusedFreeBoundStore, createUnusedTrialScanStore } from './fake-trial-scans.js';
 import { DEFAULT_AI_MAX_OUTPUT_TOKENS } from '../../src/ai/chat-body-policy.js';
 import { legacyModelTiers } from '../../src/ai/model-tiers.js';
 import { DEFAULT_CHAT_INPUT_POLICY } from '../../src/ai/chat-input-bounds.js';
@@ -150,7 +150,11 @@ export interface StartAdminHarnessOptions {
 function createStubQuota(): AiQuotaStore {
   return {
     ...createUnusedTrialScanStore(),
+    ...createUnusedFreeBoundStore(),
     async reserve(input: { accountId: number; day: string; limit: number }): Promise<ReserveResult> {
+      return { ok: true, used: 1, limit: input.limit };
+    },
+    async reserveWindow(input: { limit: number }): Promise<ReserveResult> {
       return { ok: true, used: 1, limit: input.limit };
     },
     async release(): Promise<void> {},

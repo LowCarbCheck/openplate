@@ -68,7 +68,12 @@ export const SERVICE_PRINCIPAL_ROUTES: readonly AdminRouteRef[] = [
 ];
 
 /**
- * The only three fields a service-principal PATCH may name.
+ * The only four fields a service-principal PATCH may name.
+ *
+ * `aiLimitPeriod` is the fourth (2026-10-07): the window the biller's
+ * `dailyAiLimit` counts in, `'day'` or `'week'`. A plan sold per week has to
+ * say so beside its number. Moving the window cannot raise the number past
+ * the biller's ceiling below, and it never touches the free grant.
  *
  * `capabilities` is the third (2026-10-05): the labels of the AI features an
  * account may use, which a payment turns on and a lapse turns off. Writing a
@@ -82,7 +87,12 @@ export const SERVICE_PRINCIPAL_ROUTES: readonly AdminRouteRef[] = [
  * absent deliberately: paying for a plan buys an allowance and features, and
  * it must not be able to buy an administrator or a standing grant.
  */
-export const SERVICE_PRINCIPAL_PATCH_FIELDS: readonly string[] = ['allowanceExpiresAt', 'dailyAiLimit', 'capabilities'];
+export const SERVICE_PRINCIPAL_PATCH_FIELDS: readonly string[] = [
+  'allowanceExpiresAt',
+  'dailyAiLimit',
+  'aiLimitPeriod',
+  'capabilities',
+];
 
 /** The machine code for a route this credential may not reach. A code, not a sentence: the caller is a program. */
 export const SERVICE_SCOPE_REFUSAL = 'service-scope';

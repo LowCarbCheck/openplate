@@ -1274,6 +1274,21 @@ test('AI_MAX_OUTPUT_TOKENS defaults to 8192, takes a positive integer, and refus
   }
 });
 
+test('the two retired weight settings boot with one warning each, and the size bounds still parse (2026-10-07)', () => {
+  // THE CONTROL: an environment without them warns about nothing.
+  assert.deepEqual(parseConfig(baseEnv()).retiredSettingWarnings, []);
+  const config = parseConfig(baseEnv({ AI_UNIT_INPUT_TOKENS: '8192', AI_IMAGE_INPUT_TOKENS: '1500' }));
+  assert.equal(config.retiredSettingWarnings.length, 2);
+  assert.match(
+    config.retiredSettingWarnings[0] ?? '',
+    /^AI_UNIT_INPUT_TOKENS is no longer read: every AI request counts one unit/,
+  );
+  assert.match(config.retiredSettingWarnings[1] ?? '', /^AI_IMAGE_INPUT_TOKENS is no longer read/);
+  // Not even an invalid value stops the boot: nothing reads it.
+  assert.equal(parseConfig(baseEnv({ AI_UNIT_INPUT_TOKENS: 'lots' })).retiredSettingWarnings.length, 1);
+  assert.deepEqual(config.aiInputPolicy, { maxImageParts: 1, maxTextBytes: 48 * 1024, maxMessages: 4 });
+});
+
 // ── DEFAULT_FREE_DAILY_AI_LIMIT (2026-10-05) ────────────────────────────────
 
 test('the standing free daily limit is off unless set, and unset, empty and 0 all mean off', () => {
@@ -1303,6 +1318,55 @@ test('a standing free daily limit beside a scan trial stops the boot, naming bot
   assert.equal(parseConfig(baseEnv({ ...TRIAL_ENV })).defaultFreeDailyAiLimit, 0);
   assert.equal(parseConfig(baseEnv({ DEFAULT_FREE_DAILY_AI_LIMIT: '3' })).trial, null);
   assert.equal(parseConfig(baseEnv({ ...TRIAL_ENV, DEFAULT_FREE_DAILY_AI_LIMIT: '0' })).trial?.scans, 10);
+});
+
+// ── DEFAULT_FREE_WEEKLY_AI_LIMIT (2026-10-07) ───────────────────────────────
+
+test('the standing free weekly limit is off unless set, and unset, empty and 0 all mean off', () => {
+  assert.equal(parseConfig(baseEnv()).defaultFreeWeeklyAiLimit, 0);
+  assert.equal(parseConfig(baseEnv({ DEFAULT_FREE_WEEKLY_AI_LIMIT: '' })).defaultFreeWeeklyAiLimit, 0);
+  assert.equal(parseConfig(baseEnv({ DEFAULT_FREE_WEEKLY_AI_LIMIT: '0' })).defaultFreeWeeklyAiLimit, 0);
+  const weekly = parseConfig(baseEnv({ DEFAULT_FREE_WEEKLY_AI_LIMIT: ' 10 ' }));
+  assert.equal(weekly.defaultFreeWeeklyAiLimit, 10);
+  // It is not the daily setting under another name.
+  assert.equal(weekly.defaultFreeDailyAiLimit, 0);
+});
+
+test('a standing free weekly limit that is not a whole number from 0 to the ceiling stops the boot', () => {
+  for (const value of ['-1', '2.5', 'ten', '10001']) {
+    assert.throws(
+      () => parseConfig(baseEnv({ DEFAULT_FREE_WEEKLY_AI_LIMIT: value })),
+      /DEFAULT_FREE_WEEKLY_AI_LIMIT/,
+      value,
+    );
+  }
+});
+
+test('the weekly and the daily free default together stop the boot, naming both', () => {
+  assert.throws(
+    () => parseConfig(baseEnv({ DEFAULT_FREE_WEEKLY_AI_LIMIT: '10', DEFAULT_FREE_DAILY_AI_LIMIT: '3' })),
+    /DEFAULT_FREE_WEEKLY_AI_LIMIT and DEFAULT_FREE_DAILY_AI_LIMIT/,
+  );
+  // THE CONTROL: a 0 beside the other is the same as unset.
+  assert.equal(
+    parseConfig(baseEnv({ DEFAULT_FREE_WEEKLY_AI_LIMIT: '10', DEFAULT_FREE_DAILY_AI_LIMIT: '0' }))
+      .defaultFreeWeeklyAiLimit,
+    10,
+  );
+  assert.equal(
+    parseConfig(baseEnv({ DEFAULT_FREE_WEEKLY_AI_LIMIT: '0', DEFAULT_FREE_DAILY_AI_LIMIT: '3' }))
+      .defaultFreeDailyAiLimit,
+    3,
+  );
+});
+
+test('a standing free weekly limit beside a scan trial stops the boot, naming both settings', () => {
+  assert.throws(
+    () => parseConfig(baseEnv({ ...TRIAL_ENV, DEFAULT_FREE_WEEKLY_AI_LIMIT: '10' })),
+    /DEFAULT_FREE_WEEKLY_AI_LIMIT.*TRIAL_SCANS.*TRIAL_DAILY_AI_LIMIT/s,
+  );
+  // THE CONTROL: a weekly limit of 0 beside the trial is no limit, and the trial boots.
+  assert.equal(parseConfig(baseEnv({ ...TRIAL_ENV, DEFAULT_FREE_WEEKLY_AI_LIMIT: '0' })).trial?.scans, 10);
 });
 
 // ── DEFAULT_CAPABILITIES and CAPABILITY_SCHEMA_MAP (2026-10-05) ─────────────

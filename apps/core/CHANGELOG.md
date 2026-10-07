@@ -7,6 +7,23 @@ change moves the minor.
 
 ## [Unreleased]
 
+This release has two migrations. 0034 adds one column with a default, so every existing account keeps exactly the limit it had, per day. 0035 adds one counter column with a default and one new table; nothing writes them unless an operator sets the free bounds.
+
+### Added
+
+- **An AI limit can count per week.** A new account column `ai_limit_period`, `day` or `week`, default `day`, says which window the paid `dailyAiLimit` counts in. A week runs from Monday 00:00 UTC to the next Monday 00:00 UTC, and its count is the sum of that week's rows in `ai_usage_days`; nothing about how usage is stored changed. A weekly reserve takes a per-account advisory lock, so parallel requests cannot overshoot the week. The admin PATCH and the biller's credential may write `aiLimitPeriod`; any other value is `400`, and a PATCH that names only `dailyAiLimit` keeps the window. The biller's single account read carries it too. An account's own free grant and the scan trial stay per day.
+- **A paid window never lowers an allowance.** While a paid window runs, the proxy compares it with the free grant as units per week (a day limit times seven) and counts the larger one, the paid limit on a tie. An own free limit of 10 a day therefore stays 10 a day under a paid limit of 20 a week.
+- **Optional bounds on free-grant traffic.** `AI_FREE_INSTANCE_DAILY_LIMIT` caps what all free accounts together spend per UTC day and takes their requests out of `AI_INSTANCE_DAILY_LIMIT`. `AI_FREE_NETWORK_DAILY_LIMIT` caps what one network spends on free grants per UTC day. Both are off when unset. A refusal is `503 ai-instance-ceiling`. Migration 0035 adds `ai_instance_days.free_count` and the table `ai_free_network_days`, which holds a keyed hash per network and day and is swept the next day.
+- **`DEFAULT_FREE_WEEKLY_AI_LIMIT`.** The standing free default, counted per week. Set it or `DEFAULT_FREE_DAILY_AI_LIMIT`, not both, and not beside the scan trial: each pair stops the boot. Unset or `0` is off, and nothing changes.
+- **The account view says what the proxy will count.** `GET /v1/auth/account` adds `aiLimitPeriod`, `freeAiLimitPeriod` and `aiQuota` (`kind`, `limit`, `period`, `used`, `resetsAt`, or `null` when the proxy would refuse). The admin view adds `aiLimitPeriod` and `aiUsedThisWeek`. All fields are additive.
+- **The 429 of a spent allowance carries fields.** The body keeps its `error` sentence, unchanged word for word for a daily limit, and adds `code` `ai-quota-spent`, `period`, `used`, `limit`, `weight` and `resetsAt`. `Retry-After` counts to the window's reset, the next Monday 00:00 UTC for a week. A weekly sentence starts `weekly quota spent:`.
+
+### Changed
+
+- **Every AI request counts one unit.** A request within the input bounds (`AI_MAX_IMAGE_PARTS`, `AI_MAX_TEXT_BYTES`, `AI_MAX_MESSAGES`) now counts one unit against the account's limit and against every instance ceiling, whatever its size. Before, a request near the text bound counted two. One action a person starts is one scan. A body over a bound is still `400 ai-request-too-large` and counts nothing. `AI_INSTANCE_DAILY_LIMIT`, `AI_TRIAL_INSTANCE_DAILY_LIMIT` and `AI_TRIAL_NETWORK_DAILY_LIMIT` now count requests.
+- **`AI_UNIT_INPUT_TOKENS` and `AI_IMAGE_INPUT_TOKENS` are no longer read.** The boot log warns when one is still set; the service still starts. The compose and quadlet files no longer set them.
+- **`move-accounts` writes `ai_limit_period` `day` on a moved account** and needs migration 0034 on the target. A source older than 0034 is still accepted.
+
 ## [0.36.0] - 2026-10-06
 
 ### Changed

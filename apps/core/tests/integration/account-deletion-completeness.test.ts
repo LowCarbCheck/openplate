@@ -52,6 +52,7 @@ import { createTrialAddressHasher } from '../../src/accounts/trial-address.js';
 import type { Database } from '../../src/db/client.js';
 import {
   aiBudgetAlerts,
+  aiFreeNetworkDays,
   aiInstanceDays,
   aiTrialIntakes,
   aiTrialNetworkDays,
@@ -179,7 +180,7 @@ const DECISIONS: ReadonlyMap<string, Decision> = new Map<string, Decision>([
     'ai_instance_days',
     keptOnPurpose({
       reason:
-        'instance wide sums per day (requests, trial requests, provider cost), no account column. A ceiling that fell on a delete ' +
+        'instance wide sums per day (requests, trial requests, free requests, provider cost), no account column. A ceiling that fell on a delete ' +
         'would hand spend back.',
       ends: 'none: one row per day with no personal data',
     }),
@@ -188,6 +189,15 @@ const DECISIONS: ReadonlyMap<string, Decision> = new Map<string, Decision>([
     'ai_trial_network_days',
     keptOnPurpose({
       reason: 'a keyed hash of a caller network and the day, with a count. No account, no address.',
+      ends: 'every row before today, hourly sweep (ai/usage-retention.ts)',
+    }),
+  ],
+  [
+    'ai_free_network_days',
+    keptOnPurpose({
+      reason:
+        'the free tier network bound (2026-10-07): a keyed hash of a caller network and the day, with a count. No ' +
+        'account, no address.',
       ends: 'every row before today, hourly sweep (ai/usage-retention.ts)',
     }),
   ],
@@ -651,6 +661,7 @@ async function seedAccountRows(db: Database, input: SeedInput): Promise<void> {
 async function seedSharedRows(db: Database): Promise<void> {
   await db.insert(aiInstanceDays).values({ day: DAY, count: 40, trialCount: 5, costMicroUsd: 1_200 });
   await db.insert(aiTrialNetworkDays).values({ day: DAY, networkHash: 'a-keyed-network-hash', count: 2 });
+  await db.insert(aiFreeNetworkDays).values({ day: DAY, networkHash: 'a-keyed-free-network-hash', count: 1 });
   await db.insert(aiBudgetAlerts).values({ period: 'monthly:2026-10' });
   await db.insert(pulseDays).values({ day: DAY, meals: 3, photos: 1, kcal: 1_500, protein: 100 });
   await db.insert(instanceSettings).values({ id: 1, nutrientReferenceBasis: 'dge' }).onConflictDoNothing();

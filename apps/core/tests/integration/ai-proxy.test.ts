@@ -889,41 +889,41 @@ test('with no model set, the caller model passes through and the output ceiling 
   }
 });
 
-// ── weighted units (2026-09-30) ────────────────────────────────────────────
+// ── one unit per request (2026-09-30, one since 2026-10-07) ────────────────
 
-test('parallel heavy requests never spend past the limit: the weight is inside the WHERE', async () => {
+test('parallel large requests never spend past the limit: each is one unit, and the count is inside the WHERE', async () => {
   const service = await startService({
     db: database.db,
     ai: { baseUrl: upstreamBaseUrl, apiKey: UPSTREAM_KEY, timeoutMs: 5_000, instanceDailyLimit: 100 },
   });
   try {
-    // A limit of 5 and requests of weight 2: two fit, a third would reach 6.
+    // A limit of 5 and eight requests near the text bound, which weighed 2
+    // each until 2026-10-07: now five fit, one unit each.
     const session = await service.signupThroughInvite({ email: 'heavy@example.org', dailyAiLimit: 5 });
-    const heavy = { model: 'm', messages: [{ role: 'user', content: 'x'.repeat(40_000) }] };
+    const large = { model: 'm', messages: [{ role: 'user', content: 'x'.repeat(47 * 1024) }] };
     const responses = await Promise.all(
-      Array.from({ length: 6 }, () =>
+      Array.from({ length: 8 }, () =>
         service.request<unknown>({
           method: 'POST',
           path: '/v1/chat/completions',
           accessToken: session.tokens.accessToken,
-          body: heavy,
+          body: large,
         }),
       ),
     );
-    assert.equal(responses.filter((response) => response.status === 200).length, 2);
-    assert.equal(responses.filter((response) => response.status === 429).length, 4);
-    assert.equal(await usageCount(session.account.id), 4, 'the account spent two units per answer, and no more');
-    assert.equal(await instanceCount(), 4, 'every refused request gave its instance units back');
+    assert.equal(responses.filter((response) => response.status === 200).length, 5);
+    assert.equal(responses.filter((response) => response.status === 429).length, 3);
+    assert.equal(await usageCount(session.account.id), 5, 'the account spent one unit per answer, and no more');
+    assert.equal(await instanceCount(), 5, 'every refused request gave its instance unit back');
 
-    // THE CONTROL: one unit is still left, and a light request takes it.
-    const light = await service.request<unknown>({
+    // THE CONTROL: nothing is left, so a small request is refused too.
+    const small = await service.request<unknown>({
       method: 'POST',
       path: '/v1/chat/completions',
       accessToken: session.tokens.accessToken,
       body: completionRequest(),
     });
-    assert.equal(light.status, 200);
-    assert.equal(light.headers.get('x-quota-used'), '5');
+    assert.equal(small.status, 429);
   } finally {
     await service.close();
   }

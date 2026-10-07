@@ -1,0 +1,2 @@
+ALTER TABLE "accounts" ADD COLUMN "ai_limit_period" text DEFAULT 'day' NOT NULL;--> statement-breakpoint
+ALTER TABLE "accounts" ADD CONSTRAINT "accounts_ai_limit_period" CHECK ("accounts"."ai_limit_period" IN ('day', 'week'));

@@ -152,6 +152,7 @@ async function compareWithSource(input: {
   const standing = await target.rows({ text: SELECT_TARGET_STANDING, values: [account.id] });
   const expectedStanding = [
     '0',
+    'day',
     String(input.standing.freeDailyAiLimit),
     'true',
     'true',

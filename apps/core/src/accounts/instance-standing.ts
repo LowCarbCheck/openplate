@@ -12,13 +12,17 @@
  * existed, and that includes every self-hosted instance. {@link NO_INSTANCE_STANDING}
  * is that state, for a test or a wiring that has nothing to say.
  */
+import { NO_FREE_AI_LIMIT, type AiLimitWindow } from './ai-allowance.js';
+
 export interface InstanceStanding {
   /**
-   * `DEFAULT_FREE_DAILY_AI_LIMIT`: the AI requests per UTC day an account gets
-   * when its own `free_daily_ai_limit` is `0`. `0` is off, and what an
-   * instance that did not set it has. See `accounts/ai-allowance.ts`.
+   * The free AI limit an account gets when its own `free_daily_ai_limit` is
+   * `0`, with its window: `DEFAULT_FREE_DAILY_AI_LIMIT` per UTC day, or
+   * `DEFAULT_FREE_WEEKLY_AI_LIMIT` per ISO week in UTC (2026-10-07). The two
+   * cannot both be set. A limit of `0` is off, and what an instance that set
+   * neither has. See `accounts/ai-allowance.ts`.
    */
-  defaultFreeDailyAiLimit: number;
+  defaultFreeAiLimit: AiLimitWindow;
   /**
    * `DEFAULT_CAPABILITIES`: the capabilities an account has when it holds no
    * record of its own. `null` is no check at all, which is what an instance
@@ -31,7 +35,7 @@ export interface InstanceStanding {
 
 /** The standing of an instance that configured none: no default free limit. */
 export const NO_INSTANCE_STANDING: InstanceStanding = {
-  defaultFreeDailyAiLimit: 0,
+  defaultFreeAiLimit: NO_FREE_AI_LIMIT,
   defaultCapabilities: null,
   capabilitySchemaMap: new Map(),
 };

@@ -39,6 +39,7 @@ import {
 } from '../../src/accounts/auth-handlers.js';
 import { REFRESH_TOKEN_TTL_MS, ACCESS_TOKEN_TTL_MS, hashToken } from '../../src/lib/tokens.js';
 import type { JsonObject } from '../../src/lib/json.js';
+import type { AccountView } from '../../src/protocol.js';
 import {
   createAuthFixture,
   sampleAuthHash,
@@ -619,6 +620,10 @@ test('GET /account reports the whole AccountView, including today’s AI spend',
   assert.equal(outcome.status, 'ok');
   if (outcome.status !== 'ok') throw new Error('unreachable');
   assert.deepEqual(Object.keys(outcome.body.account).toSorted(), [
+    // 2026-10-07: the window of the paid limit, "day" here.
+    'aiLimitPeriod',
+    // 2026-10-07: the grant the proxy would pick now and its count, `null` here because this account holds none.
+    'aiQuota',
     'aiUsedToday',
     'allowanceExpiresAt',
     // 2026-10-05: the capabilities the proxy checks, `null` here because no record and no default exist.
@@ -627,6 +632,8 @@ test('GET /account reports the whole AccountView, including today’s AI spend',
     'dailyAiLimit',
     'displayName',
     'email',
+    // 2026-10-07: the window of the free grant, "day" here.
+    'freeAiLimitPeriod',
     // The standing free grant (2026-09-30), `0` here.
     'freeDailyAiLimit',
     // The health-data consent, `null` here because this fixture's instance asks for none.
@@ -655,7 +662,10 @@ test('GET /account reports the whole AccountView, including today’s AI spend',
 test('the account view reports the free limit the proxy enforces: the column, or the instance default', async () => {
   const fixture = inviteFixture();
   const session = await signUp(fixture);
-  const withDefault = { ...fixture.ctx, standing: { ...NO_INSTANCE_STANDING, defaultFreeDailyAiLimit: 3 } };
+  const withDefault = {
+    ...fixture.ctx,
+    standing: { ...NO_INSTANCE_STANDING, defaultFreeAiLimit: { limit: 3, period: 'day' as const } },
+  };
   const read = async (ctx: typeof fixture.ctx): Promise<number> => {
     const outcome = await handleGetAccount({ accountId: session.account.id }, ctx);
     if (outcome.status !== 'ok') throw new Error('the account read failed');
@@ -664,13 +674,86 @@ test('the account view reports the free limit the proxy enforces: the column, or
 
   // THE CONTROL: no standing at all is the column, which is 0 for this account.
   assert.equal(await read(fixture.ctx), 0);
-  assert.equal(await read({ ...fixture.ctx, standing: { ...NO_INSTANCE_STANDING, defaultFreeDailyAiLimit: 0 } }), 0);
+  assert.equal(
+    await read({
+      ...fixture.ctx,
+      standing: { ...NO_INSTANCE_STANDING, defaultFreeAiLimit: { limit: 0, period: 'day' as const } },
+    }),
+    0,
+  );
   // A default fills in for an account with no free limit of its own.
   assert.equal(await read(withDefault), 3);
   // An own limit wins, whichever way it compares with the default.
   await fixture.store.updateStanding({ accountId: session.account.id, freeDailyAiLimit: 10 });
   assert.equal(await read(withDefault), 10);
   assert.equal(await read(fixture.ctx), 10);
+});
+
+test('the account view reports the quota the proxy would hold the next request to, summed over its window', async () => {
+  // The fixture clock is Tuesday 2026-08-04T10:00:00Z: the week began Monday 2026-08-03.
+  const fixture = inviteFixture();
+  const session = await signUp(fixture);
+  const id = session.account.id;
+  fixture.store.seedAiUsage({ accountId: id, day: '2026-08-02', count: 9 }); // Sunday, the week before
+  fixture.store.seedAiUsage({ accountId: id, day: '2026-08-03', count: 4 }); // Monday
+  fixture.store.seedAiUsage({ accountId: id, day: '2026-08-04', count: 2 }); // today
+  const read = async (): Promise<AccountView['aiQuota']> => {
+    const outcome = await handleGetAccount({ accountId: id }, fixture.ctx);
+    if (outcome.status !== 'ok') throw new Error('the account read failed');
+    return outcome.body.account.aiQuota;
+  };
+
+  // No grant at all: the proxy would refuse, so there is no quota to show.
+  assert.equal(await read(), null);
+
+  await fixture.store.updateStanding({
+    accountId: id,
+    dailyAiLimit: 40,
+    aiLimitPeriod: 'week',
+    allowanceExpiresAt: new Date('2026-09-01T00:00:00.000Z'),
+  });
+  assert.deepEqual(await read(), {
+    kind: 'paid',
+    limit: 40,
+    period: 'week',
+    used: 6,
+    resetsAt: '2026-08-10T00:00:00.000Z',
+  });
+
+  // THE CONTROL, the old plan: the same account per day counts today alone.
+  await fixture.store.updateStanding({ accountId: id, dailyAiLimit: 25, aiLimitPeriod: 'day' });
+  assert.deepEqual(await read(), {
+    kind: 'paid',
+    limit: 25,
+    period: 'day',
+    used: 2,
+    resetsAt: '2026-08-05T00:00:00.000Z',
+  });
+});
+
+test('the account view reports no quota for a scan trial whose scans are spent, as the proxy refuses it', async () => {
+  const fixture = inviteFixture();
+  const session = await signUp(fixture);
+  const id = session.account.id;
+  const read = async (): Promise<AccountView['aiQuota']> => {
+    const outcome = await handleGetAccount({ accountId: id }, fixture.ctx);
+    if (outcome.status !== 'ok') throw new Error('the account read failed');
+    return outcome.body.account.aiQuota;
+  };
+
+  // THE CONTROL: a trial with scans left is a trial quota, per day.
+  await fixture.store.updateStanding({ accountId: id, dailyAiLimit: 20, trialScans: 5 });
+  assert.deepEqual(await read(), {
+    kind: 'trial',
+    limit: 20,
+    period: 'day',
+    used: 0,
+    resetsAt: '2026-08-05T00:00:00.000Z',
+  });
+
+  // No scans granted is no scans left: the proxy answers trial-scans-spent.
+  await fixture.store.updateStanding({ accountId: id, trialScans: 0 });
+  assert.equal(await read(), null);
 });
 
 test('the account view reports the capabilities the proxy checks: own record, else the instance default, else null', async () => {

@@ -39,7 +39,8 @@ import { createSilentLogger } from '../../src/logger.js';
 import { hashToken } from '../../src/lib/tokens.js';
 import { MAX_BLOB_BYTES } from '../../src/protocol.js';
 import { createAuthFixture } from './auth-context-fixture.js';
-import { createUnusedTrialScanStore } from './fake-trial-scans.js';
+import { NO_FREE_BOUND } from '../../src/ai/free-bound.js';
+import { createUnusedFreeBoundStore, createUnusedTrialScanStore } from './fake-trial-scans.js';
 
 /** The production default, transcribed rather than imported: a test that reads the value it checks proves nothing. */
 const DEFAULT_AI_MAX_REQUEST_BYTES = 8_000_000;
@@ -57,7 +58,12 @@ function createAllowingQuota(): AiQuotaStore {
   let used = 0;
   return {
     ...createUnusedTrialScanStore(),
+    ...createUnusedFreeBoundStore(),
     async reserve(): Promise<ReserveResult> {
+      used += 1;
+      return { ok: true, used, limit: 1000 };
+    },
+    async reserveWindow(): Promise<ReserveResult> {
       used += 1;
       return { ok: true, used, limit: 1000 };
     },
@@ -129,6 +135,7 @@ async function startRoute(options: { maxRequestBytes?: number } = {}): Promise<R
       timeoutMs: 10_000,
     },
     quota: createAllowingQuota(),
+    freeBound: NO_FREE_BOUND,
     accounts: fixture.store,
     logger: createSilentLogger(),
     now: fixture.now,

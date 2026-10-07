@@ -476,8 +476,6 @@ services:
       AI_MAX_IMAGE_PARTS: ${AI_MAX_IMAGE_PARTS:-1}
       AI_MAX_TEXT_BYTES: ${AI_MAX_TEXT_BYTES:-49152}
       AI_MAX_MESSAGES: ${AI_MAX_MESSAGES:-4}
-      AI_UNIT_INPUT_TOKENS: ${AI_UNIT_INPUT_TOKENS:-8192}
-      AI_IMAGE_INPUT_TOKENS: ${AI_IMAGE_INPUT_TOKENS:-1500}
 
       # ── Members inviting people (optional) ──
       # The first two together or neither; the cap only with them. Empty means
@@ -536,6 +534,13 @@ services:
       # no end date and no trial. Empty or 0 means off. It cannot stand
       # beside the trial above: the boot stops naming both.
       DEFAULT_FREE_DAILY_AI_LIMIT: ${DEFAULT_FREE_DAILY_AI_LIMIT:-}
+      DEFAULT_FREE_WEEKLY_AI_LIMIT: ${DEFAULT_FREE_WEEKLY_AI_LIMIT:-}
+      # Opt-in bounds on free-grant traffic. Empty means off. The first is what
+      # every free account together may spend per UTC day, and takes free
+      # requests out of AI_INSTANCE_DAILY_LIMIT; the second is what one network
+      # may spend on free grants per UTC day.
+      AI_FREE_INSTANCE_DAILY_LIMIT: ${AI_FREE_INSTANCE_DAILY_LIMIT:-}
+      AI_FREE_NETWORK_DAILY_LIMIT: ${AI_FREE_NETWORK_DAILY_LIMIT:-}
 
       # ── AI feature permissions (optional) ──
       # DEFAULT_CAPABILITIES is what an account with no record of its own may

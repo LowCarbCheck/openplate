@@ -157,6 +157,10 @@ test('the account body carries exactly the documented metadata fields and nothin
   const account = asObject(asObject(body)?.account);
 
   assert.deepEqual(Object.keys(account ?? {}).toSorted(), [
+    // The window of the paid limit (2026-10-07), "day" or "week".
+    'aiLimitPeriod',
+    // The units since Monday 00:00 UTC (2026-10-07), a count like aiUsedToday.
+    'aiUsedThisWeek',
     'aiUsedToday',
     'allowanceExpiresAt',
     'blob',
@@ -168,6 +172,8 @@ test('the account body carries exactly the documented metadata fields and nothin
     'displayName',
     'email',
     // The standing free grant (2026-09-30), a number the operator set.
+    // The window of the free grant (2026-10-07), "day" for an own record.
+    'freeAiLimitPeriod',
     'freeDailyAiLimit',
     // Justified against ADR-0001: the health-data consent, a version string
     // and an instant. Art. 7(1) GDPR puts the burden of showing consent on

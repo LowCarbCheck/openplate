@@ -44,6 +44,7 @@ import { createMailer } from './mail/mailer.js';
 import { createDeclarationTemplateSource } from './mail/declaration-templates.js';
 import { createDrizzleAiCapacityReader, createDrizzleAiQuotaStore } from './ai/quota-store.js';
 import { createTrialNetworkHasher, type TrialNetworkShare } from './ai/trial-network.js';
+import { createFreeNetworkHasher, type FreeBound } from './ai/free-bound.js';
 import { defaultTierOf, describeModelTiers } from './ai/model-tiers.js';
 import { createUpstreamBudgetSource, upstreamBudgetKeyUrl } from './ai/upstream-budget.js';
 import { createBudgetAlerter, startBudgetWatch, type BudgetWatch } from './ai/budget-alert.js';
@@ -93,6 +94,17 @@ function trialNetworkShareOf(config: ServiceConfig): TrialNetworkShare | null {
   return {
     dailyLimit: config.aiTrialNetworkDailyLimit,
     hashNetwork: createTrialNetworkHasher(config.trialAddressPepper),
+  };
+}
+
+/** The opt-in free bounds (2026-10-07, `ai/free-bound.ts`), each part `null` when its setting is unset. */
+function freeBoundOf(config: ServiceConfig): FreeBound {
+  return {
+    instanceDailyLimit: config.aiFreeInstanceDailyLimit,
+    network:
+      config.aiFreeNetworkDailyLimit === null
+        ? null
+        : { dailyLimit: config.aiFreeNetworkDailyLimit, hashNetwork: createFreeNetworkHasher(config.serverSecret) },
   };
 }
 
@@ -165,7 +177,12 @@ async function main(): Promise<void> {
         letters: createThrottleStore(SIGNUP_LETTER_THROTTLE),
       }
     : null;
-  if (openSignup !== null && config.trial === null && config.defaultFreeDailyAiLimit === 0) {
+  if (
+    openSignup !== null &&
+    config.trial === null &&
+    config.defaultFreeDailyAiLimit === 0 &&
+    config.defaultFreeWeeklyAiLimit === 0
+  ) {
     logger.info('Open sign-up is on, and new accounts get no AI until an operator grants some');
   }
   if (openSignup !== null) {
@@ -189,8 +206,13 @@ async function main(): Promise<void> {
   // for the two readers of it: the account view (through the auth context) and
   // the AI proxy (which `create-app.ts` hands the same object). All-off, and so
   // today's behaviour, on an instance that set none of the variables.
+  // The two free defaults cannot both be set (`config.ts`), so at most one of
+  // them is above zero and decides the window.
   const standing: InstanceStanding = {
-    defaultFreeDailyAiLimit: config.defaultFreeDailyAiLimit,
+    defaultFreeAiLimit:
+      config.defaultFreeWeeklyAiLimit > 0
+        ? { limit: config.defaultFreeWeeklyAiLimit, period: 'week' }
+        : { limit: config.defaultFreeDailyAiLimit, period: 'day' },
     defaultCapabilities: config.defaultCapabilities,
     capabilitySchemaMap: config.capabilitySchemaMap,
   };
@@ -198,6 +220,12 @@ async function main(): Promise<void> {
     logger.info('A standing free daily AI limit is on: accounts with no limit of their own get it, and no scan trial', {
       defaultFreeDailyAiLimit: config.defaultFreeDailyAiLimit,
     });
+  }
+  if (config.defaultFreeWeeklyAiLimit > 0) {
+    logger.info(
+      'A standing free weekly AI limit is on: accounts with no limit of their own get it per week from Monday 00:00 UTC, and no scan trial',
+      { defaultFreeWeeklyAiLimit: config.defaultFreeWeeklyAiLimit },
+    );
   }
 
   const authContext: AuthContext = {
@@ -327,6 +355,7 @@ async function main(): Promise<void> {
           // ONE NETWORK'S SHARE OF IT (M270 spec 12), named under the pepper
           // the trial already requires, so the counter never holds an address.
           trialNetwork: trialNetworkShareOf(config),
+          freeBound: freeBoundOf(config),
           // THE SAME BINDING `/health` publishes below (M256): the default
           // tier's model is what `/health` names, and the proxy resolves every
           // request to a tier of this same set, so the two cannot disagree.
@@ -347,6 +376,7 @@ async function main(): Promise<void> {
     }),
   );
   for (const warning of config.aiTiersWarnings) logger.warn(warning);
+  for (const warning of config.retiredSettingWarnings) logger.warn(warning);
 
   // AN UPSTREAM KEY WITH NO NAMED MODEL. Non-fatal, like the two warnings
   // above: a self-built client that sends its own `model` still gets a proxied
@@ -590,6 +620,9 @@ async function main(): Promise<void> {
       trialAddressPepper: config.trialAddressPepper !== null,
       // Whether one network's share of the trial ceiling is enforced (M270 spec 12).
       trialNetworkShare: config.aiTrialNetworkDailyLimit !== null,
+      // Whether the free tier's bounds are enforced (2026-10-07), never the numbers.
+      freeInstanceCeiling: config.aiFreeInstanceDailyLimit !== null,
+      freeNetworkShare: config.aiFreeNetworkDailyLimit !== null,
       openSignup: openSignup !== null,
       // Whether a captcha guards that door, never a key.
       signupCaptcha: openSignup?.captcha != null,

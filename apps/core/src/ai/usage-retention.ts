@@ -135,6 +135,9 @@ export function startAiUsageRetention(options: AiUsageRetentionOptions): AiUsage
     // before today goes; a count in the log line, never a hash.
     const networks = await options.quota.purgeTrialNetworkDaysBefore({ day: utcDayKey(now) });
     if (networks > 0) logger.info('Deleted trial network counters from past days', { deleted: networks });
+    // THE SAME FOR THE FREE TIER'S NETWORK COUNTERS (2026-10-07, `ai/free-bound.ts`).
+    const freeNetworks = await options.quota.purgeFreeNetworkDaysBefore({ day: utcDayKey(now) });
+    if (freeNetworks > 0) logger.info('Deleted free network counters from past days', { deleted: freeNetworks });
     // THE DECLARATIONS, past the end of the third calendar year after the year
     // they arrived. The COUNT only: a row carries a name, an address and a
     // reason, and none of that belongs in a log line.
