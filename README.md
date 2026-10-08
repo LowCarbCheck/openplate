@@ -2,6 +2,25 @@
 
 # openplate
 
+<p>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/LowCarbCheck/openplate" alt="MIT license"></a>
+  <a href="https://github.com/LowCarbCheck/openplate/releases"><img src="https://img.shields.io/github/v/release/LowCarbCheck/openplate?filter=v*&label=app" alt="Latest app release"></a>
+  <a href="https://github.com/LowCarbCheck/openplate/commits/main"><img src="https://img.shields.io/github/last-commit/LowCarbCheck/openplate" alt="Last commit"></a>
+  <a href="https://github.com/LowCarbCheck/openplate/pkgs/container/openplate"><img src="https://img.shields.io/badge/image-ghcr.io-2496ED?logo=docker&logoColor=white" alt="Container image on GHCR"></a>
+  <img src="https://img.shields.io/badge/node-24-339933?logo=nodedotjs&logoColor=white" alt="Node 24">
+  <img src="https://img.shields.io/badge/self--hosted-yes-informational" alt="Self-hosted">
+</p>
+
+## What you get
+
+- **Photograph a plate, get the macros.** Your AI provider estimates carbs, protein, fat, and fiber. Use OpenRouter, Mistral, Anthropic, or any OpenAI-compatible endpoint.
+- **Host it for your friends and family.** Run one instance with `INSTANCE_MODE=managed`. Invite people from the admin screen. Users sign in with AI access preconfigured: no one pastes a key. Set daily or weekly allowances per person, and suspend users at any time. One provider key, one bill. See [how to host it](#host-it-for-your-friends-and-family).
+- **Local-first by default.** The app uses no accounts. The diary stays in the browser on your device, and the server has no database.
+- **Sync across devices, when you want it.** The device encrypts the diary before upload.
+- **Your own hardware for the AI.** Run the inference service with open-weight models. Plate photos stay on your network.
+- **Six languages.** English, German, French, Italian, Spanish, and Turkish.
+- **Free and open-source.** MIT license. One container runs the base setup.
+
 An open-source, self-hosted food tracker with **BYOK (bring-your-own-key) AI plate identification**. Take a photo of your plate. Your chosen AI provider (OpenRouter, Mistral, any OpenAI-compatible endpoint, or Anthropic) estimates the macros. You keep your key, your provider, and your data.
 
 **By default, there are no accounts.** There is no sign-up, no login, and no password. Open the app and start logging. Your diary lives in IndexedDB in your browser on your device. The app server has no database. An operator can run a managed instance instead, with `INSTANCE_MODE=managed`. There, an administrator invites people, each person gets an account and signs in, and accounts carry a shared AI allowance. Device sync is optional on either setup. A separate service handles it. The diary is encrypted on the device before upload. Whoever runs the core server keeps a backup key to reset forgotten passwords, and that key lets them read the diary.
@@ -40,6 +59,16 @@ To add services, pick a compose file:
 | Everything, [`compose.full.yml`](docker/topologies/compose.full.yml) | All of the above together. | Four containers. |
 
 See [`docker/topologies/`](docker/topologies/README.md) for setup and backup guides. Podman units live in [`docker/quadlet/`](docker/quadlet).
+
+### Host it for your friends and family
+
+Use the app and core setup with managed mode enabled. In managed mode, the core server acts as the AI proxy. You store one provider key. Users get an account and an allowance, and sign in with the AI ready.
+
+1. Start [`compose.core.yml`](docker/topologies/compose.core.yml) and set `INSTANCE_MODE=managed` on the app.
+2. Put your provider settings in the core `.env`: `UPSTREAM_BASE_URL`, `UPSTREAM_API_KEY` and `AI_ADVERTISED_MODEL`.
+3. Create the first invitation with `ADMIN_TOKEN`, as [Self-hosting](apps/app/docs/self-hosting.md#create-the-first-account) shows. Then invite others at `/admin` in the app.
+
+Set a hard spend cap on the provider key. The allowance tracks requests, not money. The operator holds a backup key that can read the diaries, so host only for people you trust. The [family setup guide](apps/app/docs/family-setup.md) compares this to giving each person a capped provider key, which requires no server.
 
 ### Hosted by the maintainers
 
@@ -86,7 +115,7 @@ make dev APP=app
 
 The pre-push hook is the only test gate. There is no cloud test runner. `make check` runs the drift check, then this gate for all three apps, without pushing. The gate and its hooks run without nix and without the toolbox. Node, pnpm, and make suffice for most stages. Only one full gate runs at a time on a host: a push takes an exclusive `flock` on `/tmp/openplate-gate.lock`. A second push waits up to an hour and says who holds the lock. Without `flock`, the gate runs unguarded and says so.
 
-The gate has two tiers. The push gate runs lint, typecheck, unit tests, the build, and a scoped browser run: the smoke set, the specs for the touched area, and the specs the push changed. Shared code runs the full browser tier. A push of a tag `v*`, `core-v*` or `inference-v*` runs the gate of the app the tag names, with the full browser tier, before the tag leaves your machine. It does this even when origin already holds the tagged commit and the pushed range is empty. `OPENPLATE_E2E_FULL=1 git push` forces the full tier on any push. A nightly run on origin/main runs the full browser tier, then the photo path guard in `apps/core` (`pnpm test:guard`, on its own database). It writes one result line to `~/.local/state/openplate/nightly-e2e/latest.txt`, and a failed guard turns that line red. `make nightly` installs the timer (the unit points at the checkout you ran it in; on a nix host the script re-runs itself under `nix develop`), and `make nightly-status` prints the last result. A red nightly does not block a push. See ADR-0022 in `apps/app/.adr/`.
+The gate has two tiers. The push gate runs lint, typecheck, unit tests, the build, and a scoped browser run: the smoke set, the specs for the touched area, and the specs the push changed. Shared code runs the full browser tier. A push of a tag `v*`, `core-v*` or `inference-v*` runs the gate of the app the tag names, with the full browser tier, before the tag leaves your machine. It does this even when origin already holds the tagged commit and the pushed range is empty. `OPENPLATE_E2E_FULL=1 git push` forces the full tier on any push. A nightly run on origin/main runs the full browser tier, then the photo path guard in `apps/core` (`pnpm test:guard`, on its own database). It writes one result line to `~/.local/state/openplate/nightly-e2e/latest.txt`, and a failed guard turns that line red. `make nightly` installs the timer (the unit points at the checkout you ran it in; on a nix host the script re-runs itself under `nix develop`), `make nightly-now` starts a run, and `make nightly-status` prints the last result. A red nightly does not block a push. See ADR-0022 in `apps/app/.adr/`.
 
 ```bash
 make check
@@ -103,9 +132,9 @@ Some stages need extra tools. Each stage stops the push and names any missing to
 These environments are optional. They offer alternative ways to run Node and pnpm.
 
 - **toolbox**: if the `toolbox` command exists, every hook runs its Node stages inside a container named `ts-dev`. Maintainers use this setup because their host lacks build tools. Browser tests always run on the host.
-- **nix**: running `nix develop` at the repository root opens a shell with Node 24 and pnpm 11 from the root `flake.nix`. It also provides git and make. It works on x86_64-linux, aarch64-linux, and aarch64-darwin.
+- **nix**: Run `nix develop` at the repository root to enter a shell with Node 24, pnpm 11, git, make, and podlet from the root `flake.nix`. On Linux, it provides the fonts that the browser tier renders with. On NixOS, it supplies the library path that Playwright's Chromium requires through nix-ld. It works on x86_64-linux, aarch64-linux, and aarch64-darwin.
 
-The browser tier does not run in the nix shell or in the toolbox. It runs on the host with the Chromium that Playwright downloads. The flake does not set `PLAYWRIGHT_BROWSERS_PATH`, because nixpkgs browsers belong to Playwright 1.63.0 while the apps pin 1.62.1. The flake can set it once the versions match.
+The browser tier does not run in the toolbox. It runs on the host or in the nix shell, using the Chromium that Playwright downloads. The flake does not set `PLAYWRIGHT_BROWSERS_PATH`, because nixpkgs browsers belong to Playwright 1.63.0 while the apps pin 1.62.1. The flake can set it once the versions match.
 
 `make drift` checks that the flake, `.nvmrc` files, `engines` and `packageManager` fields, Dockerfiles, and the release workflow agree on Node and pnpm.
 
