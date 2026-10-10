@@ -3381,7 +3381,8 @@
     "usageNone": "Sin fotos",
     "trialScansUsed": "{{used}} de {{granted}} usados",
     "lastSeen": {
-      "never": "Nunca inició sesión"
+      "never": "Nunca inició sesión",
+      "neverShort": "Nunca"
     },
     "person": {
       "back": "Volver a la lista",

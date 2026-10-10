@@ -3381,7 +3381,8 @@
     "usageNone": "Nessuna foto",
     "trialScansUsed": "{{used}} su {{granted}} usate",
     "lastSeen": {
-      "never": "Mai effettuato l'accesso"
+      "never": "Mai effettuato l'accesso",
+      "neverShort": "Mai"
     },
     "person": {
       "back": "Torna all'elenco",

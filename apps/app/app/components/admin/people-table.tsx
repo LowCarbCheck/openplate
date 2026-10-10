@@ -444,7 +444,15 @@ function LastSeen({ person, now }: { person: AdminAccountView; now: Date }) {
   if (person.lastSeenAt === null) {
     return (
       <span className="block text-accent-amber" data-last-seen="never">
-        {t('admin.lastSeen.never')}
+        {/* ONE LINE IN THE WIDE COLUMN. The column is 7rem and the full
+            sentence wrapped to two lines there, so the row grew. From the
+            wide form on, the short word is drawn and the sentence stays in
+            the accessibility tree as screen-reader-only text. In the narrow
+            form the labelled cell has room and shows the sentence. */}
+        <span className="@2xl:sr-only">{t('admin.lastSeen.never')}</span>
+        <span className="hidden @2xl:inline" aria-hidden="true" data-last-seen-short="">
+          {t('admin.lastSeen.neverShort')}
+        </span>
       </span>
     );
   }

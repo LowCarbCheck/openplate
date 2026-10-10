@@ -3381,7 +3381,8 @@
     "usageNone": "Fotoğraf yok",
     "trialScansUsed": "{{granted}} haktan {{used}} tanesi kullanıldı",
     "lastSeen": {
-      "never": "Hiç giriş yapmadı"
+      "never": "Hiç giriş yapmadı",
+      "neverShort": "Asla"
     },
     "person": {
       "back": "Listeye dön",

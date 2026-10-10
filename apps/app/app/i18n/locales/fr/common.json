@@ -3381,7 +3381,8 @@
     "usageNone": "Aucune photo",
     "trialScansUsed": "{{used}} sur {{granted}} utilisés",
     "lastSeen": {
-      "never": "Jamais connecté"
+      "never": "Jamais connecté",
+      "neverShort": "Jamais"
     },
     "person": {
       "back": "Retour à la liste",

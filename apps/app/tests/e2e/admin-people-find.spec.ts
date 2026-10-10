@@ -21,6 +21,10 @@
  * and a slash typed into a field stays a slash; the invitations open on
  * pending, and the Expired chip shows the expired invitation that Pending hides.
  *
+ * ALIGNMENT AND ONE LINE (2026-10-11, at 1280 px): the search box and the two
+ * menus share one top and one height, their labels share one top, and "Never
+ * signed in" is one line tall in the Last sign-in column.
+ *
  * THE ROWS MOVE, AND MUST. Narrowing a list is the change the person asked for,
  * so its rows shifting is not a finding, and the browser's own total counts
  * them. The claim is about everything else: the search, the menus, the chips,
@@ -44,6 +48,7 @@ import {
   EXPIRED_INVITE_EMAIL,
   FRESH_PERSON_EMAIL,
   LONG_INVITE_EMAIL,
+  LONG_PERSON_ID,
   adminConsoleStub,
   routeAdminConsole,
   type AdminConsoleStub,
@@ -348,4 +353,71 @@ test('on a phone the chips scroll sideways inside their row and the page never d
   await openPeople(page);
   const laptop = await read();
   expect(laptop.rowScrollWidth).toBeLessThanOrEqual(laptop.rowClientWidth);
+});
+
+test('at 1280 px the search box and the two menus share one top and one height, and so do their labels', async ({
+  page,
+}) => {
+  const stub: AdminConsoleStub = { ...adminConsoleStub(), fresh: true, labels: new Map([[LONG_PERSON_ID, 'Family']]) };
+  await signInAsAdministrator(page, stub);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await openPeople(page);
+
+  const ids = ['admin-people-search', 'admin-people-label', 'admin-people-sort'];
+  const readAll = async () => {
+    const controls = await Promise.all(ids.map((id) => pageBox(page.locator(`#${id}`))));
+    const labels = await Promise.all(ids.map((id) => pageBox(page.locator(`label[for="${id}"]`))));
+    return { controls, labels };
+  };
+
+  const aligned = await readAll();
+  for (const box of aligned.controls) {
+    expect(box.top).toBe(aligned.controls[0]?.top);
+    expect(box.height).toBe(44);
+  }
+  for (const box of aligned.labels) expect(box.top).toBe(aligned.labels[0]?.top);
+
+  // CONTROL: a search box at the primitive's old md height (36 px) sits lower, and both readings see it.
+  await page.locator('#admin-people-search').evaluate((node) => {
+    node.style.height = '36px';
+  });
+  await settleFrames(page);
+  const squeezed = await readAll();
+  expect(squeezed.controls[0]?.top).not.toBe(squeezed.controls[1]?.top);
+  expect(squeezed.labels[0]?.top).not.toBe(squeezed.labels[1]?.top);
+});
+
+test('at 1280 px "Never signed in" is one line in the Last sign-in column, and the sentence stays for a screen reader', async ({
+  page,
+}) => {
+  const stub: AdminConsoleStub = { ...adminConsoleStub(), fresh: true };
+  await signInAsAdministrator(page, stub);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await openPeople(page);
+
+  const cells = page.locator('main [data-last-seen="never"]');
+  await expect(cells).toHaveCount(2);
+
+  const read = async () =>
+    cells.first().evaluate((node) => {
+      const style = getComputedStyle(node);
+      const lineHeight = Number.parseFloat(style.lineHeight);
+      return {
+        height: node.getBoundingClientRect().height,
+        lineHeight: Number.isNaN(lineHeight) ? Number.parseFloat(style.fontSize) * 1.5 : lineHeight,
+      };
+    });
+
+  const short = await read();
+  expect(short.height, 'the value is one line box tall').toBeLessThanOrEqual(short.lineHeight + 0.5);
+  // The sentence is in the accessibility tree whatever is drawn.
+  await expect(page.getByRole('link', { name: /Fresh Signup/ })).toContainText('Never signed in');
+
+  // CONTROL: the old long sentence in the same cell wraps to two lines, and the same reading sees it.
+  await cells.first().evaluate((node) => {
+    node.textContent = 'Never signed in';
+  });
+  await settleFrames(page);
+  const long = await read();
+  expect(long.height).toBeGreaterThan(long.lineHeight * 1.5);
 });

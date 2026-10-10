@@ -12,6 +12,15 @@
  * being added when the first filter lands. `tests/e2e/admin-people-find.spec.ts`
  * reads the list's top edge before and after each of them.
  *
+
+ * ── One baseline, one top, one height ────────────────────────────────────
+ *
+ * The three labels and the three controls (search, label menu, sort menu) line
+ * up. The `Input` primitive is `h-11` on a phone and `md:h-9` from 768 px, so
+ * the search box passed the menus' 44 px and sat 12 px lower with its label
+ * dragged down with it. It is `md:h-11` here, and
+ * `admin-people-find.spec.ts` reads the three tops at 1280 px.
+ *
  * ── The label menu exists only where there is a label ────────────────────
  *
  * An instance whose operator never labelled anybody would get a menu whose
@@ -102,7 +111,7 @@ export function PeopleToolbar({ filter, onFilterChange, labels, counts, shown, t
               ref={searchRef}
               type="search"
               autoComplete="off"
-              className="h-11 pl-9 pr-9"
+              className="h-11 pl-9 pr-9 md:h-11"
               placeholder={t('admin.filter.searchPlaceholder')}
               value={filter.query}
               onChange={(event) => onFilterChange({ ...filter, query: event.target.value })}

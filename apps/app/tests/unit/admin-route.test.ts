@@ -522,7 +522,13 @@ test('Used today draws a thin bar, amber from eighty percent of the allowance', 
 test('somebody who never signed in is told so in amber, and somebody who did is not', () => {
   const html = peopleList({ people: [NEVER_ARRIVED, FRESH_MEMBER] });
 
-  assert.match(rowOf(html, 'carla@example.org'), /text-accent-amber[^>]*data-last-seen="never"[^>]*>Never signed in</);
+  const never = rowOf(html, 'carla@example.org');
+  assert.match(never, /text-accent-amber[^>]*data-last-seen="never"[^>]*>/);
+  // The sentence is always in the markup for a screen reader; from the wide form on only the short word is drawn.
+  assert.match(never, /<span class="@2xl:sr-only">Never signed in<\/span>/);
+  assert.match(never, /<span class="hidden @2xl:inline" aria-hidden="true"[^>]*>Never<\/span>/);
+  // CONTROL: somebody who did sign in has neither.
+  assert.doesNotMatch(rowOf(html, 'fresh@example.org'), /data-last-seen-short|Never/);
   assert.doesNotMatch(rowOf(html, 'fresh@example.org'), /data-last-seen="never"/);
   assert.match(rowOf(html, 'fresh@example.org'), /Today/, 'signed in an hour before NOW');
 });
