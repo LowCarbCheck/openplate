@@ -3449,9 +3449,13 @@
       "failed": "Impossible de supprimer le compte."
     },
     "invites": {
-      "title": "Invitations en attente",
       "empty": "Aucune invitation en attente.",
-      "expires": "Valide jusqu'au {{date}}",
+      "emptyFor": {
+        "expired": "Aucune invitation n'a expiré.",
+        "revoked": "Aucune invitation n'a été révoquée.",
+        "redeemed": "Personne n'a encore accepté d'invitation.",
+        "all": "Aucune invitation n'a encore été envoyée."
+      },
       "resend": "Renvoyer",
       "resent": "Une nouvelle invitation a été envoyée à {{email}}.",
       "revoke": "Révoquer",
@@ -3459,7 +3463,28 @@
       "revokeConfirmBody": "Leur lien cesse de fonctionner. Tu peux les réinviter quand tu veux.",
       "revokeConfirmCta": "Révoquer",
       "failed": "L'opération a échoué.",
-      "loadFailed": "Impossible de charger les invitations."
+      "loadFailed": "Impossible de charger les invitations.",
+      "statusLabel": "Statut",
+      "status": {
+        "pending": "En attente",
+        "expired": "Expirée",
+        "revoked": "Révoquée",
+        "redeemed": "Acceptée",
+        "all": "Toutes"
+      },
+      "result_one": "{{count}} invitation, la plus récente en premier",
+      "result_other": "{{count}} invitations, les plus récentes en premier",
+      "sentToday": "Envoyée aujourd'hui",
+      "sentYesterday": "Envoyée hier",
+      "sentDaysAgo": "Envoyée il y a {{days}} jours",
+      "sentOn": "Envoyée le {{date}}",
+      "perDay_one": "{{count}} photo par jour",
+      "perDay_other": "{{count}} photos par jour",
+      "expiresIn_one": "Expire dans {{count}} jour",
+      "expiresIn_other": "Expire dans {{count}} jours",
+      "expiresToday": "Expire aujourd'hui",
+      "expiredOn": "A expiré le {{date}}",
+      "addressErased": "Adresse supprimée"
     },
     "invite": {
       "cta": "Inviter quelqu'un",
@@ -3523,15 +3548,38 @@
     },
     "filter": {
       "searchLabel": "Recherche",
-      "searchPlaceholder": "Nom ou adresse courriel",
-      "groupLabel": "Afficher",
-      "everybody": "Tout le monde",
-      "active": "Actifs",
-      "suspended": "Suspendus",
-      "administrators": "Administrateurs",
+      "searchPlaceholder": "Nom, adresse ou étiquette",
+      "viewLabel": "Afficher",
+      "views": {
+        "all": "Tous",
+        "new": "Nouveaux cette semaine",
+        "seen": "Vus cette semaine",
+        "quiet": "Sans activité",
+        "never": "Ne s'est jamais connecté",
+        "suspended": "Suspendu",
+        "administrators": "Administrateurs"
+      },
+      "labelLabel": "Étiquette",
+      "labelAny": "Toute étiquette",
+      "labelNone": "Sans étiquette",
+      "labelPart": "étiquette \"{{label}}\"",
+      "labelPartNone": "sans étiquette",
+      "sortLabel": "Trier",
+      "sorts": {
+        "newest": "Plus récents d'abord",
+        "oldest": "Plus anciens d'abord",
+        "seen": "Dernière activité",
+        "usage": "Plus grand nombre de scans aujourd'hui",
+        "name": "Nom, de A à Z"
+      },
+      "result": "{{shown}} personnes sur {{total}}",
+      "clear": "Effacer les filtres",
       "noneQuery": "Personne ici ne correspond à « {{query}} ».",
       "noneGroup": "Personne ici n'appartient à « {{group}} ».",
-      "noneBoth": "Personne dans « {{group}} » ne correspond à « {{query}} »."
+      "noneBoth": "Personne dans « {{group}} » ne correspond à « {{query}} ».",
+      "noneLabel": "Personne ici ne porte l'étiquette \"{{label}}\".",
+      "noneNoLabel": "Tout le monde ici a une étiquette.",
+      "noneSeveral": "Personne ici ne correspond à {{filters}}."
     },
     "activity": {
       "title": "Qui l'utilise encore",
@@ -3574,6 +3622,19 @@
       "deleteConfirmBody": "Les chiffres et la photo disparaissent maintenant, sans attendre l'expiration du délai. Cette action est irréversible.",
       "deleteConfirmCta": "Supprimer définitivement",
       "deleteFailed": "Impossible de supprimer le rapport."
+    },
+    "badge": {
+      "new": "Nouveau"
+    },
+    "dayAge": {
+      "today": "Aujourd'hui",
+      "yesterday": "Hier",
+      "daysAgo": "Il y a {{days}} jours"
+    },
+    "bands": {
+      "week": "Cette semaine",
+      "month": "Ce mois-ci",
+      "earlier": "Plus tôt"
     }
   },
   "aiIntake": {

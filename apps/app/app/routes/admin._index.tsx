@@ -21,11 +21,13 @@
  * somebody stays rather than glances at. `/admin/people/:id` re-reads the
  * account, which is one request and is also the fresher answer.
  *
- * ── The filter runs in the browser ───────────────────────────────────────
+ * ── The filter runs in the browser, and lives in the address ─────────────
  *
  * The whole list is already here: `AdminClient.listAccounts` follows the
  * service's paging itself, so nothing on this page knows about a page ceiling.
  * A request per keystroke against a list already in memory would buy nothing.
+ * The view, sort, label and search are in the query string (`use-people-filter`)
+ * so a reload and a shared address restore the list as it was.
  *
  * ── The strips are one request, and they are allowed to fail ─────────────
  *
@@ -63,7 +65,8 @@ import type { ActivityByAccount } from '#app/lib/admin/activity-strip';
 import type { AiBudgetLoad } from '#app/lib/admin/ai-budget-view';
 import type { AdminOutcome } from '#app/lib/admin/admin-client';
 import type { AdminAccountView, AdminActivityDay, AdminActivityList } from '#app/lib/admin/admin-wire';
-import { EMPTY_PEOPLE_FILTER, type PeopleFilter } from '#app/lib/admin/people-filter';
+import { labelsOf } from '#app/lib/admin/people-filter';
+import { usePeopleFilter } from '#app/hooks/use-people-filter';
 
 /** What the tab is showing. One `kind`, so a loading spinner and an error can never be on screen together. */
 type PeopleState =
@@ -75,7 +78,6 @@ type PeopleState =
 export default function AdminPeople() {
   const session = useSyncSession();
   const [state, setState] = useState<PeopleState>({ kind: 'loading' });
-  const [filter, setFilter] = useState<PeopleFilter>(EMPTY_PEOPLE_FILTER);
 
   const load = useCallback(async (): Promise<void> => {
     const client = currentAdminClient();
@@ -113,13 +115,7 @@ export default function AdminPeople() {
   return (
     <div className="space-y-6">
       <AiBudgetCard load={budget} />
-      <PeopleContent
-        state={state}
-        currentAccountId={session.account?.id ?? -1}
-        filter={filter}
-        onFilterChange={setFilter}
-        onRetry={() => void load()}
-      />
+      <PeopleContent state={state} currentAccountId={session.account?.id ?? -1} onRetry={() => void load()} />
     </div>
   );
 }
@@ -158,14 +154,10 @@ function useAiBudgetLoad(): AiBudgetLoad {
 function PeopleContent({
   state,
   currentAccountId,
-  filter,
-  onFilterChange,
   onRetry,
 }: {
   state: Exclude<PeopleState, { kind: 'forbidden' }>;
   currentAccountId: number;
-  filter: PeopleFilter;
-  onFilterChange: (filter: PeopleFilter) => void;
   onRetry: () => void;
 }) {
   const { t } = useTranslation();
@@ -201,15 +193,40 @@ function PeopleContent({
   return (
     <Card>
       <CardContent className="pt-6">
-        <PeopleTable
-          people={state.people}
-          currentAccountId={currentAccountId}
-          activity={state.activity}
-          filter={filter}
-          onFilterChange={onFilterChange}
-        />
+        <PeopleReady people={state.people} currentAccountId={currentAccountId} activity={state.activity} />
       </CardContent>
     </Card>
+  );
+}
+
+/**
+ * The list once there are people to show, and the filter that goes with it.
+ *
+ * A component of its own because the filter is a hook, and a hook cannot sit
+ * below the loading and failed returns above. The filter lives in the address
+ * (`usePeopleFilter`); the clock is read once, when the list is drawn, so
+ * "3 days ago" does not change under an operator's eyes while they read.
+ */
+function PeopleReady({
+  people,
+  currentAccountId,
+  activity,
+}: {
+  people: AdminAccountView[];
+  currentAccountId: number;
+  activity: ActivityByAccount | null;
+}) {
+  const [now] = useState(() => new Date());
+  const [filter, setFilter] = usePeopleFilter(labelsOf(people));
+  return (
+    <PeopleTable
+      people={people}
+      currentAccountId={currentAccountId}
+      activity={activity}
+      filter={filter}
+      onFilterChange={setFilter}
+      now={now}
+    />
   );
 }
 

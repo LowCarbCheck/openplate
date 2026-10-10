@@ -3449,9 +3449,13 @@
       "failed": "No se pudo eliminar la cuenta."
     },
     "invites": {
-      "title": "Invitaciones pendientes",
       "empty": "No hay ninguna invitación pendiente.",
-      "expires": "Válida hasta el {{date}}",
+      "emptyFor": {
+        "expired": "Ninguna invitación ha caducado.",
+        "revoked": "No se ha retirado ninguna invitación.",
+        "redeemed": "Nadie ha aceptado una invitación todavía.",
+        "all": "No se ha enviado ninguna invitación todavía."
+      },
       "resend": "Enviar de nuevo",
       "resent": "Se envió una nueva invitación a {{email}}.",
       "revoke": "Retirar",
@@ -3459,7 +3463,28 @@
       "revokeConfirmBody": "Su enlace dejará de funcionar. Puedes volver a invitar a esta persona cuando quieras.",
       "revokeConfirmCta": "Retirar",
       "failed": "La operación no se pudo completar.",
-      "loadFailed": "No se pudieron cargar las invitaciones."
+      "loadFailed": "No se pudieron cargar las invitaciones.",
+      "statusLabel": "Estado",
+      "status": {
+        "pending": "Pendiente",
+        "expired": "Caducada",
+        "revoked": "Retirada",
+        "redeemed": "Aceptada",
+        "all": "Todas"
+      },
+      "result_one": "{{count}} invitación, las más recientes primero",
+      "result_other": "{{count}} invitaciones, las más recientes primero",
+      "sentToday": "Enviada hoy",
+      "sentYesterday": "Enviada ayer",
+      "sentDaysAgo": "Enviada hace {{days}} días",
+      "sentOn": "Enviada el {{date}}",
+      "perDay_one": "{{count}} foto al día",
+      "perDay_other": "{{count}} fotos al día",
+      "expiresIn_one": "Caduca en {{count}} día",
+      "expiresIn_other": "Caduca en {{count}} días",
+      "expiresToday": "Caduca hoy",
+      "expiredOn": "Caducó el {{date}}",
+      "addressErased": "Dirección eliminada"
     },
     "invite": {
       "cta": "Invitar a alguien",
@@ -3523,15 +3548,38 @@
     },
     "filter": {
       "searchLabel": "Buscar",
-      "searchPlaceholder": "Nombre o dirección de correo",
-      "groupLabel": "Mostrar",
-      "everybody": "Todos",
-      "active": "Activas",
-      "suspended": "Suspendidas",
-      "administrators": "Administradores",
+      "searchPlaceholder": "Nombre, dirección o etiqueta",
+      "viewLabel": "Ver",
+      "views": {
+        "all": "Todos",
+        "new": "Nuevos esta semana",
+        "seen": "Vistos esta semana",
+        "quiet": "Sin actividad",
+        "never": "Nunca ha iniciado sesión",
+        "suspended": "Suspendido",
+        "administrators": "Administradores"
+      },
+      "labelLabel": "Etiqueta",
+      "labelAny": "Cualquier etiqueta",
+      "labelNone": "Sin etiqueta",
+      "labelPart": "etiqueta \"{{label}}\"",
+      "labelPartNone": "sin etiqueta",
+      "sortLabel": "Ordenar",
+      "sorts": {
+        "newest": "Más recientes primero",
+        "oldest": "Más antiguos primero",
+        "seen": "Última conexión",
+        "usage": "Más escaneos hoy",
+        "name": "Nombre, de la A a la Z"
+      },
+      "result": "{{shown}} de {{total}} personas",
+      "clear": "Borrar filtros",
       "noneQuery": "Nadie aquí coincide con «{{query}}».",
       "noneGroup": "Nadie aquí está en «{{group}}».",
-      "noneBoth": "Nadie en «{{group}}» coincide con «{{query}}»."
+      "noneBoth": "Nadie en «{{group}}» coincide con «{{query}}».",
+      "noneLabel": "Nadie aquí tiene la etiqueta \"{{label}}\".",
+      "noneNoLabel": "Todo el mundo aquí tiene una etiqueta.",
+      "noneSeveral": "Nadie aquí coincide con {{filters}}."
     },
     "activity": {
       "title": "Quién sigue usándolo",
@@ -3574,6 +3622,19 @@
       "deleteConfirmBody": "Las cifras y la foto se eliminan ahora, en vez de al terminar el plazo. Esto no se puede deshacer.",
       "deleteConfirmCta": "Eliminar definitivamente",
       "deleteFailed": "No se pudo eliminar el informe."
+    },
+    "badge": {
+      "new": "Nuevo"
+    },
+    "dayAge": {
+      "today": "Hoy",
+      "yesterday": "Ayer",
+      "daysAgo": "Hace {{days}} días"
+    },
+    "bands": {
+      "week": "Esta semana",
+      "month": "Este mes",
+      "earlier": "Anteriormente"
     }
   },
   "aiIntake": {

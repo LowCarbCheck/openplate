@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Added
+
+- **The admin console opens on new sign-ups and finds anyone fast.** The People tab lists new sign-ups first with a "New" badge and a Joined column, and it groups them under this week, this month and earlier. Quick views with live counts show who is new, who was seen this week, who went quiet, who never signed in, who is suspended and who administers. A label menu, a sort menu and sortable column headings narrow it further, "/" jumps to the search, and the choice lives in the address so a reload or a shared link keeps it. The counts at the top link to the matching list. The Invitations tab opens on the pending ones and keeps expired, revoked and accepted invitations behind chips of their own, each row with its send date, its photo allowance and the days left.
+
 ### Fixed
 
 - **A moved instance never points a browser at another host.** In moved mode the server sends a request path back as a redirect. It collapsed leading slashes, but a backslash, a tab or a line break at the start could still make a browser read the path as another host. Express encoded the backslash in a `Location` header, but the route data answer puts the path in `X-Remix-Redirect` as it is. Every leading separator is now removed before the path goes back.

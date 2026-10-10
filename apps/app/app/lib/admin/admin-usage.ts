@@ -21,6 +21,38 @@ import { shownAiLimit } from '#app/lib/plans/free-grant';
 /** The translate function the two screens hand in, narrowed to what this line needs. */
 type Translate = (key: string, params?: Readonly<Record<string, string | number>>) => string;
 
+/** The fields of an account the usage reads, shared by the sentence and the figures. */
+type UsagePerson = Pick<
+  AdminAccountView,
+  'dailyAiLimit' | 'freeDailyAiLimit' | 'allowanceExpiresAt' | 'aiUsedToday'
+> &
+  Partial<Pick<AdminAccountView, 'aiLimitPeriod' | 'aiUsedThisWeek'>>;
+
+/**
+ * The limit that binds, its window and the count in THAT window.
+ *
+ * `used` is `null` for a weekly limit read from a core that sent no week
+ * count: today's count beside a week's limit would be a number nobody measured.
+ */
+interface ReadUsage {
+  limit: number;
+  period: 'day' | 'week';
+  used: number | null;
+}
+
+function readUsage({ person, now }: { person: UsagePerson; now: Date }): ReadUsage {
+  const shown = shownAiLimit({
+    dailyAiLimit: person.dailyAiLimit,
+    aiLimitPeriod: person.aiLimitPeriod,
+    freeDailyAiLimit: person.freeDailyAiLimit,
+    allowanceExpiresAt: person.allowanceExpiresAt,
+    now,
+  });
+  const limit = shown?.limit ?? 0;
+  if (shown?.period !== 'week') return { limit, period: 'day', used: person.aiUsedToday };
+  return { limit, period: 'week', used: person.aiUsedThisWeek ?? null };
+}
+
 /**
  * The usage line: `admin.usageNone` with no limit, `admin.usageWeek` against a
  * weekly limit, otherwise `admin.usage` against the daily one that binds.
@@ -30,28 +62,36 @@ export function adminUsage({
   t,
   now = new Date(),
 }: {
-  person: Pick<
-    AdminAccountView,
-    'dailyAiLimit' | 'freeDailyAiLimit' | 'allowanceExpiresAt' | 'aiUsedToday'
-  > &
-    Partial<Pick<AdminAccountView, 'aiLimitPeriod' | 'aiUsedThisWeek'>>;
+  person: UsagePerson;
   t: Translate;
   now?: Date;
 }): string {
-  const shown = shownAiLimit({
-    dailyAiLimit: person.dailyAiLimit,
-    aiLimitPeriod: person.aiLimitPeriod,
-    freeDailyAiLimit: person.freeDailyAiLimit,
-    allowanceExpiresAt: person.allowanceExpiresAt,
-    now,
-  });
-  const limit = shown?.limit ?? 0;
+  const { limit, period, used } = readUsage({ person, now });
   if (limit === 0) return t('admin.usageNone');
-  if (shown?.period !== 'week') return t('admin.usage', { used: person.aiUsedToday, limit });
+  if (period !== 'week') return t('admin.usage', { used: person.aiUsedToday, limit });
   // A WEEKLY LIMIT WITH NO WEEK COUNT (a core that sent none) names the limit
   // alone: today's count beside a week's limit would be a number nobody measured.
-  if (person.aiUsedThisWeek === null || person.aiUsedThisWeek === undefined) {
-    return t('account.allowance.limitWeek', { count: limit });
-  }
-  return t('admin.usageWeek', { used: person.aiUsedThisWeek, limit });
+  if (used === null) return t('account.allowance.limitWeek', { count: limit });
+  return t('admin.usageWeek', { used, limit });
+}
+
+/**
+ * The count and the limit behind the usage line, for a bar and for a sort, or
+ * `null` when the line names no pair: no limit at all, or a weekly limit with
+ * no week count.
+ *
+ * ONE READING OF THE LIMIT, shared with {@link adminUsage}. A bar drawn from
+ * the paid column while the line beside it names the free grant would be full
+ * next to a number that says it is not.
+ */
+export function adminUsageFigures({
+  person,
+  now = new Date(),
+}: {
+  person: UsagePerson;
+  now?: Date;
+}): { used: number; limit: number } | null {
+  const { limit, used } = readUsage({ person, now });
+  if (limit === 0 || used === null) return null;
+  return { used, limit };
 }

@@ -63,6 +63,7 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { Outlet, useLoaderData, useLocation } from 'react-router';
+import type { ShouldRevalidateFunctionArgs } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { UserPlus } from 'lucide-react';
 import type { MetaFunction } from 'react-router';
@@ -92,6 +93,24 @@ export const handle = {
   title: 'Administration',
   backTo: '/settings',
 };
+
+/**
+ * A change of the SEARCH on a page under here (the people list's view, sort,
+ * label and query, the invitations' status) is not a reason to ask the server
+ * anything. The loader below answers one constant question, and declining here
+ * is what keeps a keystroke in the people search from becoming a request, and
+ * from lighting the progress bar for the length of one.
+ */
+export function shouldRevalidate({
+  currentUrl,
+  nextUrl,
+  formMethod,
+  defaultShouldRevalidate,
+}: ShouldRevalidateFunctionArgs): boolean {
+  if (formMethod) return defaultShouldRevalidate;
+  if (currentUrl.pathname === nextUrl.pathname) return false;
+  return defaultShouldRevalidate;
+}
 
 /** @throws a 404 Response on an instance with no server configured, where nobody has an account to administer. */
 export function loader() {

@@ -3449,9 +3449,13 @@
       "failed": "Hesap silinemedi."
     },
     "invites": {
-      "title": "Açık davetler",
       "empty": "Bekleyen davet yok.",
-      "expires": "{{date}} tarihine kadar geçerli",
+      "emptyFor": {
+        "expired": "Süresi dolan davet yok.",
+        "revoked": "Geri çekilen davet yok.",
+        "redeemed": "Henüz kimse daveti kabul etmedi.",
+        "all": "Henüz hiç davet gönderilmedi."
+      },
       "resend": "Tekrar gönder",
       "resent": "{{email}} adresine yeni bir davet gönderildi.",
       "revoke": "Geri çek",
@@ -3459,7 +3463,28 @@
       "revokeConfirmBody": "Bağlantıları çalışmaz hale gelir. İstediğin zaman onları tekrar davet edebilirsin.",
       "revokeConfirmCta": "Geri çek",
       "failed": "İşlem tamamlanamadı.",
-      "loadFailed": "Davetler yüklenemedi."
+      "loadFailed": "Davetler yüklenemedi.",
+      "statusLabel": "Durum",
+      "status": {
+        "pending": "Beklemede",
+        "expired": "Süresi doldu",
+        "revoked": "Geri çekildi",
+        "redeemed": "Kabul edildi",
+        "all": "Tümü"
+      },
+      "result_one": "{{count}} davet, en yeniden eskiye",
+      "result_other": "{{count}} davet, en yeniden eskiye",
+      "sentToday": "Bugün gönderildi",
+      "sentYesterday": "Dün gönderildi",
+      "sentDaysAgo": "{{days}} gün önce gönderildi",
+      "sentOn": "{{date}} tarihinde gönderildi",
+      "perDay_one": "Günde {{count}} fotoğraf",
+      "perDay_other": "Günde {{count}} fotoğraf",
+      "expiresIn_one": "{{count}} gün içinde sona eriyor",
+      "expiresIn_other": "{{count}} gün içinde sona eriyor",
+      "expiresToday": "Bugün sona eriyor",
+      "expiredOn": "{{date}} tarihinde sona erdi",
+      "addressErased": "Adres kaldırıldı"
     },
     "invite": {
       "cta": "Birini davet et",
@@ -3523,15 +3548,38 @@
     },
     "filter": {
       "searchLabel": "Ara",
-      "searchPlaceholder": "İsim veya e-posta adresi",
-      "groupLabel": "Göster",
-      "everybody": "Herkes",
-      "active": "Etkin",
-      "suspended": "Askıya alındı",
-      "administrators": "Yöneticiler",
+      "searchPlaceholder": "İsim, adres veya etiket",
+      "viewLabel": "Görüntüle",
+      "views": {
+        "all": "Tümü",
+        "new": "Bu hafta yeni",
+        "seen": "Bu hafta görüldü",
+        "quiet": "Sessizleşti",
+        "never": "Hiç giriş yapmadı",
+        "suspended": "Askıya alındı",
+        "administrators": "Yöneticiler"
+      },
+      "labelLabel": "Etiket",
+      "labelAny": "Herhangi bir etiket",
+      "labelNone": "Etiket yok",
+      "labelPart": "\"{{label}}\" etiketi",
+      "labelPartNone": "etiket yok",
+      "sortLabel": "Sırala",
+      "sorts": {
+        "newest": "Önce en yeni",
+        "oldest": "Önce en eski",
+        "seen": "Son görülme",
+        "usage": "Bugün en çok tarama yapanlar",
+        "name": "İsim, A'dan Z'ye"
+      },
+      "result": "{{total}} kişiden {{shown}} kişi",
+      "clear": "Filtreleri temizle",
       "noneQuery": "Burada \"{{query}}\" ile eşleşen kimse yok.",
       "noneGroup": "Burada \"{{group}}\" içinde kimse yok.",
-      "noneBoth": "\"{{group}}\" içinde \"{{query}}\" ile eşleşen kimse yok."
+      "noneBoth": "\"{{group}}\" içinde \"{{query}}\" ile eşleşen kimse yok.",
+      "noneLabel": "Buradaki kimsede \"{{label}}\" etiketi yok.",
+      "noneNoLabel": "Buradaki herkesin bir etiketi var.",
+      "noneSeveral": "Burada {{filters}} ile eşleşen kimse yok."
     },
     "activity": {
       "title": "Hala kimler kullanıyor",
@@ -3574,6 +3622,19 @@
       "deleteConfirmBody": "Rakamlar ve fotoğraf, sürenin dolması beklenmeden hemen silinir. Bu işlem geri alınamaz.",
       "deleteConfirmCta": "Kalıcı olarak sil",
       "deleteFailed": "Rapor silinemedi."
+    },
+    "badge": {
+      "new": "Yeni"
+    },
+    "dayAge": {
+      "today": "Bugün",
+      "yesterday": "Dün",
+      "daysAgo": "{{days}} gün önce"
+    },
+    "bands": {
+      "week": "Bu hafta",
+      "month": "Bu ay",
+      "earlier": "Daha önce"
     }
   },
   "aiIntake": {
