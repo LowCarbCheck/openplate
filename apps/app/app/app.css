@@ -555,37 +555,60 @@
    */
 
   /*
-   * The hero: a flat panel with graph paper drawn inside it, after
+   * The hero: a flat panel with graph paper behind its head band, after
    * lowcarbcheck.org's own hero. The paper is what makes the hero the hero now
    * that the fill is an ordinary card fill, and nothing else in the app wears
    * it, which `tests/e2e/lcc-lineage-hero.spec.ts` reads as "the only element
    * with a grid background image on the screen".
    *
-   * THE ALPHA AND THE SCOPE, DECIDED BY LOOKING (2026-09-21, the four renders
-   * under `.tracker/M243-lcc-lineage-restyle/renders/`). WHOLE PANEL, and the
-   * same seven tenths the page grid uses below, which is the number the tests
-   * read as `GRID_LINE_ALPHA`.
+   * THE FADING BAND, DECIDED BY THE OPERATOR ON 2026-10-11 from three
+   * variants in a playground (`playgrounds/admin-and-hero/`, section 3). The
+   * paper used to cover the whole panel at seven tenths, and the operator found
+   * it generic, and found that the eye got lost in it on a data-heavy screen
+   * and on an empty one. The chosen variant keeps the same 28 px paper, a
+   * little stronger (nine tenths of `--border`, the number the tests read as
+   * `HERO_GRID_LINE_ALPHA`), and shows it only behind the head band: fully for
+   * the first 56 px from the top, fading to nothing by 170 px. Below that the
+   * panel is the plain `--card` fill, so the figures and the rows sit on a
+   * quiet ground and the paper only frames where the hero starts.
    *
-   * Three tenths was tried first, on the worry that the paper would sit behind
-   * the 12 px caption under each figure. At three tenths the paper is not
-   * there: the panel reads as a plain light card in light and a plain dark one
-   * in dark, and the hero loses the only device that still tells it apart from
-   * every other card. At seven tenths it reads in both themes and nothing
-   * competes with a digit, because what keeps the paper off the small text is
-   * not the alpha, it is the CONTENT: the data rows, the composer and the
-   * inner cards all carry a fill of their own, so the paper is visible in the
-   * hero's top band and in the gaps, which is where lowcarbcheck.org's own
-   * hero shows it. Scoping it to a band was considered and dropped: it needs a
-   * mask, and a mask on the panel masks the panel's children too.
+   * HOW THE FADE IS DRAWN: A THIRD BACKGROUND LAYER, FIRST IN THE LIST, ON TOP
+   * OF THE TWO GRID LAYERS. It runs from transparent to opaque `--card`, so
+   * where it is opaque it hides the paper under it and where it is clear the
+   * paper shows through. A mask would be the obvious tool and is the wrong
+   * one: `mask-image` on the panel masks the panel's children as well, and
+   * would fade out the digits it is meant to leave alone. A pseudo-element
+   * would carry the mask instead, but it needs `position: relative` on the
+   * panel and a stacking order against the content at every call site (seven
+   * of them, one a layout of its own), which is a bigger change than the look
+   * is worth. A layer needs neither. The cover paints over the border box
+   * (`background-origin: border-box`, not the padding box the paper is
+   * positioned against), so a translucent border, as the landing frame has,
+   * is not left carrying a grid line down its whole edge below the band.
+   *
+   * The paper before this change, whole panel at seven tenths, was picked by
+   * looking at four renders (2026-09-21, M243 spec 04) after three tenths had
+   * made the paper vanish in both themes. The page grid on the landing page
+   * (`.surface-grid`, below) keeps those seven tenths: it is a backdrop
+   * behind a fold with nothing on it to compete with.
    */
   .surface-brand {
     background-color: hsl(var(--card));
     border-color: hsl(var(--border));
     background-image:
-      linear-gradient(to right, hsl(var(--border) / 0.7) 1px, transparent 1px),
-      linear-gradient(to bottom, hsl(var(--border) / 0.7) 1px, transparent 1px);
-    background-size: 28px 28px;
-    background-position: -1px -1px;
+      linear-gradient(to bottom, transparent 0, transparent 56px, hsl(var(--card)) 170px),
+      linear-gradient(to right, hsl(var(--border) / 0.9) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--border) / 0.9) 1px, transparent 1px);
+    background-size:
+      100% 100%,
+      28px 28px,
+      28px 28px;
+    background-repeat: no-repeat, repeat, repeat;
+    background-position:
+      0 0,
+      -1px -1px,
+      -1px -1px;
+    background-origin: border-box, padding-box, padding-box;
   }
 
   /* The placeholder panel (an empty state, the landing preview), paired with
@@ -624,9 +647,10 @@
 
      WHO WEARS IT. The landing hero section, and that is all
      (`app/routes/index.tsx`). The hero PANEL inside the app draws the same
-     two layers from `.surface-brand` above, at the same cell and the same
-     alpha, rather than composing this class, because the panel also sets its
-     own `background-color` and the two belong in one rule. The app shell's
+     two layers from `.surface-brand` above, at the same cell but a stronger
+     alpha and under a fading cover, rather than composing this class, because
+     the panel also sets its own `background-color` and its cover layer and the
+     three belong in one rule. The app shell's
      `<main>` deliberately does NOT wear it: behind opaque cards the paper
      would be visible only in the 16px gutters and under the smallest grey
      text, which is noise rather than texture. */

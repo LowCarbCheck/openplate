@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Changed
+
+- **The graph paper on the hero card fades out below the head band.** The paper was drawn over the whole hero panel and the eye got lost in it on a busy screen and on an empty one. It is the same 28 px paper, a little stronger (nine tenths of the border colour, up from seven), and it shows in full for the first 56 px from the top, then fades to nothing by 170 px. Below that the card is its plain fill. A cover layer on top of the two paper layers does the fading, so the text and figures inside the panel are not masked. The landing page keeps its own paper unchanged.
+
 ### Fixed
 
 - **A moved instance never points a browser at another host.** In moved mode the server sends a request path back as a redirect. It collapsed leading slashes, but a backslash, a tab or a line break at the start could still make a browser read the path as another host. Express encoded the backslash in a `Location` header, but the route data answer puts the path in `X-Remix-Redirect` as it is. Every leading separator is now removed before the path goes back.

@@ -110,8 +110,8 @@ them paints the brand hue any more. All three live in `app.css`, all three are t
 literal:
 
 - `.surface-brand` is the one hero panel per screen. A flat `bg-card` fill on the border colour at
-  `shadow-sm`, with §5b's graph paper drawn inside it. The paper is what marks the hero now that
-  the fill is an ordinary card fill.
+  `shadow-sm`, with §5b's graph paper drawn behind its head band and faded out before the data. The
+  paper is what marks the hero now that the fill is an ordinary card fill.
 - `.surface-brand-soft` is a placeholder or empty-state panel, `bg-muted/40`, paired with
   `border-dashed` on the border colour at every call site.
 - `.brand-glow` is the landing hero backdrop only, a muted radial, not a brand one.
@@ -354,11 +354,20 @@ tokens, with no image, no SVG and no new colour:
   both themes from one declaration, with no second rule, no new token and no literal.
 - **28px cells.** The original SVG stretches to about 128px at desktop width, which is far too
   coarse for a 390px column.
-- **Seven tenths alpha, in both places the paper is drawn.** Three tenths was tried first, out of
-  a worry about the 12px captions under the hero figures, and at three tenths the paper is simply
-  not there in either theme. What keeps the paper off the small text is the CONTENT, the data rows
-  and inner cards carry fills of their own, not a weaker line. The cell and the alpha are
-  `GRID_CELL_PX` and `GRID_LINE_ALPHA` in `tests/design-contract.ts`.
+- **Two alphas, one cell.** The page grid (`.surface-grid`, behind the landing fold) is drawn at
+  seven tenths. Three tenths was tried first, out of a worry about the 12px captions under the hero
+  figures, and at three tenths the paper is simply not there in either theme. The hero panel is
+  drawn at nine tenths (see the next bullet). The cell and the alphas are `GRID_CELL_PX`,
+  `GRID_LINE_ALPHA` and `HERO_GRID_LINE_ALPHA` in `tests/design-contract.ts`.
+- **The hero's paper is a fading band (operator decision, 2026-10-11).** The whole-panel paper read
+  as generic, and on a data-heavy or an empty screen the eye got lost in it. The hero keeps the
+  same 28px paper, a little stronger, but only behind its head band: fully visible for the first
+  56px from the top and gone by 170px (`HERO_BAND_SOLID_PX`, `HERO_BAND_FADE_END_PX`). Below that
+  the panel is the plain `--card` fill. What keeps the paper off the small text is that it ends
+  above the data, not a weaker line. It is drawn by one more background layer, listed first so it
+  paints on top of the two grid layers: a vertical gradient from clear to opaque `--card`. A
+  `mask-image` on the panel was refused because it masks the panel's children too, and a
+  pseudo-element because it needs positioning changes at every call site.
 
 **Where it is drawn, and where it is NOT.** Two places only: inside the one hero panel
 (`.surface-brand` declares its own copy, §2) and behind the landing hero section (`.surface-grid`

@@ -25,7 +25,8 @@
  *
  * ── WHAT IS NOT PINNED ──
  * WHERE `.surface-grid` is drawn. The landing hero section wears the class and the in-app hero
- * panel draws the same two layers from `.surface-brand`, so a source count here would be the
+ * panel draws the same paper from `.surface-brand` (behind a fading band since 2026-10-11, see the
+ * last block of this file), so a source count here would be the
  * weaker of two answers: `lcc-lineage-landing.spec.ts` and `lcc-lineage-hero.spec.ts` read what
  * a browser actually paints in each place.
  */
@@ -40,6 +41,9 @@ import {
   BRAND_STACK,
   GRID_CELL_PX,
   GRID_LINE_ALPHA,
+  HERO_BAND_FADE_END_PX,
+  HERO_BAND_SOLID_PX,
+  HERO_GRID_LINE_ALPHA,
   PROSE_STACK,
   VICTOR_MONO_FALLBACK,
 } from '../design-contract';
@@ -152,6 +156,58 @@ function gridReadsBorderToken(css: string): boolean {
 function gridHasNoHexLiteral(css: string): boolean {
   const body = gridBodyOf(css);
   return body !== null && !body.includes('#');
+}
+
+/** The hero panel's rule body, or null when `.surface-brand` is not a rule. */
+function heroBodyOf(css: string): string | null {
+  return ruleBodyOf({ css, selector: '.surface-brand' });
+}
+
+/** One declaration's value out of a rule body, whitespace collapsed to single spaces, or null. */
+function declarationOf({ body, property }: { body: string; property: string }): string | null {
+  const match = new RegExp(`(?:^|[\\s;])${escapeForPattern(property)}:\\s*([^;]*);`).exec(body);
+  return match === null ? null : match[1].replace(/\s+/g, ' ').trim();
+}
+
+/** The cover layer the hero lists FIRST: clear to the solid height, opaque card at the fade end. */
+const HERO_COVER_LAYER =
+  `linear-gradient(to bottom, transparent 0, transparent ${HERO_BAND_SOLID_PX}px, ` +
+  `hsl(var(--card)) ${HERO_BAND_FADE_END_PX}px)`;
+
+/** One paper layer of the hero, on the border token at the hero alpha. */
+function heroPaperLayer(direction: string): string {
+  return `linear-gradient(${direction}, hsl(var(--border) / ${HERO_GRID_LINE_ALPHA}) 1px, transparent 1px)`;
+}
+
+/** A `.surface-brand` rule around a body, so a control can rebuild or break the real one. */
+function heroRule(body: string): string {
+  return `.surface-brand { ${body} }`;
+}
+
+/**
+ * Whether the hero is graph paper behind a fading band: the cover first, then the two paper layers
+ * on the border token at the hero alpha, the cover sized to the whole panel and not repeated, no
+ * mask on the panel, and no pseudo-element carrying the paper.
+ */
+function heroFadesOverTheBand(css: string): boolean {
+  const body = heroBodyOf(css);
+  if (body === null) return false;
+  const image = declarationOf({ body, property: 'background-image' });
+  if (image === null) return false;
+  const expected = [HERO_COVER_LAYER, heroPaperLayer('to right'), heroPaperLayer('to bottom')].join(', ');
+  const size = declarationOf({ body, property: 'background-size' });
+  const repeat = declarationOf({ body, property: 'background-repeat' });
+  const hasMask = /(?:^|[\s;-])mask(?:-image)?:/.test(body);
+  const hasPseudo = ruleBodiesOf({ css, selector: '.surface-brand::before' }).length > 0;
+  const hasFill = declarationOf({ body, property: 'background-color' }) === 'hsl(var(--card))';
+  return (
+    image === expected &&
+    size === `100% 100%, ${GRID_CELL_PX}px ${GRID_CELL_PX}px, ${GRID_CELL_PX}px ${GRID_CELL_PX}px` &&
+    repeat === 'no-repeat, repeat, repeat' &&
+    hasFill &&
+    !hasMask &&
+    !hasPseudo
+  );
 }
 
 /** Every `.tsx` file directly under the legal routes, as `[name, source]` pairs. */
@@ -317,6 +373,47 @@ describe('.surface-grid', () => {
     assert.equal(gridReadsBorderToken(hexGrid), false, 'a layer that skips the token must fail');
     assert.equal(gridHasNoHexLiteral(hexGrid), false, 'a hex literal in the rule must fail');
     assert.equal(gridHasNoHexLiteral('.other { color: red; }'), false, 'a missing rule must not pass as clean');
+  });
+});
+
+describe('.surface-brand, the hero panel', () => {
+  it('is a rule in app.css', () => {
+    assert.notEqual(heroBodyOf(APP_CSS), null, 'app.css needs a .surface-brand rule');
+  });
+
+  it('is graph paper behind a fading band: a cover layer first, then the paper at the hero alpha', () => {
+    assert.equal(heroFadesOverTheBand(APP_CSS), true);
+  });
+
+  it('draws the hero stronger than the page grid, which keeps its own alpha', () => {
+    assert.ok(HERO_GRID_LINE_ALPHA > GRID_LINE_ALPHA, 'the operator chose a stronger line for the band');
+    assert.ok(HERO_BAND_FADE_END_PX > HERO_BAND_SOLID_PX, 'the fade needs room to fade in');
+  });
+
+  it('CONTROL: a mask, a pseudo-element, the old alpha, a cover on the bottom and a wrong fade all answer no', () => {
+    const real = heroBodyOf(APP_CSS);
+    assert.notEqual(real, null);
+    const body = real ?? '';
+    const withMask = heroRule(`${body} mask-image: linear-gradient(to bottom, #000, transparent);`);
+    const withPseudo = `${heroRule(body)}\n.surface-brand::before { content: ''; }`;
+    const oldAlpha = heroRule(body.replaceAll(`/ ${HERO_GRID_LINE_ALPHA})`, `/ ${GRID_LINE_ALPHA})`));
+    const coverLast = heroRule(
+      body.replace(HERO_COVER_LAYER + ',', '').replace(
+        'transparent 1px);',
+        `transparent 1px), ${HERO_COVER_LAYER};`,
+      ),
+    );
+    const fadeEarly = heroRule(body.replace(`${HERO_BAND_FADE_END_PX}px)`, `${HERO_BAND_SOLID_PX + 1}px)`));
+    const noFill = heroRule(body.replace('background-color: hsl(var(--card));', ''));
+    assert.equal(heroFadesOverTheBand(withMask), false, 'a mask on the panel masks its children');
+    assert.equal(heroFadesOverTheBand(withPseudo), false, 'the paper is not a pseudo-element');
+    assert.equal(heroFadesOverTheBand(oldAlpha), false, 'seven tenths is the page grid, not the hero');
+    assert.equal(heroFadesOverTheBand(coverLast), false, 'a cover under the paper hides nothing');
+    assert.equal(heroFadesOverTheBand(fadeEarly), false, 'the fade must end at the contract height');
+    assert.equal(heroFadesOverTheBand(noFill), false, 'the card fill stays under the layers');
+    assert.equal(heroFadesOverTheBand('.other { color: red; }'), false, 'a missing rule must not pass');
+    // The reader itself: the real body, put back into a rule, still answers yes.
+    assert.equal(heroFadesOverTheBand(heroRule(body)), true, 'the control rebuilds the real rule, so it can pass');
   });
 });
 

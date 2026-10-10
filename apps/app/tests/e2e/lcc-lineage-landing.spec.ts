@@ -6,7 +6,9 @@
  * ── THE GRID IS READ AS PAINT, IN BOTH THEMES ──
  * `.surface-grid` is a class, and a class is not a picture. The hero's computed `background-image`
  * is read instead, and it has to be the two-layer graph paper drawn in the `--border` token at
- * `GRID_LINE_ALPHA`, which is the same recipe the app's own hero panel draws. Both themes are
+ * `GRID_LINE_ALPHA`. The app's own hero panel draws the same 28 px paper, but stronger and only
+ * behind its head band (`HERO_GRID_LINE_ALPHA`, `lcc-lineage-hero.spec.ts`); this page keeps its
+ * seven tenths because nothing on a fold competes with it. Both themes are
  * walked because the token changes and the alpha does not: a grid that vanished in the dark theme
  * would pass a one-theme check and ship invisible. `to bottom` IS NOT IN THE COMPUTED STRING, so
  * the second layer is counted rather than named (see `lcc-lineage-hero.spec.ts`, which learned it

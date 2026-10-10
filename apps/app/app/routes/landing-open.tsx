@@ -879,8 +879,8 @@ export function LandingOpen({ syncEnabled, newsletter, analyticsLevel }: Landing
           now reads every clipping box in the fold for content running past it,
           so the next thing that hides here fails a test. */}
       {/* THE GRAPH PAPER SITS BEHIND THE HERO AND NOWHERE ELSE (M243 spec 06).
-          It is the same `.surface-grid` the hero panel inside the app draws,
-          at the same 28 px cell, so a stranger's first screen and their first
+          It is the same 28 px paper the hero panel inside the app draws
+          behind its head band, so a stranger's first screen and their first
           logged day are made of one texture. The page behind it stays plain:
           four of four advisors said a grid under the whole page is noise, and
           LowCarbCheck puts it under its fold only. The layers below paint on

@@ -14,24 +14,46 @@
  *
  * ── WHAT THE HERO IS MADE OF NOW ──
  * An ordinary card fill, an ordinary hairline, `shadow-sm`, and the page's graph paper drawn
- * INSIDE the panel from the `--border` token at `GRID_LINE_ALPHA`. The paper is the whole
- * device: it is what marks the hero now that the fill is every other card's, and it is why the
- * dashboard's hero is also asserted to be the only element on that screen painting a grid.
+ * INSIDE the panel from the `--border` token at `HERO_GRID_LINE_ALPHA`, behind the head band only
+ * (the fading band the operator chose on 2026-10-11). The paper is solid for the first
+ * `HERO_BAND_SOLID_PX` and a cover layer of opaque `--card` hides it from `HERO_BAND_FADE_END_PX`
+ * down, so the panel below the band is the plain card fill. The paper is the whole device: it is
+ * what marks the hero now that the fill is every other card's, and it is why the dashboard's hero
+ * is also asserted to be the only element on that screen painting a grid.
+ *
+ * ── THE FADE IS READ TWICE, AND ONE OF THE READS IS A PIXEL ──
+ * The computed `background-image` says what was ASKED FOR: the cover is the first of three layers
+ * and it runs from clear to the card colour between the two heights. That does not say what is
+ * DRAWN, so a probe wearing the real class is screenshotted: the band must hold paper, the part
+ * under the fade end must be one flat colour (the card's), and the band between must be weaker
+ * than the top and stronger than nothing. The probe is empty and fixed to the viewport on purpose:
+ * the real hero's rows and tiles would sit on the very pixels being read.
  *
  * ── EVERY CHECK IS SHOWN ABLE TO FAIL ──
- * Three controls, each injecting the exact thing the check exists to catch:
+ * Controls, each injecting the exact thing the check exists to catch:
  *
  * 1. A second `.surface-brand` element, which must break the count AND the only-grid claim.
  * 2. The old M129 wash, re-injected with `addStyleTag` at a higher precedence, which must break
  *    the paint claim on the real hero.
  * 3. A `shadow-md` probe beside the `shadow-sm` probe, so "the hero rests at shadow-sm" is a
  *    comparison between two different values rather than a string that happens to match.
+ * 4. The previous look, whole-panel paper at seven tenths with no cover, set on a probe: the
+ *    computed-style reader must reject it and the flat-colour pixel read must find paper in the
+ *    lower part.
+ * 5. The two schemes must paint different cards, or "the lower part is the card colour" was read
+ *    twice off one theme.
  *
  * @area brand-and-lineage
  */
 import { expect, test, type Page } from '@playwright/test';
 
-import { GRID_LINE_ALPHA } from '../design-contract';
+import {
+  GRID_CELL_PX,
+  HERO_BAND_FADE_END_PX,
+  HERO_BAND_SOLID_PX,
+  HERO_GRID_LINE_ALPHA,
+  GRID_LINE_ALPHA,
+} from '../design-contract';
 import { completeOnboarding, logFoodManually, PHONE_WIDTH } from './helpers';
 
 /** The phone this tier emulates. */
@@ -109,20 +131,45 @@ async function heroPaint(page: Page): Promise<HeroPaint> {
 }
 
 /**
- * Whether a computed `background-image` is graph paper: two linear layers, one of them running
- * to the right.
+ * Whether a computed `background-image` is the hero's graph paper: three linear layers (the cover
+ * and the two paper layers), one of them running to the right.
  *
  * `to bottom` IS NOT IN THE COMPUTED STRING. It is the default direction, so a browser drops it
  * on the way out and serialises the vertical layer as `linear-gradient(rgba(...) 1px, ...)`. The
  * first version of this reader looked for both keywords and reported zero grids on a page that
  * was visibly drawing one, which is why the layer COUNT carries the second half of the claim.
+ * The cover is a vertical layer too, so the count is three and not two.
  *
  * @param image - a computed `background-image`, or `none`.
- * @returns true when the value is the two-layer grid.
+ * @returns true when the value is the cover plus the two-layer grid.
  */
 function paintsGraphPaper(image: string): boolean {
   const layers = image.split('linear-gradient(').length - 1;
-  return layers === 2 && image.includes('linear-gradient(to right,');
+  return layers === HERO_LAYER_COUNT && image.includes('linear-gradient(to right,');
+}
+
+/** The cover layer, and the two paper layers under it. */
+const HERO_LAYER_COUNT = 3;
+
+/** The clear colour a computed gradient writes for `transparent`. */
+const CLEAR = 'rgba(0, 0, 0, 0)';
+
+/**
+ * Whether the FIRST layer of a computed `background-image` is the cover: clear down to the solid
+ * height, the card colour at the fade end, and nothing else.
+ *
+ * The first layer is the one painted on top, which is the whole point: a cover listed under the
+ * paper would hide nothing. The string is matched from its start for that reason.
+ *
+ * @param input.image - a computed `background-image`.
+ * @param input.card - the `--card` token as `rgb(r, g, b)`.
+ * @returns true when the top layer is the clear-to-card cover at the contract heights.
+ */
+function coversTheLowerPanel({ image, card }: { image: string; card: string }): boolean {
+  const expected =
+    `linear-gradient(${CLEAR} 0px, ${CLEAR} ${HERO_BAND_SOLID_PX}px, ${card} ${HERO_BAND_FADE_END_PX}px), ` +
+    'linear-gradient(to right,';
+  return image.startsWith(expected);
 }
 
 /**
@@ -151,6 +198,124 @@ async function paintedImages(page: Page): Promise<string[]> {
 async function gridElementCount(page: Page): Promise<number> {
   return (await paintedImages(page)).filter(paintsGraphPaper).length;
 }
+
+/** The probe's width, in CSS px: wide enough to hold several grid cells across. */
+const PROBE_WIDTH = 300;
+
+/** The probe's height, in CSS px: taller than the fade end, so there is a lower part to read. */
+const PROBE_HEIGHT = 320;
+
+/** A horizontal strip of the probe, in CSS px from its top edge. */
+interface Rows {
+  top: number;
+  height: number;
+}
+
+/**
+ * Inside the solid band: ends 16 px above where the cover starts, and holds a full grid row at
+ * y = 27 (the paper is positioned at -1px, so its lines are at 28k - 1).
+ */
+const BAND_ROWS: Rows = { top: 0, height: HERO_BAND_SOLID_PX - 16 };
+
+/** Inside the fade, centred on the grid line at y = 111, where the cover is about half opaque. */
+const FADE_ROWS: Rows = { top: 100, height: 30 };
+
+/** Under the fade end, with a margin of 10 px for the rasteriser, down to the probe's foot. */
+const LOWER_ROWS: Rows = {
+  top: HERO_BAND_FADE_END_PX + 10,
+  height: PROBE_HEIGHT - HERO_BAND_FADE_END_PX - 10,
+};
+
+/**
+ * The most ink a strip of plain card may carry. A flat fill is not read back to the digit: a
+ * gradient layer is shaded in floating point, and the lower part of the probe came back one channel
+ * step off the card colour on one or two channels in both themes (a summed distance of 3 in light
+ * and 2 in dark). Three is one step on each of the three channels.
+ */
+const FLAT_FILL_INK_MAX = 3;
+
+/**
+ * The least ink a strip must carry to be called paper. The faintest line the band draws, in the
+ * dark theme, is a summed distance of about 56 from the card; the fade at its half way is about 33.
+ */
+const PAPER_INK_MIN = 20;
+
+/** What a strip of pixels holds. */
+interface RegionReading {
+  /** The largest summed channel distance from the card colour, 0 for a strip that is all card. */
+  ink: number;
+}
+
+/**
+ * Plants an empty element wearing `.surface-brand` over the top-left of the viewport.
+ *
+ * AN EMPTY PROBE, NOT THE REAL HERO, because the real hero's rows and tiles carry fills of their
+ * own and would sit on the very pixels being read. The probe wears the real class, so it is the
+ * real stylesheet that paints it. It has no border and no shadow, so every pixel in it is the
+ * panel's own background.
+ *
+ * @param page - a loaded page.
+ * @param extraStyle - extra inline declarations, for a control that paints the old look.
+ */
+async function plantProbe(page: Page, extraStyle: string): Promise<void> {
+  await page.evaluate(
+    ({ width, height, extra }) => {
+      const probe = document.createElement('div');
+      probe.id = 'hero-probe';
+      probe.className = 'surface-brand';
+      probe.style.cssText =
+        `position:fixed;top:0;left:0;width:${width}px;height:${height}px;z-index:2147483647;` +
+        `border:0;box-shadow:none;transition:none;${extra}`;
+      document.body.append(probe);
+    },
+    { width: PROBE_WIDTH, height: PROBE_HEIGHT, extra: extraStyle },
+  );
+}
+
+/**
+ * Reads a strip of the probe off a screenshot: how far its furthest pixel is from the card colour.
+ *
+ * The PNG is decoded in the page (`createImageBitmap` of a blob, which no content security policy
+ * governs) so the colours are the browser's own and no image library is needed here.
+ *
+ * @param input.page - a page with the probe planted.
+ * @param input.rows - the strip to read.
+ * @param input.card - the `--card` token as `rgb(r, g, b)`.
+ * @returns the ink.
+ */
+async function readRegion({ page, rows, card }: { page: Page; rows: Rows; card: string }): Promise<RegionReading> {
+  const png = await page.screenshot({ clip: { x: 0, y: rows.top, width: PROBE_WIDTH, height: rows.height } });
+  const channels = card
+    .slice(card.indexOf('(') + 1, card.lastIndexOf(')'))
+    .split(',')
+    .map((channel) => Number(channel));
+  return page.evaluate(
+    async ({ base64, target }) => {
+      const bytes = Uint8Array.from(atob(base64), (char) => char.codePointAt(0) ?? 0);
+      const bitmap = await createImageBitmap(new Blob([bytes], { type: 'image/png' }));
+      const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+      const context = canvas.getContext('2d');
+      if (context === null) throw new Error('no 2d context to read the screenshot with');
+      context.drawImage(bitmap, 0, 0);
+      const { data } = context.getImageData(0, 0, bitmap.width, bitmap.height);
+      let ink = 0;
+      for (let at = 0; at < data.length; at += 4) {
+        const distance =
+          Math.abs(data[at] - target[0]) + Math.abs(data[at + 1] - target[1]) + Math.abs(data[at + 2] - target[2]);
+        ink = Math.max(ink, distance);
+      }
+      return { ink };
+    },
+    { base64: png.toString('base64'), target: channels },
+  );
+}
+
+/** The previous look as inline declarations: paper over the whole panel at seven tenths, no cover. */
+const PREVIOUS_LOOK_STYLE =
+  `background-image: linear-gradient(to right, hsl(var(--border) / ${GRID_LINE_ALPHA}) 1px, transparent 1px), ` +
+  `linear-gradient(to bottom, hsl(var(--border) / ${GRID_LINE_ALPHA}) 1px, transparent 1px);` +
+  `background-size: ${GRID_CELL_PX}px ${GRID_CELL_PX}px; background-repeat: repeat;` +
+  'background-position: -1px -1px; background-origin: padding-box;';
 
 /**
  * The computed shadow of a probe wearing one Tailwind shadow class.
@@ -250,7 +415,7 @@ test('CONTROL: a second hero on one screen breaks the count and the only-grid cl
   );
 });
 
-test('the hero paints graph paper on the border token, and rests at shadow-sm', async ({ page }) => {
+test('the hero paints graph paper behind its band on the border token, and rests at shadow-sm', async ({ page }) => {
   await page.setViewportSize({ width: PHONE_WIDTH, height: PHONE_HEIGHT });
   await completeOnboarding(page);
   await logFoodManually(page, SEEDED_FOOD);
@@ -260,9 +425,13 @@ test('the hero paints graph paper on the border token, and rests at shadow-sm', 
   expect(smallShadow, 'the shadow-sm probe must paint something, or the comparison is vacuous').not.toBe('none');
   expect(mediumShadow, 'the two shadow steps must differ, or the claim below proves nothing').not.toBe(smallShadow);
 
-  const borderLine = atAlpha(await tokenColour(page, '--border'), GRID_LINE_ALPHA);
-  const brandLine = atAlpha(await tokenColour(page, '--primary'), GRID_LINE_ALPHA);
+  const borderLine = atAlpha(await tokenColour(page, '--border'), HERO_GRID_LINE_ALPHA);
+  const brandLine = atAlpha(await tokenColour(page, '--primary'), HERO_GRID_LINE_ALPHA);
   expect(borderLine, 'the two tokens must resolve differently, or the colour claim is vacuous').not.toBe(brandLine);
+  const card = await tokenColour(page, '--card');
+  expect(card, 'the card and the border must differ, or the cover claim is vacuous').not.toBe(
+    await tokenColour(page, '--border'),
+  );
 
   const checked: string[] = [];
   for (const route of ROUTES) {
@@ -279,6 +448,10 @@ test('the hero paints graph paper on the border token, and rests at shadow-sm', 
     expect(paint.backgroundImage, `${route}: both layers are drawn in the border token`).toContain(borderLine);
     expect(paint.backgroundImage, `${route}: no layer may be drawn in the brand token`).not.toContain(brandLine);
     expect(paint.backgroundImage, `${route}: the 140 degree wash is what this spec removed`).not.toContain('140deg');
+    expect(
+      coversTheLowerPanel({ image: paint.backgroundImage, card }),
+      `${route}: the top layer must be the cover, clear to ${HERO_BAND_SOLID_PX}px and the card colour at ${HERO_BAND_FADE_END_PX}px, and is ${paint.backgroundImage}`,
+    ).toBe(true);
     expect(paint.boxShadow, `${route}: the hero rests at the small shadow`).toBe(smallShadow);
     checked.push(route);
   }
@@ -292,7 +465,7 @@ test('CONTROL: the old wash re-injected fails the paint claim on the real hero',
   await page.goto('/dashboard');
   await expect(page.locator(HERO_SELECTOR).first(), 'the dashboard must draw its hero').toBeVisible();
 
-  const borderLine = atAlpha(await tokenColour(page, '--border'), GRID_LINE_ALPHA);
+  const borderLine = atAlpha(await tokenColour(page, '--border'), HERO_GRID_LINE_ALPHA);
   const before = await heroPaint(page);
   expect(before.backgroundImage, 'the hero starts on the border token').toContain(borderLine);
 
@@ -302,11 +475,19 @@ test('CONTROL: the old wash re-injected fails the paint claim on the real hero',
   expect(after.backgroundImage, 'CONTROL: the re-injected wash must be what the reader now sees').toContain('140deg');
   expect(after.backgroundImage, 'CONTROL: and the border-token claim must go red').not.toContain(borderLine);
   expect(paintsGraphPaper(after.backgroundImage), 'CONTROL: a wash is not graph paper').toBe(false);
+  expect(
+    coversTheLowerPanel({ image: after.backgroundImage, card: await tokenColour(page, '--card') }),
+    'CONTROL: a wash has no cover layer on top, so the fade claim must go red too',
+  ).toBe(false);
   expect(await gridElementCount(page), 'CONTROL: the screen now paints no graph paper at all').toBe(0);
 
   // The predicate itself, against the two values it exists to tell apart, so a reader that
   // answered false to everything could not have passed the line above.
   expect(paintsGraphPaper(before.backgroundImage), 'CONTROL: the real hero is graph paper').toBe(true);
+  expect(
+    coversTheLowerPanel({ image: before.backgroundImage, card: await tokenColour(page, '--card') }),
+    'CONTROL: and the real hero has the cover on top',
+  ).toBe(true);
 });
 
 test('the dashboard hero is the topmost card and the only element painting graph paper', async ({ page }) => {
@@ -327,4 +508,63 @@ test('the dashboard hero is the topmost card and the only element painting graph
   await expect(cards.nth(1), 'CONTROL: the card under the hero must not wear the hero class').not.toHaveClass(
     /(?:^|\s)surface-brand(?:\s|$)/u,
   );
+});
+
+for (const scheme of ['light', 'dark'] as const) {
+  test(`the paper sits behind the head band only, and the lower hero is the plain card (${scheme})`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: PHONE_WIDTH, height: PHONE_HEIGHT });
+    await page.emulateMedia({ colorScheme: scheme });
+    await completeOnboarding(page);
+    await page.goto('/dashboard');
+    await expect(page.locator(HERO_SELECTOR).first(), 'the dashboard must draw its hero').toBeVisible();
+
+    const card = await tokenColour(page, '--card');
+    await plantProbe(page, '');
+    const band = await readRegion({ page, rows: BAND_ROWS, card });
+    const fade = await readRegion({ page, rows: FADE_ROWS, card });
+    const lower = await readRegion({ page, rows: LOWER_ROWS, card });
+
+    expect(band.ink, `${scheme}: the band holds paper, well away from the card colour`).toBeGreaterThan(PAPER_INK_MIN);
+    expect(fade.ink, `${scheme}: the fade still shows some paper`).toBeGreaterThan(FLAT_FILL_INK_MAX);
+    expect(fade.ink, `${scheme}: but weaker than the band shows it`).toBeLessThan(band.ink);
+    expect(lower.ink, `${scheme}: below the fade the panel is the card colour and nothing else`).toBeLessThanOrEqual(
+      FLAT_FILL_INK_MAX,
+    );
+  });
+}
+
+test('CONTROL: the two schemes paint different cards, so the flat-colour read is not one theme twice', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: PHONE_WIDTH, height: PHONE_HEIGHT });
+  await page.emulateMedia({ colorScheme: 'light' });
+  await completeOnboarding(page);
+  await page.goto('/dashboard');
+  await expect(page.locator(HERO_SELECTOR).first()).toBeVisible();
+  const light = await tokenColour(page, '--card');
+
+  // The theme is decided when the page loads, so the dark card is read after a reload.
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.reload();
+  await expect(page.locator(HERO_SELECTOR).first()).toBeVisible();
+  expect(await tokenColour(page, '--card'), 'CONTROL: the dark card must not be the light one').not.toBe(light);
+});
+
+test('CONTROL: the previous look, paper over the whole panel, is caught by both readers', async ({ page }) => {
+  await page.setViewportSize({ width: PHONE_WIDTH, height: PHONE_HEIGHT });
+  await completeOnboarding(page);
+  await page.goto('/dashboard');
+  await expect(page.locator(HERO_SELECTOR).first(), 'the dashboard must draw its hero').toBeVisible();
+
+  const card = await tokenColour(page, '--card');
+  await plantProbe(page, PREVIOUS_LOOK_STYLE);
+  const lower = await readRegion({ page, rows: LOWER_ROWS, card });
+  expect(lower.ink, 'CONTROL: whole-panel paper leaves paper in the lower part').toBeGreaterThan(PAPER_INK_MIN);
+
+  const image = await page.locator('#hero-probe').evaluate((node) => globalThis.getComputedStyle(node).backgroundImage);
+  expect(image, 'CONTROL: the probe now carries the old two layers').toContain('rgba(');
+  expect(paintsGraphPaper(image), 'CONTROL: two layers are no longer the hero recipe').toBe(false);
+  expect(coversTheLowerPanel({ image, card }), 'CONTROL: and there is no cover on top').toBe(false);
 });

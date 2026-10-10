@@ -114,17 +114,24 @@ export const CARD_TITLE_PX = 18;
 export const CARD_TITLE_OVER_BODY_MIN_RATIO = 1.25;
 
 /**
- * The graph paper's cell, and the alpha its hairlines are drawn at.
+ * The graph paper's cell, and the alpha its hairlines are drawn at, in the two places it is drawn.
  *
- * ONE ALPHA FOR BOTH PLACES the paper is drawn: the page grid (`.surface-grid`) and the hero
- * panel (`.surface-brand`, M243 spec 04). A lower alpha inside the hero was tried at three tenths
- * and the paper simply vanished in both themes, so the hero reads the same number. What keeps the
- * paper off the hero's small text is the panel's content, which carries fills of its own, not a
- * weaker line. `tests/unit/lcc-lineage-foundation.test.ts` reads it out of `app.css`;
+ * THE PAGE GRID (`.surface-grid`, behind the landing fold) is drawn at `GRID_LINE_ALPHA`, seven
+ * tenths. THE HERO PANEL (`.surface-brand`) is drawn at `HERO_GRID_LINE_ALPHA`, nine tenths, since
+ * the operator chose the fading band on 2026-10-11: the same 28 px paper, a little stronger, but
+ * only behind the head band. The paper is solid for the first `HERO_BAND_SOLID_PX` from the top of
+ * the panel and is covered by an opaque `--card` layer from `HERO_BAND_FADE_END_PX` down, with a
+ * linear fade between. Below that the panel is the plain card fill. A lower alpha was tried at
+ * three tenths (M243 spec 04) and the paper simply vanished in both themes; what keeps the paper
+ * off the hero's small text now is that it ends above the data, not a weaker line.
+ * `tests/unit/lcc-lineage-foundation.test.ts` reads both out of `app.css`;
  * `tests/e2e/lcc-lineage-hero.spec.ts` reads what a browser paints on the hero.
  */
 export const GRID_CELL_PX = 28;
 export const GRID_LINE_ALPHA = 0.7;
+export const HERO_GRID_LINE_ALPHA = 0.9;
+export const HERO_BAND_SOLID_PX = 56;
+export const HERO_BAND_FADE_END_PX = 170;
 
 /**
  * EVERY CORNER IS SQUARE (operator decision, 2026-09-22), which retires the five-step radius
