@@ -174,7 +174,7 @@ async function showPeople(page: Page): Promise<void> {
 
 /** Switches to the Invitations tab the way a person does, with a click, and waits for its rows. */
 async function switchToInvitations(page: Page): Promise<void> {
-  await page.locator('main a[href="/admin/invitations"]').click();
+  await page.locator('main nav a[href="/admin/invitations"]').click();
   await expect(page.getByText(LONG_INVITE_EMAIL).first()).toBeVisible({ timeout: 15_000 });
   await settleAnimations(page);
 }
