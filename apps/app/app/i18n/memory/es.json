@@ -1350,6 +1350,13 @@
     "at": "2026-09-20",
     "es": "La pantalla de descripción muestra su propio nombre una sola vez, y los encabezados de la primera ejecución no dejan palabras sueltas."
   },
+  "0eab276f45787b82": {
+    "en": "The Overview now leads with your main goal as one large figure.",
+    "path": "releases:v0_68_0.changed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Resumen ahora comienza con tu objetivo principal como una cifra grande."
+  },
   "0ec06a330cc9be7e": {
     "en": "Fat {{value}} g",
     "path": "common:entry.preview.fat",
@@ -1650,6 +1657,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Recuperar tu diario · openplate"
+  },
+  "120339e0a34164eb": {
+    "en": "The admin console opens on new sign-ups and finds anyone fast.",
+    "path": "releases:v0_68_0.added.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "La consola de administración se abre en los nuevos registros y encuentra a cualquiera con rapidez."
   },
   "121a84e79fd7267f": {
     "en": "End fast",
@@ -18101,6 +18115,13 @@
     "at": "2026-09-14",
     "es": "La foto es demasiado grande (máximo 8MB)."
   },
+  "cd0f466c5eecf26a": {
+    "en": "A moved instance never points a browser at another host.",
+    "path": "releases:v0_68_0.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Una instancia trasladada nunca dirige el navegador hacia otro host."
+  },
   "cd3da96493510279": {
     "en": "Signed-in people can now reach the legal pages from Settings.",
     "path": "releases:v0_63_0.fixed.02",
@@ -18282,6 +18303,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Claro, oscuro, o la configuración actual de tu dispositivo."
+  },
+  "cf4f813133652685": {
+    "en": "The graph paper on the hero card fades out below the head band.",
+    "path": "releases:v0_68_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "El papel milimetrado de la tarjeta principal se desvanece por debajo de la banda superior."
   },
   "cf5e6429c1b010ef": {
     "en": "3 months",
@@ -22741,6 +22769,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Tu navegador ha dejado de preguntar. Permite las notificaciones en los ajustes del sitio de tu navegador."
+  },
+  "fd9933b2f74a87f6": {
+    "en": "A page that gains or loses its scrollbar no longer jumps sideways.",
+    "path": "releases:v0_68_0.fixed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Las páginas que muestran u ocultan su barra de desplazamiento ya no dan saltos laterales."
   },
   "fdb635be0ee9b34a": {
     "en": "How to self-host",

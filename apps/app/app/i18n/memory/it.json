@@ -1350,6 +1350,13 @@
     "at": "2026-09-20",
     "it": "La schermata di descrizione mostra il proprio titolo una sola volta, e i titoli del primo avvio non lasciano parole isolate a fine riga."
   },
+  "0eab276f45787b82": {
+    "en": "The Overview now leads with your main goal as one large figure.",
+    "path": "releases:v0_68_0.changed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "it": "La Panoramica ora si apre con il tuo obiettivo principale mostrato come una singola cifra grande."
+  },
   "0ec06a330cc9be7e": {
     "en": "Fat {{value}} g",
     "path": "common:entry.preview.fat",
@@ -1650,6 +1657,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Recupera il tuo diario · openplate"
+  },
+  "120339e0a34164eb": {
+    "en": "The admin console opens on new sign-ups and finds anyone fast.",
+    "path": "releases:v0_68_0.added.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "it": "La console di amministrazione si apre sulle nuove registrazioni e trova chiunque rapidamente."
   },
   "121a84e79fd7267f": {
     "en": "End fast",
@@ -18101,6 +18115,13 @@
     "at": "2026-09-14",
     "it": "La foto è troppo grande (massimo 8MB)."
   },
+  "cd0f466c5eecf26a": {
+    "en": "A moved instance never points a browser at another host.",
+    "path": "releases:v0_68_0.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "it": "Un'istanza spostata non indirizza mai un browser verso un altro host."
+  },
   "cd3da96493510279": {
     "en": "Signed-in people can now reach the legal pages from Settings.",
     "path": "releases:v0_63_0.fixed.02",
@@ -18282,6 +18303,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Chiaro, scuro, oppure l'impostazione attuale del tuo dispositivo."
+  },
+  "cf4f813133652685": {
+    "en": "The graph paper on the hero card fades out below the head band.",
+    "path": "releases:v0_68_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "it": "La carta millimetrata sulla scheda principale sfuma sotto la fascia superiore."
   },
   "cf5e6429c1b010ef": {
     "en": "3 months",
@@ -22741,6 +22769,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Il tuo browser non mostra più la richiesta. Consenti le notifiche nelle impostazioni del sito del browser."
+  },
+  "fd9933b2f74a87f6": {
+    "en": "A page that gains or loses its scrollbar no longer jumps sideways.",
+    "path": "releases:v0_68_0.fixed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "it": "Una pagina che acquisisce o perde la barra di scorrimento non fa più scatti laterali."
   },
   "fdb635be0ee9b34a": {
     "en": "How to self-host",

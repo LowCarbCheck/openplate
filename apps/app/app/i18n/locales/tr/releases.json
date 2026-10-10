@@ -1,4 +1,18 @@
 {
+  "v0_68_0": {
+    "date": "2026-10-11",
+    "added": {
+      "01": "Yönetici konsolu yeni kayıtlarda açılır ve herkesi hızla bulur."
+    },
+    "changed": {
+      "01": "Başlık kartındaki milimetrik kağıt, üst şeridin altında solarak kaybolur.",
+      "02": "Genel bakış artık ana hedefini tek bir büyük sayı olarak en başta gösterir."
+    },
+    "fixed": {
+      "01": "Taşınan bir örnek, tarayıcıyı asla başka bir ana bilgisayara yönlendirmez.",
+      "02": "Kaydırma çubuğu eklenen veya kaybolan bir sayfa artık yana doğru sıçramaz."
+    }
+  },
   "v0_67_0": {
     "date": "2026-10-07",
     "changed": {
@@ -17,12 +31,6 @@
       "02": "Fotoğraf istemi artık güven derecesini fotoğrafın gösterdiklerine göre belirler.",
       "03": "Hamilelik işaretleri artık her kategorinin arkasındaki yiyecekleri adlandırır.",
       "04": "İstemler artık şüpheli yumurta, alkol ve eti işaretler ve tek bir hamilelik satırını paylaşır."
-    }
-  },
-  "v0_65_1": {
-    "date": "2026-10-05",
-    "fixed": {
-      "01": "Analiz betiği yüklenmeden önce gönderilen bir olay, artık gerçek sayfa adresini taşımaz."
     }
   }
 }

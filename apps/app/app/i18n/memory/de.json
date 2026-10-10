@@ -1350,6 +1350,13 @@
     "at": "2026-09-20",
     "de": "Die Beschreibungsansicht benennt sich einmal, und die Überschriften beim ersten Start behalten ihr letztes Wort bei sich."
   },
+  "0eab276f45787b82": {
+    "en": "The Overview now leads with your main goal as one large figure.",
+    "path": "releases:v0_68_0.changed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "de": "Die Übersicht beginnt jetzt mit deinem Hauptziel als einzelne große Zahl."
+  },
   "0ec06a330cc9be7e": {
     "en": "Fat {{value}} g",
     "path": "common:entry.preview.fat",
@@ -1650,6 +1657,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Tagebuch wiederherstellen · openplate"
+  },
+  "120339e0a34164eb": {
+    "en": "The admin console opens on new sign-ups and finds anyone fast.",
+    "path": "releases:v0_68_0.added.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "de": "Die Admin-Konsole öffnet sich bei neuen Registrierungen und findet jeden schnell."
   },
   "121a84e79fd7267f": {
     "en": "End fast",
@@ -18101,6 +18115,13 @@
     "at": "2026-09-14",
     "de": "Das Foto ist zu groß (max. 8 MB)."
   },
+  "cd0f466c5eecf26a": {
+    "en": "A moved instance never points a browser at another host.",
+    "path": "releases:v0_68_0.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "de": "Eine verschobene Instanz leitet einen Browser niemals auf einen anderen Host um."
+  },
   "cd3da96493510279": {
     "en": "Signed-in people can now reach the legal pages from Settings.",
     "path": "releases:v0_63_0.fixed.02",
@@ -18282,6 +18303,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Hell, dunkel oder wie dein Gerät bereits eingestellt ist."
+  },
+  "cf4f813133652685": {
+    "en": "The graph paper on the hero card fades out below the head band.",
+    "path": "releases:v0_68_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "de": "Das Millimeterpapier auf der Hero-Karte blendet unter dem Kopfband aus."
   },
   "cf5e6429c1b010ef": {
     "en": "3 months",
@@ -22741,6 +22769,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Dein Browser fragt nicht mehr. Erlaube Benachrichtigungen in den Website-Einstellungen."
+  },
+  "fd9933b2f74a87f6": {
+    "en": "A page that gains or loses its scrollbar no longer jumps sideways.",
+    "path": "releases:v0_68_0.fixed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "de": "Eine Seite, die ihre Scrollleiste erhält oder verliert, springt nicht mehr zur Seite."
   },
   "fdb635be0ee9b34a": {
     "en": "How to self-host",

@@ -1,4 +1,18 @@
 {
+  "v0_68_0": {
+    "date": "2026-10-11",
+    "added": {
+      "01": "La console di amministrazione si apre sulle nuove registrazioni e trova chiunque rapidamente."
+    },
+    "changed": {
+      "01": "La carta millimetrata sulla scheda principale sfuma sotto la fascia superiore.",
+      "02": "La Panoramica ora si apre con il tuo obiettivo principale mostrato come una singola cifra grande."
+    },
+    "fixed": {
+      "01": "Un'istanza spostata non indirizza mai un browser verso un altro host.",
+      "02": "Una pagina che acquisisce o perde la barra di scorrimento non fa più scatti laterali."
+    }
+  },
   "v0_67_0": {
     "date": "2026-10-07",
     "changed": {
@@ -17,12 +31,6 @@
       "02": "Il prompt per le foto ora valuta il proprio livello di confidenza in base a ciò che mostra la foto.",
       "03": "I contrassegni per la gravidanza ora indicano i singoli alimenti associati a ciascuna categoria.",
       "04": "I prompt ora segnalano uova, alcolici e carne incerti, e condividono un'unica riga per la gravidanza."
-    }
-  },
-  "v0_65_1": {
-    "date": "2026-10-05",
-    "fixed": {
-      "01": "Un evento inviato prima del caricamento dello script di analisi non include più l'indirizzo reale della pagina."
     }
   }
 }

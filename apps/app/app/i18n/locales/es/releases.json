@@ -1,4 +1,18 @@
 {
+  "v0_68_0": {
+    "date": "2026-10-11",
+    "added": {
+      "01": "La consola de administración se abre en los nuevos registros y encuentra a cualquiera con rapidez."
+    },
+    "changed": {
+      "01": "El papel milimetrado de la tarjeta principal se desvanece por debajo de la banda superior.",
+      "02": "Resumen ahora comienza con tu objetivo principal como una cifra grande."
+    },
+    "fixed": {
+      "01": "Una instancia trasladada nunca dirige el navegador hacia otro host.",
+      "02": "Las páginas que muestran u ocultan su barra de desplazamiento ya no dan saltos laterales."
+    }
+  },
   "v0_67_0": {
     "date": "2026-10-07",
     "changed": {
@@ -17,12 +31,6 @@
       "02": "El prompt para fotos ahora califica su nivel de certeza según lo que se observa en la foto.",
       "03": "Los avisos de embarazo ahora indican los alimentos que corresponden a cada categoría.",
       "04": "Los prompts ahora señalan dudas sobre huevo, alcohol y carne, y comparten una misma línea para el embarazo."
-    }
-  },
-  "v0_65_1": {
-    "date": "2026-10-05",
-    "fixed": {
-      "01": "Un evento enviado antes de que cargue el script de analítica ya no incluye la dirección real de la página."
     }
   }
 }

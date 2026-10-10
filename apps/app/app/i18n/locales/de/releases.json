@@ -1,4 +1,18 @@
 {
+  "v0_68_0": {
+    "date": "2026-10-11",
+    "added": {
+      "01": "Die Admin-Konsole öffnet sich bei neuen Registrierungen und findet jeden schnell."
+    },
+    "changed": {
+      "01": "Das Millimeterpapier auf der Hero-Karte blendet unter dem Kopfband aus.",
+      "02": "Die Übersicht beginnt jetzt mit deinem Hauptziel als einzelne große Zahl."
+    },
+    "fixed": {
+      "01": "Eine verschobene Instanz leitet einen Browser niemals auf einen anderen Host um.",
+      "02": "Eine Seite, die ihre Scrollleiste erhält oder verliert, springt nicht mehr zur Seite."
+    }
+  },
   "v0_67_0": {
     "date": "2026-10-07",
     "changed": {
@@ -17,12 +31,6 @@
       "02": "Der Foto-Prompt bewertet seine Konfidenz jetzt danach, was das Foto zeigt.",
       "03": "Die Schwangerschaftshinweise benennen jetzt die Lebensmittel hinter jeder Kategorie.",
       "04": "Die Prompts markieren jetzt unsicheres Ei, unsicheren Alkohol sowie unsicheres Fleisch und teilen sich eine gemeinsame Schwangerschaftszeile."
-    }
-  },
-  "v0_65_1": {
-    "date": "2026-10-05",
-    "fixed": {
-      "01": "Ein Ereignis, das vor dem Laden des Analytics-Skripts gesendet wird, enthält nicht mehr die echte Seitenadresse."
     }
   }
 }

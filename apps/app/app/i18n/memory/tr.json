@@ -1350,6 +1350,13 @@
     "at": "2026-09-20",
     "tr": "Tarif etme ekranı adını bir kez belirtir, ilk çalıştırma başlıkları da son sözcüklerini yalnız bırakmaz."
   },
+  "0eab276f45787b82": {
+    "en": "The Overview now leads with your main goal as one large figure.",
+    "path": "releases:v0_68_0.changed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "tr": "Genel bakış artık ana hedefini tek bir büyük sayı olarak en başta gösterir."
+  },
   "0ec06a330cc9be7e": {
     "en": "Fat {{value}} g",
     "path": "common:entry.preview.fat",
@@ -1650,6 +1657,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Günlüğünü kurtar · openplate"
+  },
+  "120339e0a34164eb": {
+    "en": "The admin console opens on new sign-ups and finds anyone fast.",
+    "path": "releases:v0_68_0.added.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "tr": "Yönetici konsolu yeni kayıtlarda açılır ve herkesi hızla bulur."
   },
   "121a84e79fd7267f": {
     "en": "End fast",
@@ -18101,6 +18115,13 @@
     "at": "2026-09-14",
     "tr": "Fotoğraf çok büyük (en fazla 8 MB)."
   },
+  "cd0f466c5eecf26a": {
+    "en": "A moved instance never points a browser at another host.",
+    "path": "releases:v0_68_0.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "tr": "Taşınan bir örnek, tarayıcıyı asla başka bir ana bilgisayara yönlendirmez."
+  },
   "cd3da96493510279": {
     "en": "Signed-in people can now reach the legal pages from Settings.",
     "path": "releases:v0_63_0.fixed.02",
@@ -18282,6 +18303,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Açık, koyu veya cihazının ayarı neyse o."
+  },
+  "cf4f813133652685": {
+    "en": "The graph paper on the hero card fades out below the head band.",
+    "path": "releases:v0_68_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "tr": "Başlık kartındaki milimetrik kağıt, üst şeridin altında solarak kaybolur."
   },
   "cf5e6429c1b010ef": {
     "en": "3 months",
@@ -22741,6 +22769,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Tarayıcın sormayı bıraktı. Tarayıcının site ayarlarından bildirimlere izin ver."
+  },
+  "fd9933b2f74a87f6": {
+    "en": "A page that gains or loses its scrollbar no longer jumps sideways.",
+    "path": "releases:v0_68_0.fixed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "tr": "Kaydırma çubuğu eklenen veya kaybolan bir sayfa artık yana doğru sıçramaz."
   },
   "fdb635be0ee9b34a": {
     "en": "How to self-host",

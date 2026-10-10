@@ -1,4 +1,18 @@
 {
+  "v0_68_0": {
+    "date": "2026-10-11",
+    "added": {
+      "01": "The admin console opens on new sign-ups and finds anyone fast."
+    },
+    "changed": {
+      "01": "The graph paper on the hero card fades out below the head band.",
+      "02": "The Overview now leads with your main goal as one large figure."
+    },
+    "fixed": {
+      "01": "A moved instance never points a browser at another host.",
+      "02": "A page that gains or loses its scrollbar no longer jumps sideways."
+    }
+  },
   "v0_67_0": {
     "date": "2026-10-07",
     "changed": {
@@ -17,12 +31,6 @@
       "02": "The photo prompt now rates its confidence by what the photo shows.",
       "03": "The pregnancy flags now name the foods behind each category.",
       "04": "The prompts now flag uncertain egg, alcohol and meat, and share one pregnancy line."
-    }
-  },
-  "v0_65_1": {
-    "date": "2026-10-05",
-    "fixed": {
-      "01": "An event sent before the analytics script loads no longer carries the real page address."
     }
   }
 }
