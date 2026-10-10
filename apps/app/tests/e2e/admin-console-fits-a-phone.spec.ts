@@ -269,8 +269,23 @@ async function readFit(page: Page): Promise<FitReading> {
       const pinned = [...document.body.querySelectorAll('*')].filter(
         (element) => getComputedStyle(element).position === 'fixed',
       );
+      // A row of quick-view chips scrolls sideways on a phone ON PURPOSE
+      // (`filter-chips.tsx`). What sits in its overflow is reachable by a
+      // swipe and does not widen the page, so it is not "past an edge" as
+      // long as the scroller itself ends inside the viewport.
+      // `admin-people-find.spec.ts` proves the page does not scroll sideways.
+      const isInsideAFittingScroller = (element: Element): boolean => {
+        for (let node = element.parentElement; node !== null; node = node.parentElement) {
+          const style = getComputedStyle(node);
+          if (style.overflowX !== 'auto' && style.overflowX !== 'scroll') continue;
+          const box = node.getBoundingClientRect();
+          return box.left >= -tolerance && box.right <= viewportWidth + tolerance;
+        }
+        return false;
+      };
       const offenders = [...document.body.querySelectorAll('*')].filter((element) => {
         if (pinned.some((fixed) => fixed.contains(element))) return false;
+        if (isInsideAFittingScroller(element)) return false;
         const box = element.getBoundingClientRect();
         // A box a pixel or less on a side is `sr-only` text or a collapsed
         // node, which nobody sees wherever it sits.

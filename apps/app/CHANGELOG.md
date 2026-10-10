@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Added
+
+- **The admin console opens on new sign-ups and finds anyone fast.** The People tab lists new sign-ups first with a "New" badge and a Joined column, and it groups them under this week, this month and earlier. Quick views with live counts show who is new, who was seen this week, who went quiet, who never signed in, who is suspended and who administers. A label menu, a sort menu and sortable column headings narrow it further, "/" jumps to the search, and the choice lives in the address so a reload or a shared link keeps it. The counts at the top link to the matching list. The Invitations tab opens on the pending ones and keeps expired, revoked and accepted invitations behind chips of their own, each row with its send date, its photo allowance and the days left.
+
 ### Changed
 
 - **The graph paper on the hero card fades out below the head band.** The paper was drawn over the whole hero panel and the eye got lost in it on a busy screen and on an empty one. It is the same 28 px paper, a little stronger (nine tenths of the border colour, up from seven), and it shows in full for the first 56 px from the top, then fades to nothing by 170 px. Below that the card is its plain fill. A cover layer on top of the two paper layers does the fading, so the text and figures inside the panel are not masked. The landing page keeps its own paper unchanged.

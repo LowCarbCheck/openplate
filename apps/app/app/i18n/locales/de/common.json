@@ -3381,7 +3381,8 @@
     "usageNone": "Keine Fotos",
     "trialScansUsed": "{{used}} von {{granted}} verbraucht",
     "lastSeen": {
-      "never": "Nie angemeldet"
+      "never": "Nie angemeldet",
+      "neverShort": "Nie"
     },
     "person": {
       "back": "Zurück zur Liste",
@@ -3449,9 +3450,13 @@
       "failed": "Das Konto konnte nicht gelöscht werden."
     },
     "invites": {
-      "title": "Offene Einladungen",
       "empty": "Keine offenen Einladungen.",
-      "expires": "Gültig bis {{date}}",
+      "emptyFor": {
+        "expired": "Keine Einladung ist abgelaufen.",
+        "revoked": "Keine Einladung wurde zurückgezogen.",
+        "redeemed": "Bisher hat niemand eine Einladung angenommen.",
+        "all": "Bisher wurde keine Einladung gesendet."
+      },
       "resend": "Erneut senden",
       "resent": "Eine neue Einladung ging an {{email}}.",
       "revoke": "Zurückziehen",
@@ -3459,7 +3464,28 @@
       "revokeConfirmBody": "Der Link verliert seine Gültigkeit. Du kannst die Person jederzeit erneut einladen.",
       "revokeConfirmCta": "Zurückziehen",
       "failed": "Das hat nicht geklappt.",
-      "loadFailed": "Die Einladungen konnten nicht geladen werden."
+      "loadFailed": "Die Einladungen konnten nicht geladen werden.",
+      "statusLabel": "Status",
+      "status": {
+        "pending": "Ausstehend",
+        "expired": "Abgelaufen",
+        "revoked": "Zurückgezogen",
+        "redeemed": "Angenommen",
+        "all": "Alle"
+      },
+      "result_one": "{{count}} Einladung, neueste zuerst",
+      "result_other": "{{count}} Einladungen, neueste zuerst",
+      "sentToday": "Heute gesendet",
+      "sentYesterday": "Gestern gesendet",
+      "sentDaysAgo": "Vor {{days}} Tagen gesendet",
+      "sentOn": "Am {{date}} gesendet",
+      "perDay_one": "{{count}} Foto pro Tag",
+      "perDay_other": "{{count}} Fotos pro Tag",
+      "expiresIn_one": "Läuft in {{count}} Tag ab",
+      "expiresIn_other": "Läuft in {{count}} Tagen ab",
+      "expiresToday": "Läuft heute ab",
+      "expiredOn": "Am {{date}} abgelaufen",
+      "addressErased": "Adresse entfernt"
     },
     "invite": {
       "cta": "Jemanden einladen",
@@ -3523,15 +3549,38 @@
     },
     "filter": {
       "searchLabel": "Suche",
-      "searchPlaceholder": "Name oder E-Mail-Adresse",
-      "groupLabel": "Anzeigen",
-      "everybody": "Alle",
-      "active": "Aktiv",
-      "suspended": "Gesperrt",
-      "administrators": "Administratoren",
+      "searchPlaceholder": "Name, Adresse oder Label",
+      "viewLabel": "Ansicht",
+      "views": {
+        "all": "Alle",
+        "new": "Neu diese Woche",
+        "seen": "Diese Woche aktiv",
+        "quiet": "Inaktiv geworden",
+        "never": "Nie angemeldet",
+        "suspended": "Gesperrt",
+        "administrators": "Administratoren"
+      },
+      "labelLabel": "Label",
+      "labelAny": "Beliebiges Label",
+      "labelNone": "Kein Label",
+      "labelPart": "Label \"{{label}}\"",
+      "labelPartNone": "kein Label",
+      "sortLabel": "Sortieren",
+      "sorts": {
+        "newest": "Neueste zuerst",
+        "oldest": "Älteste zuerst",
+        "seen": "Zuletzt aktiv",
+        "usage": "Meiste Scans heute",
+        "name": "Name, A bis Z"
+      },
+      "result": "{{shown}} von {{total}} Personen",
+      "clear": "Filter zurücksetzen",
       "noneQuery": "Niemand hier passt zu \"{{query}}\".",
       "noneGroup": "Niemand hier gehört zu \"{{group}}\".",
-      "noneBoth": "Niemand in \"{{group}}\" passt zu \"{{query}}\"."
+      "noneBoth": "Niemand in \"{{group}}\" passt zu \"{{query}}\".",
+      "noneLabel": "Niemand hier hat das Label \"{{label}}\".",
+      "noneNoLabel": "Jeder hier hat ein Label.",
+      "noneSeveral": "Niemand hier entspricht {{filters}}."
     },
     "activity": {
       "title": "Wer es noch nutzt",
@@ -3574,6 +3623,19 @@
       "deleteConfirmBody": "Die Werte und das Foto werden sofort gelöscht, nicht erst nach Ablauf der Frist. Das kann nicht rückgängig gemacht werden.",
       "deleteConfirmCta": "Endgültig löschen",
       "deleteFailed": "Die Meldung konnte nicht gelöscht werden."
+    },
+    "badge": {
+      "new": "Neu"
+    },
+    "dayAge": {
+      "today": "Heute",
+      "yesterday": "Gestern",
+      "daysAgo": "Vor {{days}} Tagen"
+    },
+    "bands": {
+      "week": "Diese Woche",
+      "month": "Diesen Monat",
+      "earlier": "Früher"
     }
   },
   "aiIntake": {

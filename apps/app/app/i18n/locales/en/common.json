@@ -3381,7 +3381,8 @@
     "usageNone": "No photos",
     "trialScansUsed": "{{used}} of {{granted}} used",
     "lastSeen": {
-      "never": "Never signed in"
+      "never": "Never signed in",
+      "neverShort": "Never"
     },
     "person": {
       "back": "Back to the list",
@@ -3449,9 +3450,13 @@
       "failed": "The account could not be deleted."
     },
     "invites": {
-      "title": "Open invitations",
       "empty": "No invitation is waiting.",
-      "expires": "Valid until {{date}}",
+      "emptyFor": {
+        "expired": "No invitation has expired.",
+        "revoked": "No invitation has been revoked.",
+        "redeemed": "Nobody has accepted an invitation yet.",
+        "all": "No invitation has been sent yet."
+      },
       "resend": "Send again",
       "resent": "A new invitation went to {{email}}.",
       "revoke": "Withdraw",
@@ -3459,7 +3464,28 @@
       "revokeConfirmBody": "Their link stops working. You can invite them again whenever you like.",
       "revokeConfirmCta": "Withdraw",
       "failed": "That did not go through.",
-      "loadFailed": "The invitations could not be loaded."
+      "loadFailed": "The invitations could not be loaded.",
+      "statusLabel": "Status",
+      "status": {
+        "pending": "Pending",
+        "expired": "Expired",
+        "revoked": "Revoked",
+        "redeemed": "Accepted",
+        "all": "All"
+      },
+      "result_one": "{{count}} invitation, newest first",
+      "result_other": "{{count}} invitations, newest first",
+      "sentToday": "Sent today",
+      "sentYesterday": "Sent yesterday",
+      "sentDaysAgo": "Sent {{days}} days ago",
+      "sentOn": "Sent {{date}}",
+      "perDay_one": "{{count}} photo a day",
+      "perDay_other": "{{count}} photos a day",
+      "expiresIn_one": "Expires in {{count}} day",
+      "expiresIn_other": "Expires in {{count}} days",
+      "expiresToday": "Expires today",
+      "expiredOn": "Expired {{date}}",
+      "addressErased": "Address removed"
     },
     "invite": {
       "cta": "Invite someone",
@@ -3523,15 +3549,38 @@
     },
     "filter": {
       "searchLabel": "Search",
-      "searchPlaceholder": "Name or email address",
-      "groupLabel": "Show",
-      "everybody": "Everybody",
-      "active": "Active",
-      "suspended": "Suspended",
-      "administrators": "Administrators",
+      "searchPlaceholder": "Name, address or label",
+      "viewLabel": "View",
+      "views": {
+        "all": "All",
+        "new": "New this week",
+        "seen": "Seen this week",
+        "quiet": "Gone quiet",
+        "never": "Never signed in",
+        "suspended": "Suspended",
+        "administrators": "Administrators"
+      },
+      "labelLabel": "Label",
+      "labelAny": "Any label",
+      "labelNone": "No label",
+      "labelPart": "label \"{{label}}\"",
+      "labelPartNone": "no label",
+      "sortLabel": "Sort",
+      "sorts": {
+        "newest": "Newest first",
+        "oldest": "Oldest first",
+        "seen": "Last seen",
+        "usage": "Most scans today",
+        "name": "Name, A to Z"
+      },
+      "result": "{{shown}} of {{total}} people",
+      "clear": "Clear filters",
       "noneQuery": "Nobody here matches \"{{query}}\".",
       "noneGroup": "Nobody here is in \"{{group}}\".",
-      "noneBoth": "Nobody in \"{{group}}\" matches \"{{query}}\"."
+      "noneBoth": "Nobody in \"{{group}}\" matches \"{{query}}\".",
+      "noneLabel": "Nobody here has the label \"{{label}}\".",
+      "noneNoLabel": "Everybody here has a label.",
+      "noneSeveral": "Nobody here matches {{filters}}."
     },
     "activity": {
       "title": "Who is still using it",
@@ -3574,6 +3623,19 @@
       "deleteConfirmBody": "The figures and the photo go now, rather than when the window runs out. This cannot be undone.",
       "deleteConfirmCta": "Delete for good",
       "deleteFailed": "The report could not be deleted."
+    },
+    "badge": {
+      "new": "New"
+    },
+    "dayAge": {
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "daysAgo": "{{days}} days ago"
+    },
+    "bands": {
+      "week": "This week",
+      "month": "This month",
+      "earlier": "Earlier"
     }
   },
   "aiIntake": {

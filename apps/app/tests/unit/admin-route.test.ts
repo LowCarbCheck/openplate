@@ -31,8 +31,11 @@
  *     underneath would be bare numbers again.
  *  5. THE PERSON PAGE. Every action, and the two the service would refuse on
  *     your own account, which are absent rather than explained.
- *  6. THE INVITATIONS TAB. The pending invitations that used to sit under the
- *     people list.
+ *  3b. FINDING SOMEBODY (2026-10-11). Newest first with a "New" badge and band
+ *     headings, quick-view chips that carry their counts, a result line that
+ *     keeps its box, sortable column headings, a label menu, and the usage bar
+ *     and the amber "never signed in" in the row.
+ *  6. THE INVITATIONS TAB. Every state behind a chip, pending first.
  *  7. THE INVITE RESULT, with and without mail.
  *  8. A HAND-PASSED LINK THAT OPENS ANOTHER ADDRESS than the page, which
  *     says so under the link.
@@ -45,6 +48,7 @@ import { MemoryRouter } from 'react-router';
 
 import { withI18n } from './trends-i18n-harness';
 import { AdminTabs } from '../../app/components/admin/admin-tabs';
+import { StatsRow } from '../../app/components/admin/stats-row';
 import { NotAnAdministratorCard } from '../../app/components/admin/not-an-administrator';
 import { CopyableLinkView, InviteResult } from '../../app/components/admin/invite-result';
 import { InviteTable } from '../../app/components/admin/invite-table';
@@ -53,6 +57,7 @@ import { PeopleTable } from '../../app/components/admin/people-table';
 import { PersonDetail } from '../../app/components/admin/person-detail';
 import { PersonEditor } from '../../app/components/admin/person-actions';
 import { EMPTY_PEOPLE_FILTER, type PeopleFilter } from '../../app/lib/admin/people-filter';
+import type { InviteStatusFilter } from '../../app/lib/admin/invite-filter';
 import type { ActivityByAccount } from '../../app/lib/admin/activity-strip';
 import type {
   AdminAccountActivity,
@@ -151,6 +156,19 @@ const PENDING_INVITE: InviteView = {
   redeemedAccountId: null,
 };
 
+/**
+ * The clock every age in these renders is measured against. A fixed instant:
+ * "joined 2 days ago" is a fact about two instants, and a render that read the
+ * real clock would be a different test every week. Noon UTC, so no time zone
+ * reads another day.
+ */
+const NOW = new Date('2026-09-07T12:00:00.000Z');
+
+/** A filter with the parts a test names set and every other part at its default. */
+function filterOf(overrides: Partial<PeopleFilter>): PeopleFilter {
+  return { ...EMPTY_PEOPLE_FILTER, ...overrides };
+}
+
 /** The people list with no strips and no filter set, which is what it looks like on a first load. */
 function peopleList(input: {
   people: AdminAccountView[];
@@ -167,6 +185,7 @@ function peopleList(input: {
       onFilterChange: () => {
         throw new Error('a render must not change the filter');
       },
+      now: NOW,
     }),
   );
 }
@@ -243,9 +262,14 @@ test('a row is a real link to that person, and carries nothing that changes them
   assert.match(html, /href="\/admin\/people\/1"/, 'middle click and the back button need a real link');
   assert.match(html, /href="\/admin\/people\/2"/);
   // EVERY action left the row. A button in the list would also be a click
-  // target nested inside the link that wraps the row.
-  assert.doesNotMatch(html, /<button/, 'a list is for finding somebody, not for acting on them');
+  // target nested inside the link that wraps the row. The controls above the
+  // rows (chips, sort headings) are buttons; no ROW is.
+  const rows = html.split('<li>').slice(1);
+  assert.equal(rows.length, 2);
+  for (const row of rows) assert.doesNotMatch(row, /<button/, 'a list is for finding somebody, not for acting on them');
   assert.doesNotMatch(html, /Send a reset link|Delete|Bring back/);
+  // CONTROL: the page does have buttons, so the loop above is not reading a page without any.
+  assert.match(html, /<button/);
 });
 
 test('an account that has never signed in renders words, not an epoch', () => {
@@ -269,48 +293,263 @@ test('an empty instance says so instead of rendering an empty box', () => {
 test('the search narrows the rows to the people it matches, by name or by address', () => {
   const people = [ADMIN, SUSPENDED_PERSON, NEVER_ARRIVED];
 
-  const byAddress = peopleList({ people, filter: { query: '  ANNA ', group: 'everybody' } });
+  const byAddress = peopleList({ people, filter: filterOf({ query: '  ANNA ' }) });
   assert.match(byAddress, /anna@example\.org/, 'trimmed and case insensitive');
   assert.doesNotMatch(byAddress, /owner@example\.org/);
   assert.doesNotMatch(byAddress, /carla@example\.org/);
 
-  const byName = peopleList({ people, filter: { query: 'carl', group: 'everybody' } });
+  const byName = peopleList({ people, filter: filterOf({ query: 'carl' }) });
   assert.match(byName, /carla@example\.org/);
   assert.doesNotMatch(byName, /owner@example\.org/);
 });
 
-test('the group control narrows the rows to a standing or to a role', () => {
+test('a quick view narrows the rows to a standing, a role, or a sign-in state', () => {
   const people = [ADMIN, SUSPENDED_PERSON, NEVER_ARRIVED];
 
-  const suspended = peopleList({ people, filter: { query: '', group: 'suspended' } });
+  const suspended = peopleList({ people, filter: filterOf({ view: 'suspended' }) });
   assert.match(suspended, /anna@example\.org/);
   assert.doesNotMatch(suspended, /owner@example\.org|carla@example\.org/);
 
-  const active = peopleList({ people, filter: { query: '', group: 'active' } });
-  assert.match(active, /owner@example\.org/);
-  assert.doesNotMatch(active, /anna@example\.org/);
-
-  const admins = peopleList({ people, filter: { query: '', group: 'administrators' } });
+  const admins = peopleList({ people, filter: filterOf({ view: 'administrators' }) });
   assert.match(admins, /owner@example\.org/);
-  assert.doesNotMatch(admins, /carla@example\.org/);
+  assert.doesNotMatch(admins, /carla@example\.org|anna@example\.org/);
+
+  const never = peopleList({ people, filter: filterOf({ view: 'never' }) });
+  assert.match(never, /carla@example\.org/);
+  assert.doesNotMatch(never, /owner@example\.org|anna@example\.org/);
 });
 
 test('a filter that matches nobody names the filter, and never says only "no results"', () => {
   const people = [ADMIN, SUSPENDED_PERSON];
 
-  const byQuery = peopleList({ people, filter: { query: 'zoe', group: 'everybody' } });
+  const byQuery = peopleList({ people, filter: filterOf({ query: 'zoe' }) });
   assert.match(byQuery, /Nobody here matches &quot;zoe&quot;\./, 'the search term is quoted back');
   assert.doesNotMatch(byQuery, /Nobody has an account here yet/, 'an instance with people is not an empty instance');
 
-  const byGroup = peopleList({ people: [ADMIN], filter: { query: '', group: 'suspended' } });
+  const byGroup = peopleList({ people: [ADMIN], filter: filterOf({ view: 'suspended' }) });
   assert.match(
     byGroup,
     /Nobody here is in &quot;Suspended&quot;\./,
-    'the group is named, because it is easy to forget',
+    'the view is named, because it is easy to forget',
   );
 
-  const byBoth = peopleList({ people, filter: { query: 'zoe', group: 'administrators' } });
+  const byBoth = peopleList({ people, filter: filterOf({ query: 'zoe', view: 'administrators' }) });
   assert.match(byBoth, /Nobody in &quot;Administrators&quot; matches &quot;zoe&quot;\./);
+});
+
+// ---------------------------------------------------------------------------
+// 3b. Finding somebody
+// ---------------------------------------------------------------------------
+
+/** Joined a day ago, signed in an hour ago, and half the allowance spent. */
+const FRESH_MEMBER: AdminAccountView = {
+  ...NEVER_ARRIVED,
+  id: 7,
+  email: 'fresh@example.org',
+  displayName: 'Fresh Member',
+  createdAt: '2026-09-06T09:00:00.000Z',
+  lastSeenAt: '2026-09-07T11:00:00.000Z',
+  dailyAiLimit: 10,
+  aiUsedToday: 5,
+};
+
+/** The markup of one person's row, so a badge or a bar on another row cannot satisfy the assertion. */
+function rowOf(html: string, email: string): string {
+  return html.split('<li>').find((item) => item.includes(email)) ?? '';
+}
+
+test('somebody who joined in the last week carries a New badge, and nobody else does', () => {
+  const html = peopleList({ people: [ADMIN, FRESH_MEMBER, NEVER_ARRIVED] });
+
+  assert.match(rowOf(html, 'fresh@example.org'), /data-new-badge/);
+  assert.match(rowOf(html, 'carla@example.org'), /data-new-badge/, 'joined 2026-09-05, two days before NOW');
+  // CONTROL: the administrator joined in August.
+  assert.doesNotMatch(rowOf(html, 'owner@example.org'), /data-new-badge/);
+});
+
+test('the Joined column says today, yesterday, days ago, and then a short date', () => {
+  const html = peopleList({ people: [ADMIN, FRESH_MEMBER, NEVER_ARRIVED] });
+
+  assert.match(rowOf(html, 'fresh@example.org'), /Yesterday/);
+  assert.match(rowOf(html, 'carla@example.org'), /2 days ago/);
+  assert.match(rowOf(html, 'owner@example.org'), /1 Aug/, 'past a week it is a date, without the year this year');
+});
+
+test('the list opens newest first, under This week and This month and Earlier', () => {
+  const html = peopleList({ people: [ADMIN, SUSPENDED_PERSON, FRESH_MEMBER, NEVER_ARRIVED] });
+
+  const order = ['fresh@example.org', 'carla@example.org', 'anna@example.org', 'owner@example.org'].map((email) =>
+    html.indexOf(email),
+  );
+  assert.deepEqual(
+    order,
+    order.toSorted((a, b) => a - b),
+    'newest sign-up first, whatever order the service sent',
+  );
+  assert.ok(order.every((index) => index > -1));
+  assert.match(html, />This week</);
+  assert.match(html, />This month</, 'anna joined 18 days before NOW');
+  assert.match(html, />Earlier</, 'the administrator joined in August');
+});
+
+test('a sort that is not by sign-up date draws no band headings', () => {
+  const people = [ADMIN, SUSPENDED_PERSON, FRESH_MEMBER];
+  const byName = peopleList({ people, filter: filterOf({ sort: 'name' }) });
+  assert.doesNotMatch(byName, />This week<|>This month<|>Earlier</);
+  // CONTROL: the same people, by sign-up, do have them.
+  assert.match(peopleList({ people, filter: filterOf({ sort: 'oldest' }) }), />Earlier</);
+});
+
+test('every quick view is a toggle button with its count, and the pressed one says so', () => {
+  const html = peopleList({ people: [ADMIN, SUSPENDED_PERSON, FRESH_MEMBER, NEVER_ARRIVED], filter: filterOf({ view: 'new' }) });
+
+  const chip = (id: string) => html.match(new RegExp(`<button[^>]*data-chip="${id}"[^>]*>.*?</button>`))?.[0] ?? '';
+  assert.match(chip('all'), /aria-pressed="false"[^>]*>All<span[^>]*>4</);
+  assert.match(chip('new'), /aria-pressed="true"[^>]*>New this week<span[^>]*>2</);
+  assert.match(chip('never'), />Never signed in<span[^>]*>1</);
+  assert.match(chip('suspended'), />Suspended<span[^>]*>1</);
+  assert.match(chip('administrators'), />Administrators<span[^>]*>1</);
+  assert.equal((html.match(/data-chip="/g) ?? []).length, 7);
+  assert.equal((html.match(/aria-pressed="true"[^>]*data-chip=/g) ?? []).length, 1, 'exactly one chip is pressed');
+});
+
+test('a chip with nothing behind it is dimmed but still a button, and a pressed one is not dimmed', () => {
+  const html = peopleList({ people: [ADMIN], filter: filterOf({ view: 'never' }) });
+  const never = html.match(/<button[^>]*data-chip="never"[^>]*>/)?.[0] ?? '';
+  const suspended = html.match(/<button[^>]*data-chip="suspended"[^>]*>/)?.[0] ?? '';
+
+  assert.match(suspended, /opacity-50/, 'nobody is suspended');
+  assert.doesNotMatch(suspended, /disabled/, 'dimmed is not disabled: the question was worth asking');
+  assert.doesNotMatch(never, /opacity-50/, 'the pressed chip is never dimmed, even at zero');
+});
+
+/** The Clear filters button of a rendered list, or an empty string. */
+function clear(html: string): string {
+  return html.match(/<button[^>]*>Clear filters<\/button>/)?.[0] ?? '';
+}
+
+test('the result line counts the rows against the instance, and keeps Clear filters in its box', () => {
+  const people = [ADMIN, SUSPENDED_PERSON, NEVER_ARRIVED];
+  const unfiltered = peopleList({ people });
+  assert.match(unfiltered, /<output[^>]*>3 of 3 people<\/output>/);
+
+  // THE BUTTON IS THERE EITHER WAY, and only its visibility differs.
+  assert.match(clear(unfiltered), /invisible/, 'nothing is filtered, so it is not drawn');
+
+  const filtered = peopleList({ people, filter: filterOf({ view: 'suspended' }) });
+  assert.match(filtered, /<output[^>]*>1 of 3 people<\/output>/);
+  assert.ok(clear(filtered).length > 0, 'present in the box');
+  assert.doesNotMatch(clear(filtered), /invisible/);
+
+  // A sort alone filters nothing.
+  assert.match(clear(peopleList({ people, filter: filterOf({ sort: 'name' }) })), /invisible/);
+});
+
+test('a label menu is offered only where somebody carries a label, and lists each label once', () => {
+  const withLabels = peopleList({
+    people: [
+      { ...ADMIN, label: 'Family' },
+      { ...SUSPENDED_PERSON, label: 'Beta supporter' },
+      { ...NEVER_ARRIVED, label: 'Family' },
+    ],
+  });
+  const menu = withLabels.match(/<select id="admin-people-label".*?<\/select>/)?.[0] ?? '';
+  assert.match(menu, />Any label</);
+  assert.match(menu, />No label</);
+  assert.equal((menu.match(/>Family</g) ?? []).length, 1);
+  assert.equal((menu.match(/>Beta supporter</g) ?? []).length, 1);
+
+  // CONTROL: with no label anywhere there is no such menu.
+  assert.doesNotMatch(peopleList({ people: [ADMIN, SUSPENDED_PERSON] }), /admin-people-label/);
+});
+
+test('the label filter narrows the rows, and the search also reads the label', () => {
+  const people = [{ ...ADMIN, label: 'Family' }, SUSPENDED_PERSON];
+
+  const named = peopleList({ people, filter: filterOf({ label: { kind: 'named', label: 'Family' } }) });
+  assert.match(named, /owner@example\.org/);
+  assert.doesNotMatch(named, /anna@example\.org/);
+
+  const none = peopleList({ people, filter: filterOf({ label: { kind: 'none' } }) });
+  assert.match(none, /anna@example\.org/);
+  assert.doesNotMatch(none, /owner@example\.org/);
+
+  const bySearch = peopleList({ people, filter: filterOf({ query: 'famil' }) });
+  assert.match(bySearch, /owner@example\.org/);
+  assert.doesNotMatch(bySearch, /anna@example\.org/);
+});
+
+test('an empty result for a label, or for several filters, still names what emptied it', () => {
+  const people = [ADMIN, SUSPENDED_PERSON];
+
+  const label = peopleList({ people: [{ ...ADMIN, label: 'Family' }], filter: filterOf({ label: { kind: 'named', label: 'Beta' } }) });
+  // The label menu would not offer "Beta", but a stale filter can still ask for it.
+  assert.match(label, /Nobody here has the label &quot;Beta&quot;\./);
+
+  const several = peopleList({ people, filter: filterOf({ query: 'zoe', view: 'suspended', label: { kind: 'none' } }) });
+  assert.match(several, /Nobody here matches &quot;zoe&quot;, &quot;Suspended&quot;, no label\./);
+});
+
+test('the four sortable headings are buttons, and only the active one shows its arrow', () => {
+  const html = peopleList({ people: [ADMIN, FRESH_MEMBER] });
+
+  for (const column of ['person', 'joined', 'usedToday', 'lastSeen']) {
+    assert.match(html, new RegExp(`data-sort-column="${column}"`), column);
+  }
+  const heading = (column: string) => html.match(new RegExp(`<button[^>]*data-sort-column="${column}".*?</button>`))?.[0] ?? '';
+  assert.match(heading('joined'), /aria-pressed="true"/, 'newest first is the default, so Joined is active');
+  assert.doesNotMatch(heading('joined'), /invisible/, 'its arrow is drawn');
+  assert.match(heading('person'), /aria-pressed="false"/);
+  assert.match(heading('person'), /invisible/, 'an idle heading keeps its arrow in the box and does not draw it');
+
+  const oldest = peopleList({ people: [ADMIN, FRESH_MEMBER], filter: filterOf({ sort: 'oldest' }) });
+  assert.match(oldest.match(/<button[^>]*data-sort-column="joined".*?<\/button>/)?.[0] ?? '', /lucide-arrow-up/);
+  assert.match(heading('joined'), /lucide-arrow-down/);
+});
+
+test('Used today draws a thin bar, amber from eighty percent of the allowance', () => {
+  const nearly = { ...FRESH_MEMBER, aiUsedToday: 8 };
+  const html = peopleList({ people: [nearly, ADMIN] });
+
+  assert.match(rowOf(html, 'fresh@example.org'), /data-usage-bar="hot"[^>]*bg-accent-amber[^>]*width:80%/);
+  // CONTROL: 12 of 500 is under the threshold and stays the primary colour.
+  assert.match(rowOf(html, 'owner@example.org'), /data-usage-bar="ok"[^>]*bg-primary[^>]*width:2%/);
+  // And 7 of 10 is just under it.
+  const under = peopleList({ people: [{ ...FRESH_MEMBER, aiUsedToday: 7 }] });
+  assert.match(under, /data-usage-bar="ok"/);
+});
+
+test('somebody who never signed in is told so in amber, and somebody who did is not', () => {
+  const html = peopleList({ people: [NEVER_ARRIVED, FRESH_MEMBER] });
+
+  const never = rowOf(html, 'carla@example.org');
+  assert.match(never, /text-accent-amber[^>]*data-last-seen="never"[^>]*>/);
+  // The sentence is always in the markup for a screen reader; from the wide form on only the short word is drawn.
+  assert.match(never, /<span class="@2xl:sr-only">Never signed in<\/span>/);
+  assert.match(never, /<span class="hidden @2xl:inline" aria-hidden="true"[^>]*>Never<\/span>/);
+  // CONTROL: somebody who did sign in has neither.
+  assert.doesNotMatch(rowOf(html, 'fresh@example.org'), /data-last-seen-short|Never/);
+  assert.doesNotMatch(rowOf(html, 'fresh@example.org'), /data-last-seen="never"/);
+  assert.match(rowOf(html, 'fresh@example.org'), /Today/, 'signed in an hour before NOW');
+});
+
+test('the counts at the top are doors: people, administrators and open invitations are links', () => {
+  const stats = { accounts: 12, admins: 2, pendingInvites: 3, aiRequestsToday: 40 };
+  const html = render(createElement(StatsRow, { stats }));
+
+  assert.match(html, /<a aria-label="People: 12"[^>]*href="\/admin"/);
+  assert.match(html, /href="\/admin\?view=administrators"/);
+  assert.match(html, /href="\/admin\/invitations"/);
+  // THE CONTROL: photos read today has no list behind it, so it is a plain cell.
+  assert.equal((html.match(/<a /g) ?? []).length, 3);
+  assert.match(html, /Photos read today/);
+  assert.match(html, />40</);
+});
+
+test('the counts keep their box while they are unread: invisible, not absent', () => {
+  const html = render(createElement(StatsRow, { stats: null }));
+  assert.match(html, /<dl class="[^"]*\binvisible\b/);
+  assert.equal((html.match(/<dt/g) ?? []).length, 4);
 });
 
 // ---------------------------------------------------------------------------
@@ -382,18 +621,18 @@ test('a row looks like it goes somewhere: a chevron at its end, and a hover back
   assert.match(html, /hover:bg-muted\/50/, 'the background the app already uses for a hovered list row');
 });
 
-test('the chevron is hidden below sm, where a fixed-width flex child would land alone on its own line', () => {
-  // Below `sm` the row wraps onto stacked lines, and the chevron, being the
-  // last and only fixed-width item with nothing left to sit beside, would
-  // wrap onto a line of its own at the bottom left, pointing at nothing. The
-  // whole row is already the link at every width, so the chevron is a hint,
-  // never the only affordance, and hiding it there costs nothing.
+test('the chevron is hidden below the wide form, where it would sit alone in a cell', () => {
+  // Below the container's `@2xl` the row is two columns of labelled cells, and
+  // the chevron, being the last item with nothing to sit beside, would land
+  // alone in a cell of its own, pointing at nothing. The whole row is already
+  // the link at every width, so the chevron is a hint, never the only
+  // affordance, and hiding it there costs nothing.
   const html = peopleList({ people: [ADMIN] });
 
   assert.match(
     html,
-    /class="lucide lucide-chevron-right hidden h-4 w-4 shrink-0 text-muted-foreground sm:block"/,
-    'hidden by default, shown again at sm and up once the row no longer wraps',
+    /class="lucide lucide-chevron-right hidden h-4 w-4 shrink-0 text-muted-foreground @2xl:block"/,
+    'hidden by default, shown again once the container is wide enough for columns',
   );
 });
 
@@ -566,37 +805,92 @@ test('a failed strip offers its own retry and does not take the person with it',
 // 6. The invitations tab
 // ---------------------------------------------------------------------------
 
-test('the invitations tab shows the one that is pending, with its expiry', () => {
-  const html = render(
+/** The invitation table with nothing wired: a render must not resend, revoke or change the chip. */
+function inviteList(input: { invites: InviteView[]; status?: InviteStatusFilter }): string {
+  return render(
     createElement(InviteTable, {
-      invites: [PENDING_INVITE],
+      invites: input.invites,
+      status: input.status ?? 'pending',
+      onStatusChange: () => {
+        throw new Error('a render must not change the status');
+      },
+      now: NOW,
       onResend: () => Promise.reject(new Error('a render must not resend')),
       onRevoke: () => Promise.reject(new Error('a render must not revoke')),
     }),
   );
+}
+
+test('the invitations tab shows the one that is pending, with what was sent and when it ends', () => {
+  const html = inviteList({ invites: [PENDING_INVITE] });
 
   assert.match(html, /bea@example\.org/);
   assert.match(html, /Bea/);
-  assert.match(html, /Valid until/);
+  assert.match(html, /Sent 3 days ago/, 'sent 2026-09-04, read at 2026-09-07 noon');
+  assert.match(html, /200 photos a day/);
+  assert.match(html, /Expires in 3 days/, 'expires 2026-09-11 09:00, so three whole days and some');
   assert.match(html, /Send again/);
   assert.match(html, /Withdraw/);
 });
 
-test('a redeemed or revoked invitation is not listed: it is a person, or it is nothing', () => {
-  const html = render(
-    createElement(InviteTable, {
-      invites: [
-        { ...PENDING_INVITE, id: 13, email: 'redeemed@example.org', status: 'redeemed', redeemedAccountId: 4 },
-        { ...PENDING_INVITE, id: 14, email: 'revoked@example.org', status: 'revoked' },
-        { ...PENDING_INVITE, id: 15, email: 'expired@example.org', status: 'expired' },
-      ],
-      onResend: () => Promise.reject(new Error('a render must not resend')),
-      onRevoke: () => Promise.reject(new Error('a render must not revoke')),
-    }),
-  );
+test('an invitation that ends in under three days says so in amber, and one that ends later does not', () => {
+  const soon = inviteList({ invites: [{ ...PENDING_INVITE, expiresAt: '2026-09-09T09:00:00.000Z' }] });
+  assert.match(soon, /text-accent-amber[^>]*>Expires in 1 day</, 'the number and the flag agree: one whole day left');
 
-  assert.match(html, /No invitation is waiting/);
-  assert.doesNotMatch(html, /redeemed@example\.org|revoked@example\.org|expired@example\.org/);
+  const today = inviteList({ invites: [{ ...PENDING_INVITE, expiresAt: '2026-09-07T20:00:00.000Z' }] });
+  assert.match(today, /text-accent-amber[^>]*>Expires today</);
+
+  // THE CONTROL: three whole days is not "soon", and draws no amber at all.
+  const later = inviteList({ invites: [PENDING_INVITE] });
+  assert.doesNotMatch(later, /text-accent-amber/);
+});
+
+test('every state is reachable behind its chip, and pending is the default view', () => {
+  const invites: InviteView[] = [
+    PENDING_INVITE,
+    { ...PENDING_INVITE, id: 13, email: 'redeemed@example.org', status: 'redeemed', redeemedAccountId: 4 },
+    { ...PENDING_INVITE, id: 14, email: 'revoked@example.org', status: 'revoked' },
+    { ...PENDING_INVITE, id: 15, email: 'expired@example.org', status: 'expired' },
+  ];
+
+  const pending = inviteList({ invites });
+  assert.match(pending, /bea@example\.org/);
+  assert.doesNotMatch(pending, /redeemed@example\.org|revoked@example\.org|expired@example\.org/);
+
+  const expired = inviteList({ invites, status: 'expired' });
+  assert.match(expired, /expired@example\.org/);
+  assert.doesNotMatch(expired, /bea@example\.org|revoked@example\.org/);
+  assert.match(expired, /Send again/, 'an expired invitation can be sent again');
+  assert.doesNotMatch(expired, /Withdraw/, 'and has nothing left to withdraw');
+
+  const redeemed = inviteList({ invites, status: 'redeemed' });
+  assert.match(redeemed, /redeemed@example\.org/);
+  assert.doesNotMatch(redeemed, /Send again|Withdraw/, 'an accepted invitation is a person, and offers nothing');
+
+  assert.equal((inviteList({ invites, status: 'all' }).match(/data-invite-status=/g) ?? []).length, 4);
+});
+
+test('each chip carries the count it would leave, whichever chip is pressed', () => {
+  const invites: InviteView[] = [
+    PENDING_INVITE,
+    { ...PENDING_INVITE, id: 13, status: 'expired' },
+    { ...PENDING_INVITE, id: 14, status: 'expired' },
+  ];
+  const html = inviteList({ invites, status: 'expired' });
+
+  assert.match(html, /data-chip="pending"[^>]*>Pending<span[^>]*>1</);
+  assert.match(html, /data-chip="expired"[^>]*>Expired<span[^>]*>2</);
+  assert.match(html, /data-chip="all"[^>]*>All<span[^>]*>3</);
+  assert.match(html, /aria-pressed="true"[^>]*data-chip="expired"/, 'the pressed chip says so');
+  assert.equal((html.match(/aria-pressed="true"/g) ?? []).length, 1);
+});
+
+test('an empty chip names the state that is empty, not just "nothing"', () => {
+  const html = inviteList({ invites: [PENDING_INVITE], status: 'revoked' });
+
+  assert.match(html, /No invitation has been revoked\./);
+  assert.doesNotMatch(html, /bea@example\.org/);
+  assert.match(inviteList({ invites: [], status: 'pending' }), /No invitation is waiting\./);
 });
 
 // ---------------------------------------------------------------------------

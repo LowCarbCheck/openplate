@@ -12,9 +12,10 @@
  * ── The container half ───────────────────────────────────────────────────
  *
  * This file owns the admin client, the load and the reload after every change.
- * `InviteTable` is presentational, and it does the one filter that matters:
- * only `pending` is listed, because a redeemed invitation is a person and a
- * revoked one is a thing that did not happen.
+ * `InviteTable` is presentational. Which chip is pressed lives in the address
+ * (`?status=expired`, pending being the default and never written), so a reload
+ * and a shared address land on the same list. Every state is reachable behind a
+ * chip, and pending is where the tab opens (operator, 2026-10-11).
  *
  * ── Every change re-reads the list ───────────────────────────────────────
  *
@@ -31,6 +32,7 @@
  * the list" re-reads it. The card replaces the list, so nothing above it moves.
  */
 import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 
@@ -38,10 +40,11 @@ import { NotAnAdministratorCard } from '#app/components/admin/not-an-administrat
 import { InviteResult } from '#app/components/admin/invite-result';
 import { InviteTable } from '#app/components/admin/invite-table';
 import { Button } from '#app/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader } from '#app/components/ui/card';
 import { currentAdminClient } from '#app/lib/admin/admin-session';
 import type { AdminClient } from '#app/lib/admin/admin-client';
 import type { Delivery, InviteView } from '#app/lib/admin/admin-wire';
+import { readInviteStatus, writeInviteStatus, type InviteStatusFilter } from '#app/lib/admin/invite-filter';
 
 /** What the tab is showing. One `kind`, so a loading spinner and an error can never be on screen together. */
 type InvitationsState =
@@ -54,6 +57,14 @@ type InvitationsState =
 export default function AdminInvitations() {
   const { t } = useTranslation();
   const [state, setState] = useState<InvitationsState>({ kind: 'loading' });
+  // Read once, when the list is drawn: "expires in 2 days" does not tick over
+  // while an operator reads it.
+  const [now] = useState(() => new Date());
+  const [searchParams, setSearchParams] = useSearchParams();
+  const status = readInviteStatus(searchParams);
+  // REPLACE: a chip is a correction to this list, not a step deeper.
+  const setStatus = (next: InviteStatusFilter): void =>
+    setSearchParams(writeInviteStatus(next), { replace: true, preventScrollReset: true });
 
   const load = useCallback(async (): Promise<void> => {
     const client = currentAdminClient();
@@ -162,19 +173,18 @@ export default function AdminInvitations() {
     );
   }
 
-  // THE TITLE STAYS. It reads "Open invitations" under a tab labelled
-  // "Invitations", and the extra word is the whole rule this list follows:
-  // only the pending ones are here, because a redeemed invitation is a person
-  // and a revoked one is a thing that did not happen. That is not something
-  // the tab says.
+  // NO CARD TITLE any more. It read "Open invitations" under a tab labelled
+  // "Invitations", and the extra word carried a rule: only the pending ones are
+  // here. That rule is gone (2026-10-11); the chips say which state is on
+  // screen, and a title that repeats the tab says nothing.
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>{t('admin.invites.title')}</CardTitle>
-      </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
         <InviteTable
           invites={state.invites}
+          status={status}
+          onStatusChange={setStatus}
+          now={now}
           onResend={resend}
           onRevoke={({ id }) => apply((client) => client.revokeInvite({ id }))}
         />

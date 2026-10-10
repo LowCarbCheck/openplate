@@ -38,6 +38,15 @@
  * core built before labels sends, so every other spec keeps talking to that
  * older core.
  *
+ * ── Fresh sign-ups and every invitation state, only when a spec asks ────
+ *
+ * `fresh` adds somebody who joined a day ago and has never signed in, so the
+ * "New" badge, the newest-first order and the "Never signed in" chip have a
+ * person to find. `everyInviteState` adds an expired, a revoked and an accepted
+ * invitation beside the two pending ones, so each chip of the invitations tab
+ * has something behind it. Left out, the people and the invitations are what
+ * they always were, and every older spec keeps talking to the same instance.
+ *
  * ── A request this file has no answer for is recorded, not guessed ───────
  *
  * It gets a 404 and its method and path go into `unanswered`, which a spec
@@ -85,6 +94,10 @@ export interface AdminConsoleStub {
    * out, no account carries a `label` key, as a core built before labels.
    */
   labels?: ReadonlyMap<number, string>;
+  /** Adds one person who joined a day ago and has never signed in. See {@link FRESH_PERSON_ID}. */
+  fresh?: boolean;
+  /** Adds an expired, a revoked and an accepted invitation to the two pending ones. */
+  everyInviteState?: boolean;
 }
 
 /** A fresh stub: nobody signed in yet, nothing unanswered, no gates. */
@@ -115,6 +128,15 @@ export const LONG_INVITE_EMAIL = 'konstantin.alexandropoulos-weatherby@example.i
 
 /** The id of the widest person, whose own page a spec opens. */
 export const LONG_PERSON_ID = 9001;
+
+/** The id of the person `fresh` adds. */
+export const FRESH_PERSON_ID = 9010;
+
+/** The address of the person `fresh` adds. Exported so a spec can find the row. */
+export const FRESH_PERSON_EMAIL = 'fresh.signup@example.invalid';
+
+/** The address of the expired invitation `everyInviteState` adds. */
+export const EXPIRED_INVITE_EMAIL = 'expired.invitee@example.invalid';
 
 /** One account as `accountViewSchema` reads it, every field present. */
 interface AccountFixture {
@@ -180,6 +202,24 @@ const OTHER_PEOPLE: readonly AccountFixture[] = [
   },
 ];
 
+/** Somebody who joined a day ago and has not signed in yet. Built per request, so "a day ago" stays one. */
+function freshAccount(): AccountFixture {
+  return {
+    id: FRESH_PERSON_ID,
+    email: FRESH_PERSON_EMAIL,
+    displayName: 'Fresh Signup',
+    role: 'member',
+    dailyAiLimit: 200,
+    aiUsedToday: 0,
+    allowanceExpiresAt: null,
+    suspendedAt: null,
+    invitesLeft: null,
+    trialScans: null,
+    createdAt: new Date(Date.now() - DAY_MS).toISOString(),
+    lastSeenAt: null,
+  };
+}
+
 /** The signed-in administrator's own row. */
 function selfAccount(id: number): AccountFixture {
   return {
@@ -200,7 +240,8 @@ function selfAccount(id: number): AccountFixture {
 
 /** Everybody the list shows. The administrator's own row only once the session has named them. */
 function everybody(stub: AdminConsoleStub): AccountFixture[] {
-  const people = stub.selfId === null ? [...OTHER_PEOPLE] : [selfAccount(stub.selfId), ...OTHER_PEOPLE];
+  const others = stub.fresh === true ? [...OTHER_PEOPLE, freshAccount()] : [...OTHER_PEOPLE];
+  const people = stub.selfId === null ? others : [selfAccount(stub.selfId), ...others];
   const { labels } = stub;
   if (labels === undefined) return people;
   const labelled: AccountFixture[] = [];
@@ -233,6 +274,51 @@ const PENDING_INVITES = [
     redeemedAccountId: null,
   },
 ];
+
+/** An expired, a revoked and an accepted invitation, sent in the last two weeks. Built per request. */
+function otherInviteStates() {
+  const sent = (daysAgo: number) => new Date(Date.now() - daysAgo * DAY_MS).toISOString();
+  return [
+    {
+      id: 503,
+      email: EXPIRED_INVITE_EMAIL,
+      displayName: null,
+      role: 'member',
+      dailyAiLimit: 50,
+      expiresAt: sent(2),
+      status: 'expired',
+      createdAt: sent(9),
+      redeemedAccountId: null,
+    },
+    {
+      id: 504,
+      email: 'revoked.invitee@example.invalid',
+      displayName: null,
+      role: 'member',
+      dailyAiLimit: 0,
+      expiresAt: sent(-3),
+      status: 'revoked',
+      createdAt: sent(4),
+      redeemedAccountId: null,
+    },
+    {
+      id: 505,
+      email: 'accepted.invitee@example.invalid',
+      displayName: null,
+      role: 'member',
+      dailyAiLimit: 0,
+      expiresAt: sent(-1),
+      status: 'redeemed',
+      createdAt: sent(6),
+      redeemedAccountId: FRESH_PERSON_ID,
+    },
+  ];
+}
+
+/** Every invitation the stub holds: the pending two, and the others when a spec asked for them. */
+function invitesOf(stub: AdminConsoleStub) {
+  return stub.everyInviteState === true ? [...PENDING_INVITES, ...otherInviteStates()] : PENDING_INVITES;
+}
 
 /** Two reports, one with a photograph and one without, so both lines of the queue row are drawn. */
 const REPORTS = [
@@ -370,9 +456,8 @@ async function answerAdmin(route: Route, stub: AdminConsoleStub): Promise<void> 
     });
   }
   if (request.method() === 'GET' && path === '/invites') {
-    return route.fulfill({
-      json: { invites: firstPageOnly({ items: PENDING_INVITES, offset }), total: PENDING_INVITES.length },
-    });
+    const invites = invitesOf(stub);
+    return route.fulfill({ json: { invites: firstPageOnly({ items: invites, offset }), total: invites.length } });
   }
   if (request.method() === 'GET' && path === '/feedback') {
     return route.fulfill({ json: { reports: firstPageOnly({ items: REPORTS, offset }), total: REPORTS.length } });

@@ -90,6 +90,13 @@
     "at": "2026-09-19",
     "es": "Comprobando qué no ha llegado todavía al servidor."
   },
+  "0135b5d017c55cd7": {
+    "en": "{{days}} days ago",
+    "path": "common:admin.dayAge.daysAgo",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Hace {{days}} días"
+  },
   "014cb74645be04e2": {
     "en": "We'll show your progress toward this as approximate, since calorie counts from food are often estimates rather than exact numbers.",
     "path": "common:goals.kcal.approximateNote",
@@ -278,6 +285,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-10-01",
     "es": "Este escaneo no comprobó tus alergias ni tu embarazo. Lee tú mismo las etiquetas."
+  },
+  "033614550f4a54c6": {
+    "en": "Nobody here matches {{filters}}.",
+    "path": "common:admin.filter.noneSeveral",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Nadie aquí coincide con {{filters}}."
   },
   "033f80a81596ccf9": {
     "en": "Add your details",
@@ -1427,6 +1441,13 @@
     "at": "2026-09-14",
     "es": "Grande ({{grams}} g)"
   },
+  "0fd7415e6e0db559": {
+    "en": "label \"{{label}}\"",
+    "path": "common:admin.filter.labelPart",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "etiqueta \"{{label}}\""
+  },
   "1002545c788934b5": {
     "en": "{{count}} entries have not reached the server yet. Erasing loses them.",
     "path": "common:signOut.outbox.waiting_other",
@@ -1503,6 +1524,20 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Este enlace de invitación no parece correcto"
+  },
+  "10e20d0c9ff1ca8b": {
+    "en": "Administrators",
+    "path": "common:admin.filter.views.administrators",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Administradores"
+  },
+  "10e558a0e249ce09": {
+    "en": "Yesterday",
+    "path": "common:admin.dayAge.yesterday",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Ayer"
   },
   "10f86cc545f38f7a": {
     "en": "Fiber",
@@ -2323,6 +2358,13 @@
     "at": "2026-09-18",
     "es": "Registraste tu primer alimento."
   },
+  "18f64a728fabb2d7": {
+    "en": "Oldest first",
+    "path": "common:admin.filter.sorts.oldest",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Más antiguos primero"
+  },
   "1914b6dbd13d29f2": {
     "en": "Your macros by weight",
     "path": "common:trends.split.titleGrams",
@@ -2609,6 +2651,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-10-01",
     "es": "La aplicación muestra cuándo un servidor de IA autoalojado no puede realizar una tarea."
+  },
+  "1c1ce2c12873d62a": {
+    "en": "Pending",
+    "path": "common:admin.invites.status.pending",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Pendiente"
   },
   "1c1cf96f02fc1619": {
     "en": "{{used}} of {{limit}} used today.",
@@ -3562,6 +3611,13 @@
     "at": "2026-09-14",
     "es": "Escribe la semana en la que estás y rellenaremos la fecha prevista de parto de arriba. Solo se guarda la fecha."
   },
+  "26818385ccf14ccd": {
+    "en": "Everybody here has a label.",
+    "path": "common:admin.filter.noneNoLabel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Todo el mundo aquí tiene una etiqueta."
+  },
   "26d93db9047b3f39": {
     "en": "This invite is not valid or has expired",
     "path": "common:connectGateway.inviteInvalid.title",
@@ -3624,6 +3680,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "No es seguro usar este enlace"
+  },
+  "27b671f274d0de06": {
+    "en": "This month",
+    "path": "common:admin.bands.month",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Este mes"
   },
   "27cb734eb8808881": {
     "en": "Things you have tried",
@@ -4290,6 +4353,13 @@
     "at": "2026-10-04",
     "es": "{{count}} análisis con IA al día"
   },
+  "3141ea9c232c557d": {
+    "en": "View",
+    "path": "common:admin.filter.viewLabel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Ver"
+  },
   "317021ec4d860c9c": {
     "en": "Macros unknown, logged as name only.",
     "path": "common:scan.review.macrosUnknown",
@@ -4352,6 +4422,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Superar un objetivo se muestra como un número en ámbar. Nunca es una penalización."
+  },
+  "32df56ce2adc2522": {
+    "en": "Expired",
+    "path": "common:admin.invites.status.expired",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Caducada"
   },
   "330ab4d7c931a13f": {
     "en": "{{duration}} to go",
@@ -4464,6 +4541,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Sin nombre"
+  },
+  "34812150349ae7d1": {
+    "en": "Gone quiet",
+    "path": "common:admin.filter.views.quiet",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Sin actividad"
   },
   "348e0223ddfacd07": {
     "en": "Nutrition sourced from our curated food database.",
@@ -4675,6 +4759,13 @@
     "at": "2026-09-14",
     "es": "Esa invitación no es válida. Puede que ya se haya usado o que haya caducado. Pide una nueva."
   },
+  "370a5e5124d0419f": {
+    "en": "Never signed in",
+    "path": "common:admin.filter.views.never",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Nunca ha iniciado sesión"
+  },
   "370cd1b0d1adf51f": {
     "en": "{{email}} signed out on this device, and that diary is still here. To use another account, erase it from this device first.",
     "path": "common:accountSwitch.body",
@@ -4786,6 +4877,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Cargando…"
+  },
+  "38267e2857c1baef": {
+    "en": "{{count}} photos a day",
+    "path": "common:admin.invites.perDay_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "{{count}} fotos al día"
   },
   "389e3ac4b99c8c65": {
     "en": "{{count}} of these days already has entries in your diary. After the import, it'll show both your entries and the imported entries. Nothing is merged or replaced.",
@@ -5354,6 +5452,13 @@
     "at": "2026-09-17",
     "es": "Autoridad Europea de Seguridad Alimentaria (EFSA)"
   },
+  "3fc5603927dbc03a": {
+    "en": "All",
+    "path": "common:admin.invites.status.all",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Todas"
+  },
   "3fc696a53c2db27a": {
     "en": "Plate photo",
     "path": "common:launcher.platePhoto",
@@ -5472,6 +5577,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Carbohidratos netos diarios"
+  },
+  "412fa359702a1a7f": {
+    "en": "New",
+    "path": "common:admin.badge.new",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Nuevo"
   },
   "413107ac2d582895": {
     "en": "This app isn't allowed to talk to that gateway",
@@ -5907,6 +6019,13 @@
     "at": "2026-09-14",
     "es": "La nota se mostrará de nuevo antes de tu siguiente ayuno largo."
   },
+  "465b02439bb14266": {
+    "en": "{{count}} invitations, newest first",
+    "path": "common:admin.invites.result_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "{{count}} invitaciones, las más recientes primero"
+  },
   "466611e5d876e7c8": {
     "en": "Disconnect",
     "path": "common:settingsAi.disconnect.button",
@@ -5927,6 +6046,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-18",
     "es": "Una semana por debajo"
+  },
+  "46aee07ccc86385b": {
+    "en": "Newest first",
+    "path": "common:admin.filter.sorts.newest",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Más recientes primero"
   },
   "46bb116792146833": {
     "en": "Start a plan",
@@ -6096,6 +6222,13 @@
     "at": "2026-09-14",
     "es": "Las estimaciones por foto para esta cuenta funcionan hasta el {{date}}."
   },
+  "49906b802bd76122": {
+    "en": "Seen this week",
+    "path": "common:admin.filter.views.seen",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Vistos esta semana"
+  },
   "49a93c5d19e732e7": {
     "en": "That file couldn't be read as an openplate backup. Check you picked the right file, then try again.",
     "path": "common:recover.restoreError",
@@ -6256,6 +6389,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Difícil"
+  },
+  "4b3f03e52c088bad": {
+    "en": "New this week",
+    "path": "common:admin.filter.views.new",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Nuevos esta semana"
   },
   "4b43e284425b4e70": {
     "en": "Plate photos stay on the device that took them, they’re never part of a sync, so you won’t see them on your other devices.",
@@ -6537,6 +6677,13 @@
     "at": "2026-09-14",
     "es": "Este openplate proporciona su propia IA"
   },
+  "4e433ab21fd1c626": {
+    "en": "Sent yesterday",
+    "path": "common:admin.invites.sentYesterday",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Enviada ayer"
+  },
   "4e74e956174a6d6b": {
     "en": "Copy link",
     "path": "common:clinicianLink.copy",
@@ -6683,6 +6830,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Conecta tu proveedor de IA en los ajustes antes de que pueda identificar comida por ti."
+  },
+  "4ff8054f0727e2ea": {
+    "en": "All",
+    "path": "common:admin.filter.views.all",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Todos"
   },
   "4ff93c69e36d62c4": {
     "en": "An end you recorded is never undone by another device.",
@@ -7181,6 +7335,13 @@
     "at": "2026-09-14",
     "es": "Objetivo de proteínas alcanzado"
   },
+  "54f85f5a2937be33": {
+    "en": "Accepted",
+    "path": "common:admin.invites.status.redeemed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Aceptada"
+  },
   "550f59a9ba12fb4a": {
     "en": "A running fast no longer moves the header when its chip arrives.",
     "path": "releases:v0_65_0.fixed.02",
@@ -7236,6 +7397,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-17",
     "es": "Recetas"
+  },
+  "55c3458de13eb373": {
+    "en": "Sent today",
+    "path": "common:admin.invites.sentToday",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Enviada hoy"
   },
   "55ccee399b24b3f8": {
     "en": "Signing out ends the session on this device only. Deleting the account ends it on every device.",
@@ -8749,6 +8917,13 @@
     "at": "2026-09-14",
     "es": "Has cerrado sesión en este dispositivo. Inicia sesión y luego activa las notificaciones."
   },
+  "6671553bc70f0ba3": {
+    "en": "No label",
+    "path": "common:admin.filter.labelNone",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Sin etiqueta"
+  },
   "6671e194ce28e892": {
     "en": "MIT licence",
     "path": "common:chrome.licence",
@@ -8769,6 +8944,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Un anillo en tu diario muestra lo que queda de hoy."
+  },
+  "66d991dd82e68b93": {
+    "en": "{{count}} invitation, newest first",
+    "path": "common:admin.invites.result_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "{{count}} invitación, las más recientes primero"
   },
   "66f3699e471215b1": {
     "en": "The name openplate no longer sits on top of the page title on a phone.",
@@ -9449,6 +9631,13 @@
     "at": "2026-09-14",
     "es": "openplate no contiene publicidad. Esta instancia ejecuta su propio Matomo sin cookies para fines de investigación. Además de las visitas y el uso de funciones, cuenta si se ha producido un ayuno, un registro de peso, una compartición con un médico o una contribución a un estudio. Nunca se le comunica lo que comes, pesas o registras. Tu diario se cifra en este dispositivo antes de que una copia llegue al servidor. Si ejecutas openplate tú mismo, no se contabiliza absolutamente nada."
   },
+  "6f4f1d0df64572b8": {
+    "en": "Sort",
+    "path": "common:admin.filter.sortLabel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Ordenar"
+  },
   "6f5bece42ce3c89f": {
     "en": "Your name (optional)",
     "path": "common:sync.displayNameLabel",
@@ -9847,6 +10036,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "No hay analítica, ni publicidad ni píxeles de seguimiento en openplate. Nada de lo que haces en la aplicación se contabiliza, y nada relacionado con ello se envía a ningún sitio."
+  },
+  "73e117fb9d711ab6": {
+    "en": "Revoked",
+    "path": "common:admin.invites.status.revoked",
+    "model": "hand-written",
+    "at": "2026-10-11",
+    "es": "Retirada"
   },
   "73e220baa277eb38": {
     "en": "Invalid date",
@@ -10653,6 +10849,13 @@
     "at": "2026-09-29",
     "es": "Se terminaron tus {{count}} días gratis"
   },
+  "7c0a385ae4ac0367": {
+    "en": "Expires in {{count}} day",
+    "path": "common:admin.invites.expiresIn_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Caduca en {{count}} día"
+  },
   "7c13e6f00019f4fa": {
     "en": "May contain peanuts",
     "path": "common:cautions.mayContain.peanuts",
@@ -11017,6 +11220,13 @@
     "at": "2026-09-14",
     "es": "{{appName}} en GitHub"
   },
+  "7fa23dc3896b10bd": {
+    "en": "Nobody has accepted an invitation yet.",
+    "path": "common:admin.invites.emptyFor.redeemed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Nadie ha aceptado una invitación todavía."
+  },
   "7fb36965cf3ee30e": {
     "en": "This study holds no key yet. Mint one before its consent materials are printed.",
     "path": "common:research.console.identity.noKey",
@@ -11044,6 +11254,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "{{value}} g de carbohidratos"
+  },
+  "7ff41717e6d982c7": {
+    "en": "{{count}} photo a day",
+    "path": "common:admin.invites.perDay_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "{{count}} foto al día"
   },
   "801efd2c5edcfb55": {
     "en": "Fiber",
@@ -12557,6 +12774,13 @@
     "at": "2026-09-14",
     "es": "Compartir"
   },
+  "8fe973dd9e607283": {
+    "en": "Earlier",
+    "path": "common:admin.bands.earlier",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Anteriormente"
+  },
   "8fe99fc59fd396d9": {
     "en": "Can't reach {{origin}}",
     "path": "common:connectGateway.unreachable.title",
@@ -12620,12 +12844,26 @@
     "at": "2026-09-14",
     "es": "Las fotos del plato no se incluyen en esta descarga: se conservan solo en este dispositivo (mira \"Fotos en este dispositivo\" más abajo), nunca se empaquetan en una copia de seguridad ni en una exportación. Tu descarga contiene solo los números que registraste."
   },
+  "90a90515c71ddf30": {
+    "en": "Sent {{days}} days ago",
+    "path": "common:admin.invites.sentDaysAgo",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Enviada hace {{days}} días"
+  },
   "90bd92305e4b5de0": {
     "en": "Signing out lands on the right page instead of flashing the front page.",
     "path": "releases:v0_63_0.fixed.06",
     "model": "google/gemini-3.8-flash",
     "at": "2026-10-04",
     "es": "Al cerrar sesión se llega a la página correcta en lugar de mostrar fugazmente la página principal."
+  },
+  "90d7ab14eb6e4c00": {
+    "en": "Most scans today",
+    "path": "common:admin.filter.sorts.usage",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Más escaneos hoy"
   },
   "90e395c439b46c2f": {
     "en": "Meal (optional)",
@@ -14097,6 +14335,13 @@
     "at": "2026-09-19",
     "es": "Ayunos"
   },
+  "a1546bcd7c0b39da": {
+    "en": "Name, address or label",
+    "path": "common:admin.filter.searchPlaceholder",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Nombre, dirección o etiqueta"
+  },
   "a168fe81a91f0c7d": {
     "en": "Goals met",
     "path": "common:trends.grid.legendRamp",
@@ -14685,6 +14930,13 @@
     "at": "2026-09-14",
     "es": "Crear una nueva cuenta de estudio"
   },
+  "a814716df2579494": {
+    "en": "Suspended",
+    "path": "common:admin.filter.views.suspended",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Suspendido"
+  },
   "a81a5a6cb9bf0410": {
     "en": "Base URL must start with http:// or https://",
     "path": "common:settingsAi.errors.baseUrlScheme",
@@ -14908,6 +15160,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-21",
     "es": "Cuándo debe surtir efecto la cancelación"
+  },
+  "aa8e46635cdd1308": {
+    "en": "no label",
+    "path": "common:admin.filter.labelPartNone",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "sin etiqueta"
   },
   "aa9767e8f4fd42af": {
     "en": "Cheap input, but it misread two of our three test plates",
@@ -15461,6 +15720,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-10-07",
     "es": "Fotos por semana"
+  },
+  "b14fb5ac92040d9f": {
+    "en": "No invitation has expired.",
+    "path": "common:admin.invites.emptyFor.expired",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Ninguna invitación ha caducado."
   },
   "b1668d82c1ce6645": {
     "en": "You've hit the provider's rate limit. Free-tier scans reset daily, or add credits on OpenRouter for more. Any credits you add go straight to OpenRouter (not openplate), are entirely optional, and are a spend-down balance, not a subscription.",
@@ -16218,6 +16484,13 @@
     "at": "2026-09-14",
     "es": "Añadir comida · openplate"
   },
+  "ba2a6d873ac5494b": {
+    "en": "No invitation has been revoked.",
+    "path": "common:admin.invites.emptyFor.revoked",
+    "model": "hand-written",
+    "at": "2026-10-11",
+    "es": "No se ha retirado ninguna invitación."
+  },
   "ba61f1729ec627dd": {
     "en": "Plan",
     "path": "common:nav.plan",
@@ -16455,6 +16728,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Definir una nueva contraseña"
+  },
+  "bd9f899790247d7f": {
+    "en": "Any label",
+    "path": "common:admin.filter.labelAny",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Cualquier etiqueta"
   },
   "bdc37ca577614cae": {
     "en": "What this study can open, with every withdrawal already purged.",
@@ -16700,6 +16980,13 @@
     "model": "hand-written",
     "at": "2026-09-20",
     "es": "La tarjeta semanal de Resumen y sus dos bloques caben en un teléfono."
+  },
+  "c07577d3f55a2443": {
+    "en": "This week",
+    "path": "common:admin.bands.week",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Esta semana"
   },
   "c09a7b7ec917866b": {
     "en": "Couldn't identify any foods in that description. Try naming each food and how much of it.",
@@ -17107,6 +17394,13 @@
     "at": "2026-09-21",
     "es": "Apio"
   },
+  "c583dca83cb3c79d": {
+    "en": "Never",
+    "path": "common:admin.lastSeen.neverShort",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Nunca"
+  },
   "c5c34f063856d72d": {
     "en": "That date is in the future. Enter today or an earlier one.",
     "path": "common:bodyMetrics.reproductive.errors.startDateFuture",
@@ -17428,6 +17722,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "tu@example.com"
+  },
+  "c9d8cd8e2b9ea336": {
+    "en": "Address removed",
+    "path": "common:admin.invites.addressErased",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Dirección eliminada"
   },
   "c9db97de4e3c5d03": {
     "en": "This app and the core server don’t speak the same version yet, so syncing is paused on purpose.",
@@ -17800,6 +18101,13 @@
     "at": "2026-09-21",
     "es": "Contiene pescado"
   },
+  "cf2b4d4bb88fb6dc": {
+    "en": "Expired {{date}}",
+    "path": "common:admin.invites.expiredOn",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Caducó el {{date}}"
+  },
   "cf2fc879bbd0512d": {
     "en": "Add to my diary",
     "path": "common:settings.data.yazio.confirm",
@@ -18142,6 +18450,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-30",
     "es": "Esta instancia no ofrece IA."
+  },
+  "d289098551673bed": {
+    "en": "No invitation has been sent yet.",
+    "path": "common:admin.invites.emptyFor.all",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "No se ha enviado ninguna invitación todavía."
   },
   "d28b73f8417dbb74": {
     "en": "Research",
@@ -18500,6 +18815,13 @@
     "at": "2026-09-14",
     "es": "Proveedor de IA desconectado."
   },
+  "d58642e868deb84f": {
+    "en": "Clear filters",
+    "path": "common:admin.filter.clear",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Borrar filtros"
+  },
   "d599a90e03f4270b": {
     "en": "A study reads contributions through sync, and whoever runs this openplate has not set it up.",
     "path": "common:research.console.noSync.body",
@@ -18626,6 +18948,13 @@
     "at": "2026-09-23",
     "es": "Plan anual"
   },
+  "d71a5337093b5081": {
+    "en": "Name, A to Z",
+    "path": "common:admin.filter.sorts.name",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Nombre, de la A a la Z"
+  },
   "d72008253cb7904f": {
     "en": "A page no longer moves when its font arrives late.",
     "path": "releases:v0_46_0.fixed.04",
@@ -18709,6 +19038,20 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-29",
     "es": "Los enlaces del pie de página ya no se salen de la pantalla de una tableta."
+  },
+  "d86e1a7388d15b76": {
+    "en": "Nobody here has the label \"{{label}}\".",
+    "path": "common:admin.filter.noneLabel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Nadie aquí tiene la etiqueta \"{{label}}\"."
+  },
+  "d8741aee69ad16a8": {
+    "en": "Label",
+    "path": "common:admin.filter.labelLabel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Etiqueta"
   },
   "d89906a1e313e8d3": {
     "en": "Show",
@@ -19248,6 +19591,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Cuando un ayuno alcanza su objetivo"
+  },
+  "de98bcf9852bc785": {
+    "en": "Expires in {{count}} days",
+    "path": "common:admin.invites.expiresIn_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Caduca en {{count}} días"
   },
   "deaa007865805277": {
     "en": "Source code",
@@ -20551,6 +20901,13 @@
     "at": "2026-09-14",
     "es": "Activo"
   },
+  "ec63ccd499c50b05": {
+    "en": "Last seen",
+    "path": "common:admin.filter.sorts.seen",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Última conexión"
+  },
   "ec86f68c44caa728": {
     "en": "Safe to send by email or show as a code. On its own it can decrypt nothing.",
     "path": "common:sharing.identity.publicKeyHint",
@@ -20830,6 +21187,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-20",
     "es": "Tu historial cuenta: la app reconstruye el registro a partir del diario que ya tienes."
+  },
+  "ef265d0f5efbb455": {
+    "en": "Sent {{date}}",
+    "path": "common:admin.invites.sentOn",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Enviada el {{date}}"
   },
   "ef2d5a450f8cfe7a": {
     "en": "Setup means visiting the provider's own site first: create a free account there, and add a payment method (their checkout, not ours: openplate never sees your card). The simplest path is a key from <providerLink>{{provider}}</providerLink>: that's the tab we've put first below, and one key covers every model listed under it.",
@@ -21335,6 +21699,13 @@
     "at": "2026-09-14",
     "es": "Introduce una fecha prevista de parto dentro de las próximas {{weeks}} semanas."
   },
+  "f5340c051cef5fb9": {
+    "en": "{{shown}} of {{total}} people",
+    "path": "common:admin.filter.result",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "{{shown}} de {{total}} personas"
+  },
   "f53c42f947abc2e3": {
     "en": "At least {{goal}} g",
     "path": "common:dashboard.ridge.caption.protein",
@@ -21411,6 +21782,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-27",
     "es": "Las cuentas necesitan una conexión segura"
+  },
+  "f5f3cb44c1e05ced": {
+    "en": "Today",
+    "path": "common:admin.dayAge.today",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Hoy"
   },
   "f60026707d160925": {
     "en": "Food database",
@@ -21593,6 +21971,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Este navegador no puede recibir notificaciones."
+  },
+  "f8516a76e7051f5a": {
+    "en": "Status",
+    "path": "common:admin.invites.statusLabel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Estado"
   },
   "f85a021dc9beb8da": {
     "en": "{{kept}} share(s) kept, {{revoked}} ended.",
@@ -22286,6 +22671,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "{{value}} calorías"
+  },
+  "ff3fe41e29b9f7d0": {
+    "en": "Expires today",
+    "path": "common:admin.invites.expiresToday",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "es": "Caduca hoy"
   },
   "ff66e3db94770dd9": {
     "en": "If you have no backup",

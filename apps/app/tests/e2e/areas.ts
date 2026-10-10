@@ -150,6 +150,7 @@ export const PATH_RULES: ReadonlyArray<PathRule> = [
     area: 'diary-and-add',
   },
   { pattern: /^app\/hooks\/use-leave-when-another-tab-signs-out/, area: 'sign-out' },
+  { pattern: /^app\/hooks\/use-people-filter/, area: 'admin' },
   { pattern: /^app\/hooks\/use-(update-status|install-affordance)/, area: 'offline-and-updates' },
   { pattern: /^app\/hooks\/use-(plan|trial|offer|payment|intended-plan|public-plan)/, area: 'plans-and-paywall' },
   { pattern: /^app\/hooks\/use-(ai-connection|plate-photo|provider)/, area: 'scan' },

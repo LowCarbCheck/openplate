@@ -3381,7 +3381,8 @@
     "usageNone": "Nessuna foto",
     "trialScansUsed": "{{used}} su {{granted}} usate",
     "lastSeen": {
-      "never": "Mai effettuato l'accesso"
+      "never": "Mai effettuato l'accesso",
+      "neverShort": "Mai"
     },
     "person": {
       "back": "Torna all'elenco",
@@ -3449,9 +3450,13 @@
       "failed": "Impossibile eliminare l'account."
     },
     "invites": {
-      "title": "Inviti in sospeso",
       "empty": "Nessun invito in attesa.",
-      "expires": "Valido fino al {{date}}",
+      "emptyFor": {
+        "expired": "Nessun invito è scaduto.",
+        "revoked": "Nessun invito è stato revocato.",
+        "redeemed": "Nessuno ha ancora accettato un invito.",
+        "all": "Nessun invito è stato ancora inviato."
+      },
       "resend": "Invia di nuovo",
       "resent": "Un nuovo invito è stato inviato a {{email}}.",
       "revoke": "Revoca",
@@ -3459,7 +3464,28 @@
       "revokeConfirmBody": "Il loro link smette di funzionare. Puoi invitarli di nuovo quando vuoi.",
       "revokeConfirmCta": "Revoca",
       "failed": "Operazione non riuscita.",
-      "loadFailed": "Impossibile caricare gli inviti."
+      "loadFailed": "Impossibile caricare gli inviti.",
+      "statusLabel": "Stato",
+      "status": {
+        "pending": "In attesa",
+        "expired": "Scaduto",
+        "revoked": "Revocato",
+        "redeemed": "Accettato",
+        "all": "Tutti"
+      },
+      "result_one": "{{count}} invito, dal più recente",
+      "result_other": "{{count}} inviti, dai più recenti",
+      "sentToday": "Inviato oggi",
+      "sentYesterday": "Inviato ieri",
+      "sentDaysAgo": "Inviato {{days}} giorni fa",
+      "sentOn": "Inviato il {{date}}",
+      "perDay_one": "{{count}} foto al giorno",
+      "perDay_other": "{{count}} foto al giorno",
+      "expiresIn_one": "Scade tra {{count}} giorno",
+      "expiresIn_other": "Scade tra {{count}} giorni",
+      "expiresToday": "Scade oggi",
+      "expiredOn": "Scaduto il {{date}}",
+      "addressErased": "Indirizzo rimosso"
     },
     "invite": {
       "cta": "Invita qualcuno",
@@ -3523,15 +3549,38 @@
     },
     "filter": {
       "searchLabel": "Cerca",
-      "searchPlaceholder": "Nome o indirizzo email",
-      "groupLabel": "Mostra",
-      "everybody": "Tutti",
-      "active": "Attivi",
-      "suspended": "Sospesi",
-      "administrators": "Amministratori",
+      "searchPlaceholder": "Nome, indirizzo o etichetta",
+      "viewLabel": "Visualizza",
+      "views": {
+        "all": "Tutti",
+        "new": "Nuovi questa settimana",
+        "seen": "Visti questa settimana",
+        "quiet": "Inattivi",
+        "never": "Mai effettuato l'accesso",
+        "suspended": "Sospeso",
+        "administrators": "Amministratori"
+      },
+      "labelLabel": "Etichetta",
+      "labelAny": "Qualsiasi etichetta",
+      "labelNone": "Nessuna etichetta",
+      "labelPart": "etichetta \"{{label}}\"",
+      "labelPartNone": "nessuna etichetta",
+      "sortLabel": "Ordina",
+      "sorts": {
+        "newest": "Prima i più recenti",
+        "oldest": "Prima i meno recenti",
+        "seen": "Ultimo accesso",
+        "usage": "Più scansioni oggi",
+        "name": "Nome, da A a Z"
+      },
+      "result": "{{shown}} persone su {{total}}",
+      "clear": "Reimposta filtri",
       "noneQuery": "Nessun risultato corrisponde a \"{{query}}\".",
       "noneGroup": "Nessun utente fa parte di \"{{group}}\".",
-      "noneBoth": "Nessun utente in \"{{group}}\" corrisponde a \"{{query}}\"."
+      "noneBoth": "Nessun utente in \"{{group}}\" corrisponde a \"{{query}}\".",
+      "noneLabel": "Nessuna persona qui ha l'etichetta \"{{label}}\".",
+      "noneNoLabel": "Tutte le persone qui hanno un'etichetta.",
+      "noneSeveral": "Nessuna persona qui corrisponde a {{filters}}."
     },
     "activity": {
       "title": "Chi lo sta ancora usando",
@@ -3574,6 +3623,19 @@
       "deleteConfirmBody": "I valori e la foto vengono eliminati subito, invece di attendere lo scadere dell'intervallo. L'operazione non si può annullare.",
       "deleteConfirmCta": "Elimina definitivamente",
       "deleteFailed": "Impossibile eliminare il resoconto."
+    },
+    "badge": {
+      "new": "Nuovo"
+    },
+    "dayAge": {
+      "today": "Oggi",
+      "yesterday": "Ieri",
+      "daysAgo": "{{days}} giorni fa"
+    },
+    "bands": {
+      "week": "Questa settimana",
+      "month": "Questo mese",
+      "earlier": "In precedenza"
     }
   },
   "aiIntake": {
