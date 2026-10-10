@@ -561,7 +561,44 @@
       "grams": "{{value}} g",
       "gramsLeft": "up to {{value}} g more",
       "gramsOver": "{{value}} g over",
+      "lead": {
+        "caption": {
+          "netCarbs": {
+            "left": "net carbs left today",
+            "spend": "net carbs to spend today",
+            "over": "net carbs over today",
+            "open": "net carbs today"
+          },
+          "calories": {
+            "left": "left today",
+            "spend": "to spend today",
+            "over": "over today",
+            "open": "today"
+          },
+          "protein": {
+            "needed": "protein still needed",
+            "reach": "protein to reach today",
+            "met": "protein, target reached",
+            "open": "protein today"
+          }
+        },
+        "entries_one": "{{count}} entry",
+        "entries_other": "{{count}} entries",
+        "limit": "limit {{value}}",
+        "noLimit": "no limit set",
+        "noTarget": "no target set",
+        "reference": "reference {{value}}",
+        "soFar_one": "{{value}} so far, {{count}} entry",
+        "soFar_other": "{{value}} so far, {{count}} entries",
+        "target": "target {{value}}"
+      },
       "leadNoTarget": "No daily target",
+      "ledger": {
+        "left": "{{value}} left",
+        "needed": "{{value}} to go",
+        "noTarget": "no target",
+        "over": "{{value}} over"
+      },
       "left": "up to {{value}} more",
       "over": "{{value}} over",
       "progress": "{{consumed}} of {{target}}",
@@ -593,6 +630,9 @@
       "door": "Like yesterday",
       "doorHint": "Copy yesterday's {{count}} entries into today",
       "meal": "{{meal}} ({{n}})",
+      "rowButton": "Copy",
+      "rowHint_one": "{{count}} entry from {{day}}",
+      "rowHint_other": "{{count}} entries from {{day}}",
       "title": "Like yesterday"
     },
     "drilldown": {

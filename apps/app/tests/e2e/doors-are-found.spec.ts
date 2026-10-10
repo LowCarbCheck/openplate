@@ -5,7 +5,7 @@
  *
  * | Feature | Route | Component | i18n key of the visible label |
  * | --- | --- | --- | --- |
- * | repeat | `/dashboard` | `RepeatYesterdayGhost` | `diary.copy.door` |
+ * | repeat | `/dashboard` | `RepeatYesterdayRow` | `diary.copy.door`, then `diary.copy.rowButton` |
  * | repeat | `/describe` | `RepeatYesterdayDoor` | `diary.copy.door` |
  * | repeat | `/diary` | `CopyFromYesterday` | `diary.copy.title`, then `diary.copy.all` / `diary.copy.meal` per chip |
  * | repeat | `/diary` | `CopyFromYesterday` | `diary.copy.chooseEntries` |
@@ -144,8 +144,10 @@ test('every repeat, save-as-meal and usual door is visible on the phone', async 
 
   await page.goto('/dashboard');
   await expectVisibleLabel(
-    page.getByRole('button', { name: EN.diary.copy.door, exact: true }),
-    "the dashboard's repeat door",
+    // The row's button is named by its title and its own word together, so the
+    // person hears what "Copy" copies.
+    page.getByRole('button', { name: `${EN.diary.copy.door} ${EN.diary.copy.rowButton}`, exact: true }),
+    "the dashboard's repeat row",
   );
   await expectPhoneLayout(page);
 

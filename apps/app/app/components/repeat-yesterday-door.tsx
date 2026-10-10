@@ -1,12 +1,16 @@
 /**
  * "Wie gestern", one tap that repeats yesterday, from wherever the person is.
  *
- * Two surfaces live here, and they submit the SAME thing. `RepeatYesterdayDoor`
- * is the pill button, on `/describe`. `RepeatYesterdayGhost` is the dashed card
- * that draws the day it would bring over, on `/dashboard`, where a fourth thing
- * to press beside the three add-entry controls was the complaint. Both take
- * their fields, their label, their hint and their toast from `useCopyDoor`
- * below, so only the surface differs.
+ * Three surfaces live here, and they submit the SAME thing. `RepeatYesterdayDoor`
+ * is the pill button, on `/describe`. `RepeatYesterdayRow` is a plain row on
+ * `/dashboard`: an icon, "Like yesterday", one muted line saying what it would
+ * bring over, and a small "Copy" button. It replaced the dashed ghost card
+ * there (2026-10-11), which sat ABOVE the composer and pushed the photo button
+ * down on every day it appeared; the row sits UNDER the composer, so the photo
+ * button is at the same height on every day. `RepeatYesterdayGhost` is that
+ * reviewed card, kept for `/dev/playground` as the record of the concept. All
+ * three take their fields and their toast from `useCopyDoor` below, so only the
+ * surface differs.
  *
  * ── Why it exists (M217) ─────────────────────────────────────────────────
  *
@@ -36,7 +40,9 @@ import { useFetcher } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { CopyPlus } from 'lucide-react';
 
+import { Button } from '#app/components/ui/button';
 import type { RepeatYesterdayOffer } from '#app/lib/copy-day';
+import { formatWeekdayName } from '#app/lib/format-day-label';
 import { useCopyYesterdayToast, type CopyYesterdayResult } from '#app/hooks/use-copy-yesterday-toast';
 import { cn } from '#app/lib/utils';
 
@@ -229,4 +235,81 @@ export function RepeatYesterdayGhost({
 }): ReactElement | null {
   if (offer === null) return null;
   return <RepeatYesterdayGhostBody offer={offer} className={className} />;
+}
+
+/**
+ * The row, rendered only when there is something to repeat. Split from the
+ * wrapper below so the hooks are never behind a condition.
+ *
+ * THE BUTTON KEEPS ITS WIDTH between "Copy" and "Copying…" (`min-w-24`), so the
+ * words of the row never move while the copy is in flight. Its accessible name
+ * is the row's title followed by its own words ("Like yesterday Copy"): a
+ * button that said only "Copy" would be one of many to a screen reader, and the
+ * visible word stays inside the name.
+ */
+function RepeatYesterdayRowBody({ offer, className }: { offer: RepeatYesterdayOffer; className?: string }): ReactElement {
+  const { t, i18n } = useTranslation();
+  const { hintId, isCopying, Form } = useCopyDoor(offer);
+  const titleId = useId();
+  const buttonTextId = useId();
+  const line = t('diary.copy.rowHint', {
+    count: offer.sourceCount,
+    day: formatWeekdayName(offer.sourceDate, i18n.language),
+  });
+
+  return (
+    <Form method="post" action="/diary" className={className} data-slot="repeat-yesterday-row">
+      <CopyFields targetDate={offer.targetDate} />
+      <div
+        className={cn(
+          'grid grid-cols-[1.5rem_minmax(0,1fr)_auto] items-center gap-x-2.5 border border-border/90 bg-card/60 px-3 py-1.5',
+          isCopying && 'pulse-soft',
+        )}
+      >
+        <CopyPlus className="size-4 text-primary" aria-hidden="true" />
+        <span className="min-w-0">
+          <span id={titleId} className="block text-sm font-medium">
+            {t('diary.copy.door')}
+          </span>
+          <span id={hintId} className="block text-xs text-muted-foreground">
+            {line}
+          </span>
+        </span>
+        <Button
+          type="submit"
+          variant="outline"
+          size="sm"
+          disabled={isCopying}
+          aria-labelledby={`${titleId} ${buttonTextId}`}
+          aria-describedby={hintId}
+          className="min-w-24 text-xs"
+        >
+          <span id={buttonTextId}>{isCopying ? t('diary.copy.copying') : t('diary.copy.rowButton')}</span>
+        </Button>
+      </div>
+    </Form>
+  );
+}
+
+/**
+ * Renders the "Like yesterday" row, or nothing.
+ *
+ * A plain row rather than a card that draws the day: the entry count and the
+ * weekday are the whole answer to "what will this do to my day", and a small
+ * outline button is all the weight a repeat needs next to the composer's
+ * camera. It renders nothing for a null offer, so a day with nothing to
+ * repeat leaves the page exactly as it was.
+ *
+ * @param offer - `selectRepeatYesterday`'s answer; null means no row.
+ * @param className - passed to the form wrapper.
+ */
+export function RepeatYesterdayRow({
+  offer,
+  className,
+}: {
+  offer: RepeatYesterdayOffer | null;
+  className?: string;
+}): ReactElement | null {
+  if (offer === null) return null;
+  return <RepeatYesterdayRowBody offer={offer} className={className} />;
 }

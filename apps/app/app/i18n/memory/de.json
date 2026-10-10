@@ -244,6 +244,13 @@
     "at": "2026-09-14",
     "de": "{{day}}, {{value}} von {{goal}} g Netto-Kohlenhydrate, im Rahmen"
   },
+  "02d6896671d5374f": {
+    "en": "no target",
+    "path": "common:diary.budget.ledger.noTarget",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "de": "kein Ziel"
+  },
   "02ec9ae3aedb5422": {
     "en": "{{count}} weigh-ins skipped: those days already have a weigh-in in your openplate weight log.",
     "path": "common:settings.data.yazio.skipped.weightAlreadyLogged_other",
@@ -460,6 +467,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Konto"
+  },
+  "057c23a6d15cab39": {
+    "en": "today",
+    "path": "common:diary.budget.lead.caption.calories.open",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "de": "heute"
   },
   "058bf3b9d6e00040": {
     "en": "Analyzing your plate…",
@@ -2001,6 +2015,13 @@
     "at": "2026-09-14",
     "de": "Ihre Kontonummer"
   },
+  "156578961ce7e0e2": {
+    "en": "{{count}} entry from {{day}}",
+    "path": "common:diary.copy.rowHint_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "de": "{{count}} Eintrag vom {{day}}"
+  },
   "1574c8061928fb3e": {
     "en": "Disconnect first to switch providers.",
     "path": "common:settingsAi.errors.disconnectToSwitch",
@@ -3030,6 +3051,13 @@
     "at": "2026-09-14",
     "de": "Gleich fertig…"
   },
+  "1fcfb2952f37d0f9": {
+    "en": "{{value}} so far, {{count}} entries",
+    "path": "common:diary.budget.lead.soFar_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "de": "{{value}} bisher, {{count}} Einträge"
+  },
   "1fd86df92e39bc1d": {
     "en": "Withdraw",
     "path": "common:research.withdrawal.open",
@@ -3260,6 +3288,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Der Anbieter ist vorübergehend überlastet oder nicht erreichbar. Warte eine Minute und versuche es erneut."
+  },
+  "222274c97ef75991": {
+    "en": "net carbs today",
+    "path": "common:diary.budget.lead.caption.netCarbs.open",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "de": "Netto-Kohlenhydrate heute"
   },
   "224844f61c338e7f": {
     "en": "AI entries are not switched on for this account. Searching the food database works without them.",
@@ -3841,6 +3876,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Einladungslink"
+  },
+  "294a9290045f7a48": {
+    "en": "{{count}} entries",
+    "path": "common:diary.budget.lead.entries_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "de": "{{count}} Einträge"
   },
   "2950778ac02eca76": {
     "en": "Your usual fast. The timer preselects it, and a usual start time gives you a one-tap start at that hour.",
@@ -5130,6 +5172,13 @@
     "at": "2026-09-24",
     "de": "YAZIO-Einträge entfernen"
   },
+  "3bb1724f745ad2ed": {
+    "en": "Copy",
+    "path": "common:diary.copy.rowButton",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "de": "Kopieren"
+  },
   "3bb310e3f73915a7": {
     "en": "Research studies · openplate",
     "path": "common:meta.research",
@@ -5199,6 +5248,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-29",
     "de": "Deine Testphase endet heute."
+  },
+  "3c6f2d46634e9e41": {
+    "en": "protein, target reached",
+    "path": "common:diary.budget.lead.caption.protein.met",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "de": "Protein, Ziel erreicht"
   },
   "3c78b6376fb4aff2": {
     "en": "The payment portal now opens in the page's language.",
@@ -6298,6 +6354,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-23",
     "de": "Du hast bisher {{count}} Mahlzeiten mit KI erfasst."
+  },
+  "4a3421dc8b2f7400": {
+    "en": "{{count}} entry",
+    "path": "common:diary.budget.lead.entries_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "de": "{{count}} Eintrag"
   },
   "4a492be54b1e34bd": {
     "en": "Your browser asks sites not to track it, so this browser sends nothing.",
@@ -8777,6 +8840,13 @@
     "at": "2026-09-14",
     "de": "Ab dieser Zeit starten"
   },
+  "64802dfbac51e510": {
+    "en": "no limit set",
+    "path": "common:diary.budget.lead.noLimit",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "de": "kein Limit festgelegt"
+  },
   "64a1d9191620b304": {
     "en": "Email address",
     "path": "common:declarations.withdraw.emailLabel",
@@ -9274,6 +9344,13 @@
     "at": "2026-09-14",
     "de": "Dieser Server kennt diese Studie nicht, es wurde nichts gesendet."
   },
+  "6adc2536418e1231": {
+    "en": "net carbs to spend today",
+    "path": "common:diary.budget.lead.caption.netCarbs.spend",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "de": "heute verfügbare Netto-Kohlenhydrate"
+  },
   "6b0330830fe0ca58": {
     "en": "Choose a plan to keep using openplate",
     "path": "common:paywall.heading.choose",
@@ -9455,6 +9532,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Weder noch"
+  },
+  "6d54d67ccfe9b7cb": {
+    "en": "to spend today",
+    "path": "common:diary.budget.lead.caption.calories.spend",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "de": "heute verfügbar"
   },
   "6d72542d9069982b": {
     "en": "Third trimester",
@@ -10925,6 +11009,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-19",
     "de": "{{count}} Änderungen auf diesem Gerät haben den Server noch nicht erreicht. Wenn du löschst, verlierst du sie."
+  },
+  "7caa42e2a5bdad7d": {
+    "en": "{{value}} so far, {{count}} entry",
+    "path": "common:diary.budget.lead.soFar_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "de": "{{value}} bisher, {{count}} Eintrag"
   },
   "7cbcc70dd14221d7": {
     "en": "Save",
@@ -12998,6 +13089,13 @@
     "at": "2026-09-14",
     "de": "Meldung eingereiht. Sie wird gesendet, sobald du das nächste Mal online bist."
   },
+  "9212e41bea7b5096": {
+    "en": "{{count}} entries from {{day}}",
+    "path": "common:diary.copy.rowHint_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "de": "{{count}} Einträge vom {{day}}"
+  },
   "921f28adadf8b3db": {
     "en": "elapsed",
     "path": "common:fasting.active.elapsedLabel",
@@ -13628,6 +13726,13 @@
     "at": "2026-09-14",
     "de": "Fett {{value}} g"
   },
+  "99438c04d61de336": {
+    "en": "protein to reach today",
+    "path": "common:diary.budget.lead.caption.protein.reach",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "de": "Protein heute noch zu erreichen"
+  },
   "99468f7a06776fdc": {
     "en": "Pregnancy and breastfeeding raise your need for energy and carbohydrates. Talk to your midwife or doctor before you limit either one. High protein or Just track may fit you better. Read <sourceLink>what the DGE advises</sourceLink>.",
     "path": "common:onboarding.style.caution",
@@ -13767,6 +13872,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Fotos bleiben auf dem Gerät, mit dem sie aufgenommen wurden. Sie werden nie auf ein anderes Gerät kopiert."
+  },
+  "9abed81a43020239": {
+    "en": "limit {{value}}",
+    "path": "common:diary.budget.lead.limit",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "de": "Limit {{value}}"
   },
   "9aceb0e5ccd70c83": {
     "en": "Study console · openplate",
@@ -13914,6 +14026,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "g heute darüber"
+  },
+  "9c419d8768d81cf6": {
+    "en": "{{value}} over",
+    "path": "common:diary.budget.ledger.over",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "de": "{{value}} drüber"
   },
   "9ca1c4d059845bd5": {
     "en": "Your smoothed trend against your target. One weigh-in a day is plenty.",
@@ -14110,6 +14229,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Dieses Fasten entfernen?"
+  },
+  "9ed5fd1eb22d437e": {
+    "en": "net carbs over today",
+    "path": "common:diary.budget.lead.caption.netCarbs.over",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "de": "heute überschrittene Netto-Kohlenhydrate"
   },
   "9f0d39d6e878018b": {
     "en": "The check did not pass. Wait for a new check, then send the email again.",
@@ -15707,6 +15833,13 @@
     "at": "2026-09-14",
     "de": "Passwort geändert."
   },
+  "b1108647c6976772": {
+    "en": "{{value}} left",
+    "path": "common:diary.budget.ledger.left",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "de": "{{value}} verbleibend"
+  },
   "b118bdbc2e21c9be": {
     "en": "Sharing needs your account password. Sign in on this device first.",
     "path": "common:sharing.needsSession",
@@ -15832,6 +15965,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Konto löschen"
+  },
+  "b203002d40a4cf90": {
+    "en": "no target set",
+    "path": "common:diary.budget.lead.noTarget",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "de": "kein Ziel festgelegt"
   },
   "b239e6cd33773c95": {
     "en": "Entered from {{source}}",
@@ -16154,6 +16294,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Das sind sieben Tage in Folge."
+  },
+  "b62a6a1330ea2428": {
+    "en": "protein still needed",
+    "path": "common:diary.budget.lead.caption.protein.needed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "de": "Protein noch benötigt"
   },
   "b6355e60ce528e14": {
     "en": "openplate is open source. Here is the build you are running, and where its code lives.",
@@ -16511,6 +16658,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Ziel {{goal}} g"
+  },
+  "bacceba6a9c5aa2c": {
+    "en": "over today",
+    "path": "common:diary.budget.lead.caption.calories.over",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "de": "heute überschritten"
   },
   "bace115bdb467bbc": {
     "en": "Your log",
@@ -17197,6 +17351,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "{{appName}} installieren"
+  },
+  "c31e15222ada98a1": {
+    "en": "target {{value}}",
+    "path": "common:diary.budget.lead.target",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "de": "Ziel {{value}}"
   },
   "c33abf5462863b27": {
     "en": "Logged {{name}}, {{count}} foods.",
@@ -18570,6 +18731,13 @@
     "at": "2026-09-14",
     "de": "Dein Tagebuch wird auf diesem Gerät gespeichert: Lade dir jederzeit eine vollständige Kopie herunter, ohne Bindung, ohne Wartezeit."
   },
+  "d3d4885b91e5c8ae": {
+    "en": "{{value}} to go",
+    "path": "common:diary.budget.ledger.needed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "de": "{{value}} übrig"
+  },
   "d3e4f681270af207": {
     "en": "Save one from the diary: bundle the foods you logged and give them a name.",
     "path": "common:meals.howTo",
@@ -18632,6 +18800,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Dein Foto wird direkt an deinen eigenen KI-Anbieter gesendet, um zu erkennen, was auf deinem Teller liegt. Danach wird es nur auf diesem Gerät gespeichert (nicht auf den Servern von openplate), damit du es im Eintrag wiedersehen kannst. Du kannst dies jederzeit unter „Daten & Backup“ in den Einstellungen deaktivieren oder löschen."
+  },
+  "d43867fd56948463": {
+    "en": "net carbs left today",
+    "path": "common:diary.budget.lead.caption.netCarbs.left",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "de": "heute verbleibende Netto-Kohlenhydrate"
   },
   "d442846e309e4879": {
     "en": "To switch providers, disconnect first.",
@@ -19654,6 +19829,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "KI-Einträge sind für dieses Konto nicht aktiviert. Bitte deinen Administrator, sie zu aktivieren. Die Suche in der Lebensmitteldatenbank funktioniert auch ohne sie."
+  },
+  "df9f8133ae99bdbb": {
+    "en": "left today",
+    "path": "common:diary.budget.lead.caption.calories.left",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "de": "heute verbleibend"
   },
   "dfb9aa2b4966b3e5": {
     "en": "Today so far",
@@ -20922,6 +21104,13 @@
     "at": "2026-09-14",
     "de": "Erscheinungsbild"
   },
+  "eca9038d6f0ef824": {
+    "en": "protein today",
+    "path": "common:diary.budget.lead.caption.protein.open",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "de": "Protein heute"
+  },
   "ecb23df628ad3690": {
     "en": "Pantry · openplate",
     "path": "common:meta.pantry",
@@ -21362,6 +21551,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-29",
     "de": "Was openplate ist und was es kostet: <site>{{site}}</site>"
+  },
+  "f1a392ab7e35199e": {
+    "en": "reference {{value}}",
+    "path": "common:diary.budget.lead.reference",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-10",
+    "de": "Referenz {{value}}"
   },
   "f1b6ba944f2a155b": {
     "en": "No new data will be sent to this study.",

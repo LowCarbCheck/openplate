@@ -1,11 +1,12 @@
 /**
  * The "Wie gestern" surfaces (M217/02), rendered.
  *
- * There are two now, and they share one module and one mechanism: the pill
- * door on `/describe`, and the ghost card on `/dashboard`, which replaced the
- * pill there after a playground review. Each is asserted against the same
- * contract, because a surface that stopped posting the diary's intent would be
- * a new copy mechanism no matter how it looks.
+ * There are three now, and they share one module and one mechanism: the pill
+ * door on `/describe`, the plain row on `/dashboard` (2026-10-11), and the
+ * ghost card the row replaced there, which `/dev/playground` keeps as the
+ * record of the concept. Each is asserted against the same contract, because
+ * a surface that stopped posting the diary's intent would be a new copy
+ * mechanism no matter how it looks.
  *
  * ── What is worth proving here ───────────────────────────────────────────
  *
@@ -36,7 +37,11 @@ import { RouterProvider, createMemoryRouter } from 'react-router';
 import { z } from 'zod';
 
 import { withI18n } from './trends-i18n-harness';
-import { RepeatYesterdayGhost, RepeatYesterdayDoor } from '../../app/components/repeat-yesterday-door';
+import {
+  RepeatYesterdayGhost,
+  RepeatYesterdayDoor,
+  RepeatYesterdayRow,
+} from '../../app/components/repeat-yesterday-door';
 import { selectRepeatYesterday, type RepeatYesterdayOffer } from '../../app/lib/copy-day';
 
 const doorCopySchema = z.object({
@@ -45,6 +50,9 @@ const doorCopySchema = z.object({
       door: z.string(),
       doorHint: z.string(),
       copying: z.string(),
+      rowButton: z.string(),
+      rowHint_one: z.string(),
+      rowHint_other: z.string(),
     }),
   }),
 });
@@ -71,7 +79,7 @@ const ELIGIBLE: RepeatYesterdayOffer = {
 
 /** One repeat surface under a router (both post through a fetcher) and the real English catalog. */
 function renderSurface(
-  surface: typeof RepeatYesterdayDoor | typeof RepeatYesterdayGhost,
+  surface: typeof RepeatYesterdayDoor | typeof RepeatYesterdayGhost | typeof RepeatYesterdayRow,
   offer: RepeatYesterdayOffer | null,
 ): string {
   const element = createElement(surface, { offer });
@@ -251,5 +259,107 @@ describe('the Wie gestern ghost card', () => {
     const label = new RegExp(`<span([^>]*)>${COPY.door}</span>`).exec(markup);
     assert.ok(label !== null, 'the card lost its label');
     assert.doesNotMatch(label[1] ?? '', /aria-hidden/, 'the label is hidden too, so the button has no name');
+  });
+});
+
+/** The row, which `/dashboard` renders. */
+function renderRow(offer: RepeatYesterdayOffer | null): string {
+  return renderSurface(RepeatYesterdayRow, offer);
+}
+
+/**
+ * THE ROW'S PREDICATE: a submit button carrying the row's own button word. Not
+ * `markup.includes('Like yesterday')`, which the row's title satisfies on its
+ * own, and not `markup !== ''`.
+ */
+function rowButtonTag(markup: string): string | null {
+  const found = /<button[^>]*type="submit"[^>]*>[\s\S]*?<\/button>/.exec(markup);
+  if (found === null) return null;
+  const inner = found[0].replace(/<[^>]*>/g, '');
+  if (inner !== COPY.rowButton) return null;
+  return /<button[^>]*>/.exec(found[0])?.[0] ?? null;
+}
+
+describe('the Wie gestern row on the dashboard', () => {
+  it('renders nothing at all for a null offer, and the same predicate finds it for an eligible one', () => {
+    // The control first: if this half fails the absence half below proves nothing.
+    assert.notEqual(rowButtonTag(renderRow(ELIGIBLE)), null, 'the predicate cannot see a row that IS there');
+
+    assert.equal(rowButtonTag(renderRow(null)), null, 'a null offer still drew a row');
+    assert.equal(renderRow(null), '', 'a null offer left markup behind');
+  });
+
+  it('takes its answer from the same selector the door uses', () => {
+    const offered = selectRepeatYesterday({
+      logs: [{ dayKey: YESTERDAY }, { dayKey: YESTERDAY }],
+      today: TODAY,
+      yesterday: YESTERDAY,
+    });
+    const withheld = selectRepeatYesterday({ logs: [{ dayKey: TODAY }], today: TODAY, yesterday: YESTERDAY });
+
+    assert.notEqual(rowButtonTag(renderRow(offered)), null);
+    assert.equal(rowButtonTag(renderRow(withheld)), null);
+  });
+
+  it('posts the same whole-day copy intent to the diary action', () => {
+    const markup = renderRow(ELIGIBLE);
+
+    assert.match(markup, /<form[^>]*action="\/diary"/, 'the row no longer posts to the diary');
+    assert.match(markup, /<form[^>]*method="post"/);
+    assert.match(markup, /<input type="hidden" name="_intent" value="copy-yesterday"\/>/);
+    assert.match(markup, new RegExp(`<input type="hidden" name="date" value="${TODAY}"/>`));
+    // No meal field: its ABSENCE is what makes the copy the whole day.
+    assert.doesNotMatch(markup, /name="mealType"/, 'the row narrowed itself to one meal');
+    assert.doesNotMatch(markup, /name="sourceDate"/);
+  });
+
+  it('says how many entries and from which weekday, in a plain muted line', () => {
+    // 2026-09-09 is a Wednesday.
+    const markup = renderRow(ELIGIBLE);
+    assert.match(markup, />4 entries from Wednesday</);
+    // CONTROL: one entry takes the singular, so the plural above was chosen.
+    assert.match(renderRow({ ...ELIGIBLE, sourceCount: 1 }), />1 entry from Wednesday</);
+    assert.match(markup, /text-muted-foreground/);
+  });
+
+  it('is a live, 44 px outline button at rest, named by the title and its own word', () => {
+    const markup = renderRow(ELIGIBLE);
+    const tag = rowButtonTag(markup);
+    assert.ok(tag !== null);
+    assert.doesNotMatch(tag, /\sdisabled(=""|\s|>)/, 'the row opens disabled');
+    // The control for that regex: the class it must NOT be fooled by is present.
+    assert.match(tag, /disabled:opacity-50/);
+    assert.match(tag, /\bh-11\b/, 'the button is under the 44 px floor on a phone');
+
+    // The name is the title and the visible word together: the visible word is
+    // inside the name, and "Copy" alone is not a name that says what it copies.
+    const labelledBy = /aria-labelledby="([^"]+)"/.exec(tag)?.[1]?.split(' ');
+    assert.equal(labelledBy?.length, 2);
+    const [titleId, wordId] = labelledBy ?? [];
+    assert.match(markup, new RegExp(`<span id="${titleId}"[^>]*>${COPY.door}</span>`), 'the first id is the title');
+    assert.match(markup, new RegExp(`<span id="${wordId}">${COPY.rowButton}</span>`), 'the second id is the word');
+  });
+
+  it('describes the button with the line that counts what it would copy', () => {
+    const markup = renderRow(ELIGIBLE);
+    const tag = rowButtonTag(markup) ?? '';
+    const describedBy = /aria-describedby="([^"]+)"/.exec(tag)?.[1];
+    assert.ok(describedBy !== undefined, 'the button carries no accessible description');
+    const line = new RegExp(`<span id="${describedBy}"[^>]*>([\\s\\S]*?)</span>`).exec(markup)?.[1];
+    assert.ok(line !== undefined, 'aria-describedby points at nothing');
+    assert.ok(line.includes('4'), 'the line does not say how many entries would be copied');
+  });
+
+  it('draws no dashed ghost lines and no dashed border: it is a plain row', () => {
+    const markup = renderRow(ELIGIBLE);
+    assert.doesNotMatch(markup, /border-dashed/);
+    // CONTROL: the ghost card it replaced DOES draw them, so the check can fail.
+    assert.match(renderGhost(ELIGIBLE), /border-dashed/);
+  });
+
+  it('writes nothing itself, like the door and the ghost', () => {
+    for (const forbidden of ['putLocalFoodLog', 'randomUuid', 'trackFoodLogged', 'deleteLocalFoodLog']) {
+      assert.ok(!SOURCE.includes(forbidden), `the row started doing the copy itself (${forbidden})`);
+    }
   });
 });

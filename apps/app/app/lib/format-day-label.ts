@@ -57,3 +57,36 @@ export function formatDayLabel(date: string, language: string = DEFAULT_LANGUAGE
   const instant = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
   return dayLabelFormatter(dateLabelLocale(language)).format(instant);
 }
+
+/** One weekday-name formatter per locale, for the same reason `FORMATTER_CACHE` exists. */
+const WEEKDAY_FORMATTER_CACHE = new Map<string, Intl.DateTimeFormat>();
+
+/** The weekday written out in full, in the locale's own spelling. */
+function weekdayNameFormatter(locale: string): Intl.DateTimeFormat {
+  const cached = WEEKDAY_FORMATTER_CACHE.get(locale);
+  if (cached) return cached;
+
+  const formatter = new Intl.DateTimeFormat(locale, { timeZone: 'UTC', weekday: 'long' });
+  WEEKDAY_FORMATTER_CACHE.set(locale, formatter);
+  return formatter;
+}
+
+/**
+ * The full weekday name of a `YYYY-MM-DD` calendar date: "Friday" in English,
+ * "Freitag" in German. For a sentence that names a day without its date, such
+ * as "3 entries from Friday".
+ *
+ * Read in UTC for the reason `formatDayLabel` gives: a calendar date's weekday
+ * is the same everywhere, so no time zone is needed.
+ *
+ * @param date - the calendar date as `YYYY-MM-DD`.
+ * @param language - the active UI language; defaults to English.
+ * @returns the weekday name.
+ * @throws if `date` is not a `YYYY-MM-DD` string.
+ */
+export function formatWeekdayName(date: string, language: string = DEFAULT_LANGUAGE): string {
+  const match = DATE_PATTERN.exec(date);
+  if (!match) throw new Error(`Invalid date (expected YYYY-MM-DD): ${date}`);
+  const instant = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
+  return weekdayNameFormatter(dateLabelLocale(language)).format(instant);
+}

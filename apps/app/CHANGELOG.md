@@ -18,6 +18,7 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 ### Changed
 
 - **The graph paper on the hero card fades out below the head band.** The paper was drawn over the whole hero panel and the eye got lost in it on a busy screen and on an empty one. It is the same 28 px paper, a little stronger (nine tenths of the border colour, up from seven), and it shows in full for the first 56 px from the top, then fades to nothing by 170 px. Below that the card is its plain fill. A cover layer on top of the two paper layers does the fading, so the text and figures inside the panel are not masked. The landing page keeps its own paper unchanged.
+- **The Overview now leads with your main goal as one large figure.** The first row shows what is left under a limit, or what is still needed for protein, in a 46 px figure with a meter and a scale line. A limit that is passed shows the excess in amber, a reached protein target shows the amount eaten with a check mark, and a goal with no target shows the plain amount and never invents one. The other rows form a compact ledger under it. The hero keeps one size on an empty day, a logged day and an over day, so the photo button never moves. "Like yesterday" is a plain row with a small Copy button under the composer, and the dashed ghost lines are gone.
 
 ### Fixed
 
