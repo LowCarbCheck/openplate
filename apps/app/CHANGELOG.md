@@ -14,6 +14,7 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 ### Fixed
 
 - **A moved instance never points a browser at another host.** In moved mode the server sends a request path back as a redirect. It collapsed leading slashes, but a backslash, a tab or a line break at the start could still make a browser read the path as another host. Express encoded the backslash in a `Location` header, but the route data answer puts the path in `X-Remix-Redirect` as it is. Every leading separator is now removed before the path goes back.
+- **A page that gains or loses its scrollbar no longer jumps sideways.** On a desktop with classic scrollbars, switching from a long page to a short one, for example People to Invitations in the admin console, moved everything centred by half a scrollbar and the avatar button by all of it. The page now keeps the width of a scrollbar whether or not it draws one (`scrollbar-gutter: stable` on the root). Opening a menu, dialog or sheet moves nothing either: Radix's scroll lock added its own margin for the scrollbar, which would have counted the bar twice, so `app.css` cancels that margin. Phones and macOS draw overlay scrollbars and see no change.
 
 ## [0.67.0] - 2026-10-07
 

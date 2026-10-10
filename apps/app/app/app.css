@@ -493,6 +493,41 @@
   * {
     @apply border-border outline-ring/50;
   }
+  /* The page keeps the width of a scrollbar whether or not it draws one.
+     Without this, a route change between a page that scrolls and one that
+     does not (the admin console's People and Invitations tabs, found on
+     2026-10-11) gives the free width back or takes it again, and everything
+     centred in it jumps sideways by half a scrollbar while the header's
+     avatar button jumps by all of it. Classic scrollbars only: a phone, and
+     macOS by default, draw overlay bars that take no width, so this changes
+     nothing there. `stable`, not `stable both-edges`: the bar sits on the
+     right in a left-to-right page, so mirroring the gutter on the left would
+     only push the sidebar and the content 15 px inward for no reason. */
+  html {
+    scrollbar-gutter: stable;
+  }
+  /* The gutter above makes Radix's scroll lock take the scrollbar's room a
+     second time. While a dialog, sheet, menu or select is open,
+     react-remove-scroll-bar sets `data-scroll-locked` on the body, hides the
+     bar with `overflow: hidden`, and adds a `margin-right` the width of the bar
+     (it measures `innerWidth - clientWidth`) so the page does not widen when
+     the bar goes. With the gutter reserved the room is kept already, the
+     measured width is still the whole bar, and that margin would push the page
+     left by a scrollbar the moment anything opens. So the margin is cancelled.
+     Nothing else the library injects is touched: `overflow: hidden` is what
+     locks the scroll, and the gutter stays under it.
+
+     The library writes its rule as `margin-right: Npx !important` in an
+     unlayered `<style>` it appends at run time. For `!important` the cascade
+     runs the other way round: a rule in a cascade layer beats an unlayered
+     one, whatever the order or the specificity. That is why this plain
+     `0 !important` inside `@layer base` is enough, and why it must stay inside
+     a layer. `tests/e2e/scrollbar-gutter-moves-nothing.spec.ts` opens a menu
+     and a dialog on a page that scrolls and one that does not, and fails if
+     the page moves by a pixel. */
+  body[data-scroll-locked] {
+    margin-right: 0 !important;
+  }
   body {
     /* Anti-aliased text reads crisper on both faces, Victor Mono on the body
        (see root.tsx) and Inter where a page opts back into the sans, so it is

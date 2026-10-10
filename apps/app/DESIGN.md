@@ -538,6 +538,14 @@ keys at 44px, instead of cutting the version number off the end.
   Check it in `tests/e2e/`: read `getBoundingClientRect().top` of the elements below the
   change before and after, and require a `layout-shift` `PerformanceObserver` total of 0. A
   screenshot alone proves nothing here.
+  **A scrollbar is a layout shift too (operator report, 2026-10-11).** On a desktop with classic
+  scrollbars, a route change from a page that scrolls to one that does not gave the bar's width back
+  and moved everything centred by half of it. `html { scrollbar-gutter: stable }` in `app.css`
+  keeps that width whether or not the page scrolls, so a page never gains or loses it. Radix's
+  scroll lock (`body[data-scroll-locked]`) adds its own right margin the width of the bar, which
+  the gutter would make a second helping, so `app.css` cancels it. A new overlay that locks the page
+  needs nothing more. `tests/e2e/scrollbar-gutter-moves-nothing.spec.ts` guards both, at 1280px
+  with real scrollbars, which the phone project and headless Chromium's default hide.
 - **Radix enter/exit**: `tw-animate-css` data-state animations as shipped (fade/zoom/slide).
 - **Micro-interactions**: `transition-colors` default; images in interactive cards
   `group-hover:scale-105 transition-transform duration-200`; arrow affordances
