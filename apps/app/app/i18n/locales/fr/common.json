@@ -561,7 +561,44 @@
       "grams": "{{value}} g",
       "gramsLeft": "jusqu'à {{value}} g en plus",
       "gramsOver": "{{value}} g en trop",
+      "lead": {
+        "caption": {
+          "netCarbs": {
+            "left": "glucides nets restants aujourd'hui",
+            "spend": "glucides nets à consommer aujourd'hui",
+            "over": "glucides nets en trop aujourd'hui",
+            "open": "glucides nets aujourd'hui"
+          },
+          "calories": {
+            "left": "restant aujourd'hui",
+            "spend": "à consommer aujourd'hui",
+            "over": "en trop aujourd'hui",
+            "open": "aujourd'hui"
+          },
+          "protein": {
+            "needed": "protéines encore requises",
+            "reach": "protéines à atteindre aujourd'hui",
+            "met": "protéines, objectif atteint",
+            "open": "protéines aujourd'hui"
+          }
+        },
+        "entries_one": "{{count}} entrée",
+        "entries_other": "{{count}} entrées",
+        "limit": "limite {{value}}",
+        "noLimit": "aucune limite définie",
+        "noTarget": "aucun objectif défini",
+        "reference": "référence {{value}}",
+        "soFar_one": "{{value}} jusqu'ici, {{count}} entrée",
+        "soFar_other": "{{value}} jusqu'ici, {{count}} entrées",
+        "target": "objectif {{value}}"
+      },
       "leadNoTarget": "Aucun objectif quotidien",
+      "ledger": {
+        "left": "{{value}} restant",
+        "needed": "encore {{value}}",
+        "noTarget": "aucun objectif",
+        "over": "{{value}} en trop"
+      },
       "left": "jusqu'à {{value}} en plus",
       "over": "{{value}} en trop",
       "progress": "{{consumed}} sur {{target}}",
@@ -593,6 +630,9 @@
       "door": "Comme hier",
       "doorHint": "Copier les {{count}} entrées d'hier vers aujourd'hui",
       "meal": "{{meal}} ({{n}})",
+      "rowButton": "Copier",
+      "rowHint_one": "{{count}} entrée du {{day}}",
+      "rowHint_other": "{{count}} entrées du {{day}}",
       "title": "Comme hier"
     },
     "drilldown": {

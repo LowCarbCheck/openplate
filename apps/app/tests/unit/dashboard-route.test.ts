@@ -115,21 +115,26 @@ describe('the Wie gestern door on the today card (M217/02)', () => {
     assert.ok(dashboardSource.includes('yesterday: shiftDate(today, -1)'));
   });
 
-  it('renders the door inside the hero, above the add actions', () => {
+  it('renders the row inside the hero, UNDER the composer and above the pantry door', () => {
     const hero = dashboardSource.indexOf('function TodayHeroCard({');
     assert.notEqual(hero, -1, 'TodayHeroCard is gone');
-    // The today card pairs the ghost card with the composer strip:
-    // RepeatYesterdayGhost over IntakeComposer, both the milestone's chosen
-    // names.
-    const doorAt = dashboardSource.indexOf('<RepeatYesterdayGhost offer={repeatYesterday} />', hero);
-    const addActionsAt = dashboardSource.indexOf('<IntakeComposer describeTo={ADD_DESCRIBE_PATH} />', hero);
+    // The row sits under the composer so the photo button, which the composer
+    // draws, is at the same height on every day the offer appears (2026-10-11).
+    // Above it, the dashed card pushed the camera down by its own height.
+    const composerAt = dashboardSource.indexOf('<IntakeComposer describeTo={ADD_DESCRIBE_PATH} />', hero);
+    const rowAt = dashboardSource.indexOf('<RepeatYesterdayRow offer={repeatYesterday} />', hero);
+    const pantryAt = dashboardSource.indexOf('<Link to="/pantry"', hero);
 
-    assert.notEqual(doorAt, -1, 'the today card lost its Wie gestern door');
-    assert.notEqual(addActionsAt, -1, 'the today card lost its add actions');
-    assert.ok(doorAt < addActionsAt, 'the door sank below the add actions');
-    // The control for the ordering above: both indexes are real positions in
-    // the hero, not two -1s comparing equal.
-    assert.ok(doorAt > hero && addActionsAt > hero);
+    assert.notEqual(rowAt, -1, 'the today card lost its Wie gestern row');
+    assert.notEqual(composerAt, -1, 'the today card lost its add actions');
+    assert.notEqual(pantryAt, -1, 'the today card lost its pantry door');
+    assert.ok(composerAt < rowAt, 'the row rose above the composer, which moves the photo button');
+    assert.ok(rowAt < pantryAt, 'the row sank below the pantry door');
+    // The control for the ordering above: all three are real positions in the
+    // hero, not -1s comparing equal.
+    assert.ok(composerAt > hero && rowAt > hero && pantryAt > hero);
+    // And the ghost card, which sat above the composer, is not on this page.
+    assert.ok(!dashboardSource.includes('RepeatYesterdayGhost'), 'the dashed ghost card is back on the dashboard');
   });
 
   it('owns no action of its own, so the copy still happens in exactly one place', () => {

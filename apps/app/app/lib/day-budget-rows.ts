@@ -72,6 +72,27 @@ export type DayBudgetTargetSource = MacroGapTargetSource | 'derived';
 export type DayBudgetRowTone = 'default' | 'over' | 'met';
 
 /**
+ * Where the day stands against a row's target, as one fact and one number.
+ *
+ * Each builder fills it from the figure it already owns (the hero framing's
+ * `numericValue`, the gap's `remainingG`, the derived fat difference), so the
+ * lead and the ledger of the Overview hero read the number the headline was
+ * printed from and never subtract a second time.
+ *
+ * - `none`: no target, nothing to stand against.
+ * - `left`: under a ceiling, `amount` is the headroom (0 exactly at the line).
+ * - `over`: past a ceiling, `amount` is the excess, always positive.
+ * - `needed`: under a floor, `amount` is what is still missing.
+ * - `reached`: a floor met. The excess over a floor is never a number worth stating.
+ */
+export type DayBudgetGap =
+  | { kind: 'none' }
+  | { kind: 'left'; amount: number }
+  | { kind: 'over'; amount: number }
+  | { kind: 'needed'; amount: number }
+  | { kind: 'reached' };
+
+/**
  * How a row's consumed figure is printed: grams to one decimal (net carbs and
  * fat, the precision their headlines already use), whole grams (the two floor
  * rows, whose captions have always rounded), or whole calories.
@@ -105,6 +126,8 @@ export interface DayBudgetRow {
   /** The framing the headline was formatted in, so a tweened figure can be re-formatted identically. Null when it does not animate. */
   headlineMode: HeroStatMode | null;
   tone: DayBudgetRowTone;
+  /** Where the day stands against the target; see `DayBudgetGap`. */
+  gap: DayBudgetGap;
   /** The meter's caption: "25.1 of 50 g", "899 of 1800". Null when there is no target. */
   progressText: string | null;
   /** How `figure` was formatted, so a tweened value can be printed through the same rounding. */
@@ -316,6 +339,12 @@ function budgetFraction(consumed: number, target: number | null): number | null 
   return Math.min(1, Math.max(0, consumed / target));
 }
 
+/** A budget row's gap, from the hero stat that already decided under or over. */
+function budgetGap({ stat, target }: { stat: HeroStat; target: number | null }): DayBudgetGap {
+  if (target === null) return { kind: 'none' };
+  return { kind: stat.isOver ? 'over' : 'left', amount: stat.numericValue };
+}
+
 /**
  * One of the two budget rows, built from the hero framing that already owns
  * its wording. Grams keep the app's one-decimal rounding and calories are
@@ -347,6 +376,7 @@ function budgetRow({
     headlineNumeric: stat.numericValue,
     headlineMode: stat.mode,
     tone: stat.isOver ? 'over' : 'default',
+    gap: budgetGap({ stat, target }),
     progressText:
       target === null ? null : (
         t(isGrams ? 'diary.budget.progressGrams' : 'diary.budget.progress', {
@@ -366,6 +396,13 @@ function budgetRow({
     srLabel: stat.srLabel,
   } satisfies Omit<DayBudgetRow, 'figure'>;
   return withFigure({ row, t, language });
+}
+
+/** A floor row's gap, from the macro gap that already decided met or still needed. */
+function floorGap(gap: MacroGap): DayBudgetGap {
+  if (gap.target === null) return { kind: 'none' };
+  if (gap.isMet) return { kind: 'reached' };
+  return { kind: 'needed', amount: gap.remainingG ?? 0 };
 }
 
 /**
@@ -399,6 +436,7 @@ function floorRow({
     headlineNumeric: null,
     headlineMode: null,
     tone: gap.isMet ? 'met' : 'default',
+    gap: floorGap(gap),
     progressText:
       gap.target === null ? null : t('diary.budget.progressGrams', { consumed, target: Math.round(gap.target) }),
     figureFormat: 'wholeGrams',
@@ -492,6 +530,7 @@ function absoluteFatRow({
     headlineNumeric: null,
     headlineMode: null,
     tone: 'default',
+    gap: { kind: 'none' },
     progressText: null,
     figureFormat: 'grams',
     fraction: null,
@@ -557,6 +596,7 @@ function referencedFatRow({
     headlineMode: null,
     // Never 'over': see this function's doc. The calorie row carries that warning.
     tone: 'default',
+    gap: { kind: isOver ? 'over' : 'left', amount: difference },
     progressText: t('diary.budget.progressGrams', { consumed: consumedText, target: referenceG }),
     figureFormat: 'grams',
     fraction: budgetFraction(totals.fat, referenceG),
@@ -633,6 +673,7 @@ function absoluteCaloriesRow({
     headlineNumeric: null,
     headlineMode: null,
     tone: 'default',
+    gap: { kind: 'none' },
     progressText: null,
     figureFormat: 'kcal',
     fraction: null,

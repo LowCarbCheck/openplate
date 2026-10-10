@@ -170,7 +170,7 @@ const catalogSchema = z.object({
       snack: z.string(),
       none: z.string(),
     }),
-    copy: z.object({ door: z.string(), title: z.string() }),
+    copy: z.object({ door: z.string(), rowButton: z.string(), title: z.string() }),
     actions: z.object({ undo: z.string() }),
     toast: z.object({
       addedOne: z.string(),

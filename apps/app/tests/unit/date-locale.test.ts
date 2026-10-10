@@ -11,7 +11,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { clockLocale, dateLabelLocale, formatNumericDate, numberLocale } from '../../app/i18n/date-locale';
-import { formatDayLabel } from '../../app/lib/format-day-label';
+import { formatDayLabel, formatWeekdayName } from '../../app/lib/format-day-label';
 
 describe('dateLabelLocale', () => {
   it('keeps English day labels in day-before-month order (en-GB)', () => {
@@ -81,6 +81,25 @@ describe('formatDayLabel', () => {
 
   it('throws on a malformed date regardless of language', () => {
     assert.throws(() => formatDayLabel('12/07/2026', 'de'), /Invalid date/);
+  });
+});
+
+describe('formatWeekdayName', () => {
+  it('writes the weekday out in full, in the UI language', () => {
+    // 2026-09-09 is a Wednesday everywhere.
+    assert.equal(formatWeekdayName('2026-09-09'), 'Wednesday');
+    assert.equal(formatWeekdayName('2026-09-09', 'de'), 'Mittwoch');
+    // CONTROL: the language is read, and a different date gives a different day.
+    assert.notEqual(formatWeekdayName('2026-09-09', 'de'), formatWeekdayName('2026-09-09', 'en'));
+    assert.equal(formatWeekdayName('2026-09-11'), 'Friday');
+  });
+
+  it('reads the date in UTC, so the name never shifts with the runtime zone', () => {
+    assert.equal(formatWeekdayName('2026-01-01'), 'Thursday');
+  });
+
+  it('throws on a malformed date', () => {
+    assert.throws(() => formatWeekdayName('09/09/2026'), /Invalid date/);
   });
 });
 

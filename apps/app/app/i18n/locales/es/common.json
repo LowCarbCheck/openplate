@@ -561,7 +561,44 @@
       "grams": "{{value}} g",
       "gramsLeft": "hasta {{value}} g más",
       "gramsOver": "{{value}} g por encima",
+      "lead": {
+        "caption": {
+          "netCarbs": {
+            "left": "carbohidratos netos restantes hoy",
+            "spend": "carbohidratos netos para consumir hoy",
+            "over": "carbohidratos netos en exceso hoy",
+            "open": "carbohidratos netos hoy"
+          },
+          "calories": {
+            "left": "restante hoy",
+            "spend": "para consumir hoy",
+            "over": "en exceso hoy",
+            "open": "hoy"
+          },
+          "protein": {
+            "needed": "proteína aún necesaria",
+            "reach": "proteína por alcanzar hoy",
+            "met": "proteína, objetivo alcanzado",
+            "open": "proteína hoy"
+          }
+        },
+        "entries_one": "{{count}} entrada",
+        "entries_other": "{{count}} entradas",
+        "limit": "límite {{value}}",
+        "noLimit": "sin límite establecido",
+        "noTarget": "sin objetivo establecido",
+        "reference": "referencia {{value}}",
+        "soFar_one": "{{value}} hasta ahora, {{count}} entrada",
+        "soFar_other": "{{value}} hasta ahora, {{count}} entradas",
+        "target": "objetivo {{value}}"
+      },
       "leadNoTarget": "Sin objetivo diario",
+      "ledger": {
+        "left": "quedan {{value}}",
+        "needed": "faltan {{value}}",
+        "noTarget": "sin objetivo",
+        "over": "{{value}} de exceso"
+      },
       "left": "hasta {{value}} más",
       "over": "{{value}} por encima",
       "progress": "{{consumed}} de {{target}}",
@@ -593,6 +630,9 @@
       "door": "Como ayer",
       "doorHint": "Copiar en hoy las {{count}} entradas de ayer",
       "meal": "{{meal}} ({{n}})",
+      "rowButton": "Copiar",
+      "rowHint_one": "{{count}} entrada del {{day}}",
+      "rowHint_other": "{{count}} entradas del {{day}}",
       "title": "Como ayer"
     },
     "drilldown": {

@@ -84,7 +84,7 @@ import { dismissInsightsHint, isInsightsHintDismissed } from '#app/lib/insights-
 import { WhatsNewCard } from '#app/components/whats-new-card';
 import { IntakeComposer } from '#app/components/intake/intake-composer';
 import { ADD_DESCRIBE_PATH } from '#app/lib/intake-hrefs';
-import { RepeatYesterdayGhost } from '#app/components/repeat-yesterday-door';
+import { RepeatYesterdayRow } from '#app/components/repeat-yesterday-door';
 import { FastStrip } from '#app/components/fast-strip';
 import { PulseTileSlot } from '#app/components/pulse-tile';
 import { StreakGridCard } from '#app/components/dashboard/streak-grid-card';
@@ -94,7 +94,11 @@ import { DayRidge } from '#app/components/day-ridge';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
 import { SectionEyebrow } from '#app/components/typography';
 import { DayBudgetRows } from '#app/components/day-budget-rows';
+import { DayBudgetLead } from '#app/components/day-budget-lead';
 import { buildDayBudgetRows } from '#app/lib/day-budget-rows';
+import { buildHeroLead } from '#app/lib/day-hero-lead';
+import { effectiveMainGoal } from '#app/lib/main-goal';
+import type { MainGoalId } from '#app/lib/main-goal';
 import { DayVerdictChip } from '#app/components/day-summary-details';
 import { MIN_TREND_DAYS } from '#app/components/trends/sparse-trend-notice';
 import { Button } from '#app/components/ui/button';
@@ -169,6 +173,8 @@ export async function loader() {
 export interface DashboardData {
   today: string;
   hasLoggedToday: boolean;
+  /** How many entries today holds, for the lead's scale line. Zero exactly when `hasLoggedToday` is false. */
+  entryCount: number;
   summary: DaySummary;
   goals: {
     netCarbsCeiling: number | null;
@@ -185,6 +191,8 @@ export interface DashboardData {
     proteinReferenceMissingDate: MissingReferenceDate | null;
     /** The eating style's lens, which decides the day's one verdict. */
     lens: EatingStyleLens;
+    /** Which metric leads the hero: the person's own pick, or the one the style's lens implies. */
+    mainGoal: MainGoalId;
   };
   /**
    * The week tile's Budget Ridge (M216/01), seven days as one metric against
@@ -279,6 +287,16 @@ export async function clientLoader({ serverLoader }: Route.ClientLoaderArgs): Pr
         eatingStyle: profile?.eatingStyle ?? null,
       }),
     ),
+    // Which figure the hero leads with, the same read `/diary` makes: the
+    // person's own pick, or the one the style's lens implies when they never
+    // picked (`effectiveMainGoal`).
+    mainGoal: effectiveMainGoal({
+      goalNetCarbsCeilingG: profile?.goalNetCarbsCeilingG ?? null,
+      goalKcalTarget: profile?.goalKcalTarget ?? null,
+      goalProteinFloorG: profile?.goalProteinFloorG ?? null,
+      eatingStyle: profile?.eatingStyle ?? null,
+      mainGoal: profile?.mainGoal ?? null,
+    }),
   };
 
   // ONE range query backs the ridge; the weight glance windows the same seven
@@ -287,6 +305,10 @@ export async function clientLoader({ serverLoader }: Route.ClientLoaderArgs): Pr
     fromDate: shiftDate(today, -(WEEK_DAYS - 1)),
     toDate: today,
   });
+
+  // Today is the window's last day, so its entry count is already counted.
+  const todayWindowEntry = totalsWindow.find((day) => day.date === today);
+  if (todayWindowEntry === undefined) throw new Error(`The seven-day window holds no entry for today (${today})`);
 
   const weightEntries = await listLocalWeightEntries();
 
@@ -353,6 +375,7 @@ export async function clientLoader({ serverLoader }: Route.ClientLoaderArgs): Pr
     pregnancyDueDate: bodyMetrics.pregnancyDueDate ?? null,
     lactationStartDate: bodyMetrics.lactationStartDate ?? null,
     hasLoggedToday: totalsForToday.hasLogs,
+    entryCount: todayWindowEntry.entryCount,
     // Off the `allLogs` read above, so the "Wie gestern" door costs no second
     // store pass. The day keys are the timezone-derived ones this loader
     // already works in.
@@ -394,24 +417,32 @@ export function HydrateFallback(): ReactElement {
 ////////////////////////////////////////////////////////////////////////////////
 
 /**
- * Today at a glance, plus the two buttons that start a log.
+ * Today at a glance, plus the buttons that start a log.
  *
- * The same budget rows `/diary` leads with, and nothing else: no meal list, no
- * macro grid, no suggestions, and, unlike `/diary`'s card, no count-up
- * tween. The tween exists to show an add landing; nothing is added on this
- * screen, so `DayBudgetRows` gets the settled headlines. This page's budget is
- * one phone screen with no scroll (see the module header), which is the
- * standing argument against adding anything else here.
+ * Layout F, "main goal first" (operator decision, 2026-10-11): the person's
+ * main goal leads as one large figure (`DayBudgetLead`), and every other row
+ * follows as a compact ledger (`DayBudgetRows density="ledger"`). The rows are
+ * the same ones `/diary` builds, in the same order, with the main goal first;
+ * the lead is the first of them and the ledger is the rest. `/diary` and
+ * `/catch-up` keep their own layouts. There is still no count-up tween, since
+ * nothing is added on this screen.
+ *
+ * THE HERO IS ONE SIZE ON EVERY DAY (DESIGN.md section 7). The lead block, the
+ * ledger and the verdict slot are the same height on an empty day, a logged
+ * day, an over day, a reached floor and a day with no target, so the photo
+ * button below them is at the same height on every one of those days.
  */
 function TodayHeroCard({
   summary,
   goals,
   hasLoggedToday,
+  entryCount,
   repeatYesterday,
 }: {
   summary: DaySummary;
   goals: DashboardData['goals'];
   hasLoggedToday: boolean;
+  entryCount: number;
   repeatYesterday: RepeatYesterdayOffer | null;
 }): ReactElement {
   const { t, i18n } = useTranslation();
@@ -454,25 +485,34 @@ function TodayHeroCard({
     gaps,
     t,
     language: i18n.language,
+    mainGoal: goals.mainGoal,
+  });
+  // `buildDayBudgetRows` puts the main goal's row first, always.
+  const [leadRow, ...ledgerRows] = rows;
+  if (leadRow === undefined) throw new Error('buildDayBudgetRows built no rows');
+  const lead = buildHeroLead({
+    row: leadRow,
+    entryCount,
+    hasEstimates: summary.hasEstimates,
+    t,
+    language: i18n.language,
   });
 
   const actions = (
     <div className="space-y-3">
-      {/*
-        CONDITIONAL, and above the add row (M217). Somebody who eats the same
-        thing every day thinks "wie gestern" on this screen, not on `/diary`,
-        so the offer is here; it renders nothing at all on a day with nothing to
-        repeat, which leaves the no-scroll phone page untouched in the common
-        case. It posts `/diary`'s existing copy intent and owns no write.
-
-        The GHOST card, not the pill button the other surfaces use: a fourth
-        thing to press beside the add controls was the complaint, and a card
-        that draws the day it would bring over is a different kind of object
-        from the strip under it. The strip is the composer, one control with
-        the camera and the microphone in its frame, for the same reason.
-      */}
-      <RepeatYesterdayGhost offer={repeatYesterday} />
       <IntakeComposer describeTo={ADD_DESCRIBE_PATH} />
+      {/*
+        CONDITIONAL, and UNDER the composer (2026-10-11). It sat above it as a
+        dashed card until the photo button, which is the thing people reach for
+        here, turned out to sit at a different height on every day the offer
+        appeared. Under the composer, what appears and disappears is below the
+        thumb's target, and the photo button is where it always is. Somebody who
+        eats the same thing every day thinks "wie gestern" on this screen, not
+        on `/diary`, so the offer is here; it renders nothing at all on a day
+        with nothing to repeat. It posts `/diary`'s existing copy intent and
+        owns no write.
+      */}
+      <RepeatYesterdayRow offer={repeatYesterday} />
       {/*
         THE SECOND THING THE COMPOSER ABOVE IS FOR (M233/02), and it is a
         separate door rather than a fourth key inside the strip. The strip
@@ -504,19 +544,32 @@ function TodayHeroCard({
           filled about four fifths of the phone, and the graph paper it now
           draws is only worth drawing if some of the page shows beside it. */}
       <CardContent className="space-y-4 p-4 sm:p-5">
-        <div className="space-y-2">
-          <SectionEyebrow>{t('diary.hero.eyebrow')}</SectionEyebrow>
+        <div className="space-y-3">
           {/*
-            On an untouched plate the carb-impact chip resolves to "Low carb
-            impact", which is true and useless, because it grades a day nobody has
-            eaten yet. So the verdict is withheld until something is logged,
-            exactly as `/diary` withholds its summary card until then. A style
-            with no lens is withheld always: `DayVerdictChip` renders nothing.
+            The eyebrow, and the verdict chip beside it. The chip is graded on a
+            day nobody has eaten yet as "Low carb impact", which is true and
+            useless, so it is withheld until something is logged, exactly as
+            `/diary` withholds its summary card. WITHHELD IS NOT REMOVED: on an
+            untouched day the chip is drawn `invisible`, inert and hidden from
+            assistive tech, so its box is on the page from the first paint and
+            the first food moves nothing. A style with no lens draws no chip on
+            any day. The empty-plate line that used to sit here is the lead's
+            scale line now.
           */}
-          {hasLoggedToday && <DayVerdictChip verdict={verdict} />}
-          {!hasLoggedToday && <p className="text-sm text-muted-foreground">{t('diary.empty.ordinary.line')}</p>}
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+            <SectionEyebrow>{t('diary.hero.eyebrow')}</SectionEyebrow>
+            <div
+              data-slot="verdict-slot"
+              className={cn(!hasLoggedToday && 'invisible')}
+              aria-hidden={hasLoggedToday ? undefined : true}
+              inert={!hasLoggedToday}
+            >
+              <DayVerdictChip verdict={verdict} />
+            </div>
+          </div>
+          <DayBudgetLead lead={lead} />
+          <DayBudgetRows rows={ledgerRows} density="ledger" />
         </div>
-        <DayBudgetRows rows={rows} />
         {actions}
       </CardContent>
     </Card>
@@ -698,6 +751,7 @@ function WeightGlanceCard({ weight }: { weight: WeightGlance }): ReactElement {
 export default function Dashboard({ loaderData }: Route.ComponentProps) {
   const {
     hasLoggedToday,
+    entryCount,
     summary,
     goals,
     ridge,
@@ -722,6 +776,7 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
         summary={summary}
         goals={goals}
         hasLoggedToday={hasLoggedToday}
+        entryCount={entryCount}
         repeatYesterday={repeatYesterday}
       />
       {/*

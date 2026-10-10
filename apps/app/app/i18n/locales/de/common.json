@@ -561,7 +561,44 @@
       "grams": "{{value}} g",
       "gramsLeft": "noch {{value}} g möglich",
       "gramsOver": "{{value}} g darüber",
+      "lead": {
+        "caption": {
+          "netCarbs": {
+            "left": "heute verbleibende Netto-Kohlenhydrate",
+            "spend": "heute verfügbare Netto-Kohlenhydrate",
+            "over": "heute überschrittene Netto-Kohlenhydrate",
+            "open": "Netto-Kohlenhydrate heute"
+          },
+          "calories": {
+            "left": "heute verbleibend",
+            "spend": "heute verfügbar",
+            "over": "heute überschritten",
+            "open": "heute"
+          },
+          "protein": {
+            "needed": "Protein noch benötigt",
+            "reach": "Protein heute noch zu erreichen",
+            "met": "Protein, Ziel erreicht",
+            "open": "Protein heute"
+          }
+        },
+        "entries_one": "{{count}} Eintrag",
+        "entries_other": "{{count}} Einträge",
+        "limit": "Limit {{value}}",
+        "noLimit": "kein Limit festgelegt",
+        "noTarget": "kein Ziel festgelegt",
+        "reference": "Referenz {{value}}",
+        "soFar_one": "{{value}} bisher, {{count}} Eintrag",
+        "soFar_other": "{{value}} bisher, {{count}} Einträge",
+        "target": "Ziel {{value}}"
+      },
       "leadNoTarget": "Kein Tagesziel",
+      "ledger": {
+        "left": "{{value}} verbleibend",
+        "needed": "{{value}} übrig",
+        "noTarget": "kein Ziel",
+        "over": "{{value}} drüber"
+      },
       "left": "noch {{value}} möglich",
       "over": "{{value}} darüber",
       "progress": "{{consumed}} von {{target}}",
@@ -593,6 +630,9 @@
       "door": "Wie gestern",
       "doorHint": "{{count}} Einträge von gestern für heute übernehmen",
       "meal": "{{meal}} ({{n}})",
+      "rowButton": "Kopieren",
+      "rowHint_one": "{{count}} Eintrag vom {{day}}",
+      "rowHint_other": "{{count}} Einträge vom {{day}}",
       "title": "Wie gestern"
     },
     "drilldown": {

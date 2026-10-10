@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Changed
+
+- **The Overview now leads with your main goal as one large figure.** The first row shows what is left under a limit, or what is still needed for protein, in a 46 px figure with a meter and a scale line. A limit that is passed shows the excess in amber, a reached protein target shows the amount eaten with a check mark, and a goal with no target shows the plain amount and never invents one. The other rows form a compact ledger under it. The hero keeps one size on an empty day, a logged day and an over day, so the photo button never moves. "Like yesterday" is a plain row with a small Copy button under the composer, and the dashed ghost lines are gone.
+
 ### Fixed
 
 - **A moved instance never points a browser at another host.** In moved mode the server sends a request path back as a redirect. It collapsed leading slashes, but a backslash, a tab or a line break at the start could still make a browser read the path as another host. Express encoded the backslash in a `Location` header, but the route data answer puts the path in `X-Remix-Redirect` as it is. Every leading separator is now removed before the path goes back.

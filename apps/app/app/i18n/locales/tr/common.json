@@ -561,7 +561,44 @@
       "grams": "{{value}} g",
       "gramsLeft": "en fazla {{value}} g daha",
       "gramsOver": "{{value}} g aşıldı",
+      "lead": {
+        "caption": {
+          "netCarbs": {
+            "left": "bugün kalan net karbonhidrat",
+            "spend": "bugün harcanabilecek net karbonhidrat",
+            "over": "bugün aşılan net karbonhidrat",
+            "open": "bugün net karbonhidrat"
+          },
+          "calories": {
+            "left": "bugün kalan",
+            "spend": "bugün harcanabilecek",
+            "over": "bugün aşılan",
+            "open": "bugün"
+          },
+          "protein": {
+            "needed": "hâlâ gereken protein",
+            "reach": "bugün hedeflenen protein",
+            "met": "protein, hedefe ulaşıldı",
+            "open": "bugün protein"
+          }
+        },
+        "entries_one": "{{count}} girdi",
+        "entries_other": "{{count}} girdi",
+        "limit": "sınır {{value}}",
+        "noLimit": "sınır belirlenmedi",
+        "noTarget": "hedef belirlenmedi",
+        "reference": "referans {{value}}",
+        "soFar_one": "şu ana kadar {{value}}, {{count}} girdi",
+        "soFar_other": "şu ana kadar {{value}}, {{count}} girdi",
+        "target": "hedef {{value}}"
+      },
       "leadNoTarget": "Günlük hedef yok",
+      "ledger": {
+        "left": "kalan {{value}}",
+        "needed": "ulaşılacak {{value}}",
+        "noTarget": "hedef yok",
+        "over": "{{value}} aşıldı"
+      },
       "left": "en fazla {{value}} daha",
       "over": "{{value}} aşıldı",
       "progress": "{{consumed}} / {{target}}",
@@ -593,6 +630,9 @@
       "door": "Dünkü gibi",
       "doorHint": "Dünün {{count}} kaydını bugüne kopyala",
       "meal": "{{meal}} ({{n}})",
+      "rowButton": "Kopyala",
+      "rowHint_one": "{{day}} gününden {{count}} girdi",
+      "rowHint_other": "{{day}} gününden {{count}} girdi",
       "title": "Dünkü gibi"
     },
     "drilldown": {

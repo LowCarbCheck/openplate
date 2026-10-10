@@ -26,6 +26,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from '#app/components/link';
 import { Check } from 'lucide-react';
 import type { AnimatedHeadlines, BudgetFigure, DayBudgetRow, DayBudgetRowKey } from '#app/lib/day-budget-rows';
+import { buildLedgerStatus } from '#app/lib/day-hero-lead';
 import {
   DATA_ROW_CLASS,
   DATA_ROW_DOT_CLASS,
@@ -40,7 +41,7 @@ import { cn } from '#app/lib/utils';
  * fiber take the same macro tokens the ratio bar and the macro grid use, so a
  * row and its slice of that bar are visibly the same thing.
  */
-const ROW_FILL_CLASS = {
+export const ROW_FILL_CLASS = {
   netCarbs: 'bg-primary',
   calories: 'bg-primary',
   protein: 'bg-macro-protein',
@@ -54,7 +55,7 @@ const ROW_FILL_CLASS = {
  * and fiber sit a little heavier than the brand pair because their tokens are
  * less saturated at low opacity.
  */
-const ROW_TRACK_CLASS = {
+export const ROW_TRACK_CLASS = {
   netCarbs: 'bg-primary/15',
   calories: 'bg-primary/15',
   protein: 'bg-macro-protein/20',
@@ -86,7 +87,7 @@ const REFERENCE_TAG_CLASS =
  * both dates off the targets page). Same size, same weight:
  * the tag is a footnote either way, never an alarm.
  */
-function ReferenceTag({ row, className = REFERENCE_TAG_CLASS }: { row: DayBudgetRow; className?: string }) {
+export function ReferenceTag({ row, className = REFERENCE_TAG_CLASS }: { row: DayBudgetRow; className?: string }) {
   const { t } = useTranslation();
   if (!row.referenceDateMissing) return <span className={className}>{t('diary.drilldown.referenceTag')}</span>;
 
@@ -236,7 +237,7 @@ function BudgetRow({ row, animated }: { row: DayBudgetRow; animated: AnimatedHea
  * Shared by both layouts, so neither can drift from the other in what
  * assistive tech hears.
  */
-function RowSemantics({ row }: { row: DayBudgetRow }) {
+export function RowSemantics({ row }: { row: DayBudgetRow }) {
   if (row.target === null) return <span className="sr-only">{row.srLabel}</span>;
   return (
     <progress
@@ -404,6 +405,109 @@ function QuietRow({ row }: { row: DayBudgetRow }) {
 }
 
 /**
+ * The meter in a ledger row: a 6 px bar in the metric's own colour on a tint of
+ * it, amber once the row is over, and a thin dashed line where there is no
+ * target. The dashed line sits in a box of the same height, so a row without a
+ * target is as tall as one with, and an empty track is never drawn: it would
+ * read as a goal sitting at zero percent.
+ */
+function LedgerMeter({ row }: { row: DayBudgetRow }) {
+  if (row.fraction === null) {
+    return (
+      <div data-slot="budget-track-none" aria-hidden="true" className="flex h-1.5 items-center">
+        <div className="w-full border-t-2 border-dashed border-border" />
+      </div>
+    );
+  }
+  return (
+    <div data-slot="budget-track" aria-hidden="true" className={cn('h-1.5 overflow-hidden', ROW_TRACK_CLASS[row.key])}>
+      <div
+        className={cn('h-full motion-safe:transition-[width] motion-safe:duration-500', fillClassFor(row))}
+        style={{ width: `${row.fraction * 100}%` }}
+      />
+    </div>
+  );
+}
+
+/** The ink of a ledger status line: amber over a limit, brand once a floor is reached, quiet otherwise. */
+function ledgerStatusClass(tone: DayBudgetRow['tone']): string {
+  if (tone === 'over') return 'text-accent-amber';
+  if (tone === 'met') return 'text-primary';
+  return 'text-muted-foreground';
+}
+
+/**
+ * One line of the Overview hero's ledger: label, meter, value over a status
+ * line (layout F, 2026-10-11).
+ *
+ * THE THREE COLUMNS ARE FIXED, not sized by their content. Each row is its own
+ * grid, so an `auto` column would give every row a different meter length, the
+ * defect `mobile-diary.spec.ts` was written for. The label and value columns
+ * are rems, the meter takes the rest, and a long German label wraps inside its
+ * cell instead of pushing the meter. A row is 36 to 44 px tall.
+ *
+ * No status dot: the meter already carries the colour, and a dot beside it said
+ * the same thing a second time. A reference or derived target keeps its small
+ * tag beside the label, so a figure the person did not set is never mistaken
+ * for one they did.
+ */
+function LedgerRow({ row }: { row: DayBudgetRow }) {
+  const { t, i18n } = useTranslation();
+  const status = buildLedgerStatus({ row, t, language: i18n.language });
+  const isMet = status.tone === 'met';
+  return (
+    <li
+      data-slot="budget-row"
+      data-metric={row.key}
+      className="grid min-h-9 grid-cols-[5.5rem_minmax(0,1fr)_5.5rem] items-center gap-x-2.5 border-t px-3 py-1 first:border-t-0 sm:grid-cols-[6.5rem_minmax(0,1fr)_6.5rem] sm:gap-x-3"
+    >
+      <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 break-words text-sm leading-tight text-muted-foreground">
+        {row.label}
+        <LedgerTag row={row} />
+      </span>
+      <LedgerMeter row={row} />
+      <span className="min-w-0 text-right leading-tight tabular-nums">
+        <span className="block text-sm font-semibold leading-tight text-foreground">
+          {row.figure.value}
+          <span className="text-xs font-normal text-muted-foreground"> {row.figure.suffix}</span>
+        </span>
+        <span
+          data-slot="budget-status"
+          className={cn('inline-flex items-center gap-1 text-xs leading-tight', ledgerStatusClass(status.tone))}
+        >
+          {status.text}
+          {isMet && <Check className="size-3 shrink-0" aria-hidden="true" />}
+        </span>
+      </span>
+      {row.targetSource === 'default' && row.referenceDateMissing && (
+        <ReferenceTag row={row} className={cn(LEDGER_TAG_CLASS, 'col-span-3 pt-0.5')} />
+      )}
+      <RowSemantics row={row} />
+    </li>
+  );
+}
+
+/** The footnote tag's type in the ledger: the reference tag's recipe, set inline after the label. */
+const LEDGER_TAG_CLASS = 'text-xs font-medium leading-tight uppercase tracking-[0.08em] text-muted-foreground';
+
+/**
+ * The tag after a ledger label: "reference" for a population figure, "from
+ * your targets" for the derived fat figure, nothing for a goal the person set.
+ *
+ * A reference that fell back for a missing date is NOT drawn here. Its words
+ * are a whole request ("reference, add your due date") and a link, which would
+ * wrap to three lines inside a label cell 88 px wide, so `LedgerRow` draws it
+ * on a line of its own under the row.
+ */
+function LedgerTag({ row }: { row: DayBudgetRow }) {
+  const { t } = useTranslation();
+  if (row.targetSource === 'default' && !row.referenceDateMissing)
+    return <span className={LEDGER_TAG_CLASS}>{t('diary.drilldown.referenceTag')}</span>;
+  if (row.targetSource === 'derived') return <span className={LEDGER_TAG_CLASS}>{t('diary.drilldown.derivedTag')}</span>;
+  return null;
+}
+
+/**
  * What the lead view needs beyond the rows: the tweened figure, when the
  * caller animates it. `null` paints the settled figure.
  */
@@ -426,16 +530,28 @@ export interface BudgetLeadView {
  * @param rows - the rows to draw, already in display order; with `lead`, the first one leads.
  * @param animatedHeadlines - tweened headlines for the two budget rows, or null where the caller does not animate (the dashboard does not).
  * @param lead - the lead view's extras, or null for the stack of filled rows.
+ * @param density - `'ledger'` draws the rows as the Overview hero's compact ledger, one bordered block with hairline dividers, and the lead is drawn by the caller above it (`DayBudgetLead`). Only `/dashboard` passes it.
  */
 export function DayBudgetRows({
   rows,
   animatedHeadlines = null,
   lead = null,
+  density = 'default',
 }: {
   rows: DayBudgetRow[];
   animatedHeadlines?: AnimatedHeadlines | null;
   lead?: BudgetLeadView | null;
+  density?: 'default' | 'ledger';
 }) {
+  if (density === 'ledger') {
+    return (
+      <ul data-slot="budget-ledger" className="border bg-card">
+        {rows.map((row) => (
+          <LedgerRow key={row.key} row={row} />
+        ))}
+      </ul>
+    );
+  }
   if (lead !== null) {
     const [first, ...rest] = rows;
     if (first === undefined) throw new Error('DayBudgetRows was asked for a lead view with no rows');
