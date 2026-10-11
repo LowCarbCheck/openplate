@@ -52,6 +52,13 @@ export const PATH_RULES: ReadonlyArray<PathRule> = [
   // The fixtures are mounted or read by the webServer and by specs; which ones is not tracked here.
   { pattern: /^tests\/fixtures\//, area: 'all' },
 
+  // The states playground: a dev-only page (`playground.html`, code in `app/playground/`, served by
+  // `vite.playground.config.ts` on its own port). The production build never reads any of it, so no
+  // browser spec can reach it. The pattern is the playground's own three paths and nothing wider:
+  // `app/components/playground/` belongs to the shipped `/dev/playground` review route and is not
+  // exempt, and `vite.config.ts` stays `all` below. `tests/unit/playground-entry.test.ts` pins both.
+  { pattern: /^(app\/playground\/|playground\.html$|vite\.playground\.config\.ts$)/, area: 'none' },
+
   // Build, toolchain and server: they change what every page is made of or served by.
   {
     pattern:

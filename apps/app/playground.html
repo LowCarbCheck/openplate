@@ -1,0 +1,35 @@
+<!doctype html>
+<!-- DEV-ONLY states playground. It can never ship, for three reasons that do not depend on each other:
+
+     1. The production build is `react-router build`. Its client input is the route table in
+        `app/routes.ts` and the entry files, never an HTML page, so this file is not an input.
+        Nothing in `vite.config.ts` names it.
+     2. It is served only by `vite.playground.config.ts` (`pnpm playground`, port 5299). That config
+        loads no React Router plugin and registers no service worker, so a page cannot precache it.
+     3. `tests/unit/playground-entry.test.ts` fails the push when the production config, the route
+        table or any file outside `app/playground/` starts to know about it.
+
+     Reach it at http://<host>:5299/playground.html while `pnpm playground` is running. -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>openplate states playground</title>
+    <link rel="icon" href="data:," />
+    <!-- The first-paint theme pin, the same idea as the inline script in `app/root.tsx`: apply the
+         saved choice before the first paint so a dark pick never flashes white. This page keeps its
+         own storage key, so it never reads or writes the app's `theme` key. -->
+    <script>
+      (function () {
+        var saved = localStorage.getItem('openplate-playground:theme');
+        var isDark =
+          saved === 'dark' || ((saved === null || saved === 'system') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.classList.toggle('dark', isDark);
+      })();
+    </script>
+  </head>
+  <body class="font-body">
+    <div id="root"></div>
+    <script type="module" src="/app/playground/main.tsx"></script>
+  </body>
+</html>

@@ -18,6 +18,9 @@
 #   make nightly          install and start the nightly full browser tier (systemd user timer)
 #   make nightly-now      run the nightly tier once, now, in the background
 #   make nightly-status   print the last nightly result
+#   make playground      the dev-only states playground, in the foreground (apps/app, port 5299)
+#   make playground-up   the same, detached and idempotent; prints http://bluefin:5299/playground.html
+#   make playground-down stop it
 #   make check-pg18       release check: the self-host stack starts on Postgres 18, scripts/check-postgres-18.sh
 
 APPS := app core inference
@@ -71,7 +74,7 @@ ifneq ($(app_goals),)
   endif
 endif
 
-.PHONY: help hooks install test dev check drift check-pg18 nightly nightly-now nightly-status
+.PHONY: help hooks install test dev check drift check-pg18 nightly nightly-now nightly-status playground playground-up playground-down
 .PHONY: $(APPS:%=install-%) $(APPS:%=test-%) $(APPS:%=check-%)
 
 help:
@@ -84,6 +87,9 @@ help:
 	@echo "make nightly          install the systemd user timer for the nightly full browser tier"
 	@echo "make nightly-now      run the nightly tier once now (systemd user service)"
 	@echo "make nightly-status   print the last nightly result"
+	@echo "make playground       the dev-only states playground, in the foreground (port 5299)"
+	@echo "make playground-up    the same, detached; prints the address. Safe to run twice"
+	@echo "make playground-down  stop the detached playground"
 	@echo "make check-pg18       release check: boot core on a throwaway Postgres 18 (builds the image, needs docker)"
 
 hooks:
@@ -159,3 +165,43 @@ nightly-now:
 
 nightly-status:
 	@if [ -s "$(NIGHTLY_STATE)/latest.txt" ]; then cat "$(NIGHTLY_STATE)/latest.txt"; else echo "no run yet (make nightly, then make nightly-now)"; fi
+
+# The dev-only states playground of apps/app (apps/app/playground.html, its own Vite config on
+# port 5299). It never ships: the production build does not know it. It binds to the tailnet
+# address of this machine, never 0.0.0.0, and the host names below may open it.
+#   make playground        foreground; stop it with Ctrl-C
+#   make playground-up     detached; pid and log in $(PLAYGROUND_STATE)
+#   make playground-down   stop it: the listener on the port, and the process group of the pidfile
+# `tailscale ip -4` answers nothing off the tailnet, and the host then falls back to 127.0.0.1.
+PLAYGROUND_PORT := 5299
+PLAYGROUND_STATE := $${XDG_STATE_HOME:-$$HOME/.local/state}/openplate
+PLAYGROUND_HOSTS := bluefin,localhost
+PLAYGROUND_BIND := $$(tailscale ip -4 2>/dev/null | head -n 1)
+
+playground:
+	@host="$(PLAYGROUND_BIND)"; \
+	echo "http://bluefin:$(PLAYGROUND_PORT)/playground.html (bound to $${host:-127.0.0.1})"; \
+	PLAYGROUND_HOST="$${host:-127.0.0.1}" VITE_ALLOWED_HOSTS=$(PLAYGROUND_HOSTS) pnpm -C apps/app playground
+
+# Idempotent, and never fails: a second run finds the port taken and only prints the address.
+playground-up:
+	@mkdir -p "$(PLAYGROUND_STATE)"; \
+	url="http://bluefin:$(PLAYGROUND_PORT)/playground.html"; \
+	listening() { ss -ltn 'sport = :$(PLAYGROUND_PORT)' 2>/dev/null | grep -q LISTEN; }; \
+	if listening; then echo "already running: $$url"; exit 0; fi; \
+	host="$(PLAYGROUND_BIND)"; \
+	PLAYGROUND_HOST="$${host:-127.0.0.1}" VITE_ALLOWED_HOSTS=$(PLAYGROUND_HOSTS) \
+	  setsid pnpm -C "$(CURDIR)/apps/app" playground >"$(PLAYGROUND_STATE)/playground.log" 2>&1 </dev/null & \
+	echo $$! >"$(PLAYGROUND_STATE)/playground.pid"; \
+	for _ in 1 2 3 4 5 6 7 8 9 10; do listening && break; sleep 1; done; \
+	if listening; then echo "$$url"; else echo "not listening after 10 s, read $(PLAYGROUND_STATE)/playground.log"; fi; \
+	exit 0
+
+# Two kills, both exact: the process that listens on the port, and the group of the pidfile's
+# process. No name pattern, so nothing else on the machine can match.
+playground-down:
+	@pid=$$(ss -ltnp 'sport = :$(PLAYGROUND_PORT)' 2>/dev/null | sed -n 's/.*pid=\([0-9][0-9]*\).*/\1/p' | head -n 1); \
+	if [ -n "$$pid" ]; then kill "$$pid" && echo "stopped the listener, pid $$pid"; else echo "nothing listens on port $(PLAYGROUND_PORT)"; fi; \
+	file="$(PLAYGROUND_STATE)/playground.pid"; \
+	if [ -s "$$file" ]; then kill -- -"$$(cat "$$file")" 2>/dev/null || true; rm -f "$$file"; fi; \
+	exit 0

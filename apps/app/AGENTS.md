@@ -53,6 +53,7 @@ pnpm test:e2e         # Playwright smoke tier. HOST SHELL ONLY (no Chromium in t
 pnpm test:e2e:sharded # The same tier as N Playwright processes at once (scripts/e2e-sharded.sh). The release gate and the nightly run this (the full tier)
 pnpm test:e2e:select  # Print the spec list for the pushed diff (scripts/e2e-select.ts)
 pnpm test:e2e:scoped  # Run that list through the sharded runner (scripts/e2e-scoped.sh). The push gate runs this
+pnpm playground       # The dev-only states playground (see "States playground" below), port 5299
 ```
 
 The browser tier takes three consecutive ports derived from this checkout's
@@ -87,6 +88,53 @@ smoke spec takes under 10 seconds and covers a daily door. A missing path rule
 falls back to the full tier, so add the rule, never skip the gate. Specs do
 not share saved sign-in state: it was measured on 2026-10-03 and saves about
 1 percent.
+
+## States playground
+
+The states playground is a dev-only page that shows one real component in many
+states side by side. It exists so a person can look at a state (an empty list, a
+zero count, a long label, a failing button) without making the app produce it.
+Start it from the repo root with `make playground` (foreground), or
+`make playground-up` (detached, safe to run twice, prints
+`http://bluefin:5299/playground.html`) and `make playground-down` to stop it.
+It uses port 5299, binds to the tailnet address of the machine and never to
+`0.0.0.0`. Inside `apps/app`, `pnpm playground` runs the same server.
+
+**Two rules.**
+
+1. A card mounts the REAL component with REAL props. Never copy a component into
+   the playground, never add a prop only for the playground, never use
+   `as any` or `as unknown as`. If a state cannot be reached through the props,
+   the card says so in words and does not fake it.
+2. Every card has a "Reach it for real" line: the plain steps that produce that
+   state in the app. A card that cannot be reached in the app says so there.
+
+**Layout.** `playground.html` is the page. `vite.playground.config.ts` is its own
+Vite config. It calls the production config for the shared parts, so nothing is
+copied. The code is in `app/playground/`: `main.tsx`, `app.tsx` (the page frame
+and the `SECTIONS` registry), `layout.tsx` (`Section`, `Group`, `Card`),
+`fixtures/` (sample data, all relative to `PLAYGROUND_NOW`) and `sections/`
+(one file per section). Each section is its own page at `#<id>`, a group is a
+sub-page at `#<id>:<group>`, and `#<id>/<handle>` scrolls to one card. Every
+card has `data-state="<handle>"`, and the card itself is marked
+`data-slot="playground-card"`.
+
+**Add a section.** Write `app/playground/sections/<id>.tsx` that exports `DEF`
+and a default component built from `Section`, `Group` and `Card`. Then add ONE
+line to `SECTIONS` in `app/playground/app.tsx`:
+`{ def: { id: '<id>', title: '<Title>' }, load: () => import('./sections/<id>') }`.
+The `import()` must be literal, or the section is not split into its own chunk.
+Add fixtures under `fixtures/`, never inline in the card.
+
+**It never ships.** The production build does not know the page, and no
+service worker covers it. `tests/unit/playground-entry.test.ts` fails the push
+when a file outside `app/playground/` imports it, when `app/routes.ts` or
+`vite.config.ts` names it, or when a registry row stops being a literal
+`import()`. `tests/unit/playground-sections.test.tsx` draws every section and
+fails on an empty one, a card with no handle, or a handle used twice.
+`tests/e2e/areas.ts` maps these paths to `none`, so a playground-only push runs
+no browser spec. The older `/dev/playground` route and `app/components/playground/`
+are a different thing: a review page that ships with the app.
 
 ## Key Documentation
 
