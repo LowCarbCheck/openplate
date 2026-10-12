@@ -1201,16 +1201,14 @@ export function createAdminRoutes(options: AdminRoutesOptions): Router {
         res.status(200).json({ account: toServiceAccountView(summary) });
         return;
       }
-      res
-        .status(200)
-        .json({
-          account: toAccountView({
-            summary,
-            memberInvites: options.memberInvites,
-            standing: options.standing,
-            now: options.now(),
-          }),
-        });
+      res.status(200).json({
+        account: toAccountView({
+          summary,
+          memberInvites: options.memberInvites,
+          standing: options.standing,
+          now: options.now(),
+        }),
+      });
     }),
   );
 
@@ -1443,16 +1441,14 @@ export function createAdminRoutes(options: AdminRoutesOptions): Router {
       // label is the operator's note about a person, and a role change is
       // already legible from the row.
       logger.info('Account changed by admin', { accountId });
-      res
-        .status(200)
-        .json({
-          account: toAccountView({
-            summary,
-            memberInvites: options.memberInvites,
-            standing: options.standing,
-            now: options.now(),
-          }),
-        });
+      res.status(200).json({
+        account: toAccountView({
+          summary,
+          memberInvites: options.memberInvites,
+          standing: options.standing,
+          now: options.now(),
+        }),
+      });
     }),
   );
 
