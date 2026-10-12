@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Fixed
+
+- **A new account no longer reads "No photos" in the admin people list.** The Used today column printed "No photos" for an account that holds no free limit of its own, although the instance gives every new account a standing free default, for example ten a week. The console now reads the limit the server enforces, with its window, so the row and the person's page show the week's count, such as "4 of 10 this week". It needs a core that sends `effectiveFreeAiLimit` and `effectiveFreeAiLimitPeriod`; an older core is read as before.
+
 ## [0.68.0] - 2026-10-11
 
 ### Added

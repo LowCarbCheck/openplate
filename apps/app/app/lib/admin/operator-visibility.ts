@@ -115,6 +115,18 @@ export const OPERATOR_VISIBILITY = {
   freeDailyAiLimit: {
     noLine: 'a second daily photo limit, which the dailyAiLimit line already discloses in the same words',
   },
+  // THE FREE LIMIT THE PROXY ENFORCES (2026-10-12), with its window, has no
+  // line either: it is the same standing grant `freeDailyAiLimit` above
+  // describes, resolved against the instance default, so the `dailyAiLimit`
+  // line already discloses it in the same words.
+  effectiveFreeAiLimit: {
+    noLine:
+      'the standing free photo limit resolved against the instance default, which the dailyAiLimit line already discloses',
+  },
+  effectiveFreeAiLimitPeriod: {
+    noLine:
+      'the window of the resolved free photo limit, which the dailyAiLimit line already discloses in the same words',
+  },
   invitesLeft: { copyKey: 'account.operatorSees.invitesLeft' },
   // M253/03: the free AI scans. A count the operator sees and can change.
   trialScans: { copyKey: 'account.operatorSees.trialScans' },

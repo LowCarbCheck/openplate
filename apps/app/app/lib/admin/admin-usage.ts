@@ -14,6 +14,13 @@
  * (`aiLimitPeriod`), and then the number beside it is the week's count
  * (`aiUsedThisWeek`), never today's against a week's limit. The standing free
  * grant of an account is always per day, so it is read with `aiUsedToday`.
+ *
+ * AND THE FREE LIMIT THE PROXY RESOLVES (2026-10-12). A new account holds `0`
+ * in its own free column and is held to the instance's standing default, which
+ * may count per week. The core sends that resolved pair as
+ * `effectiveFreeAiLimit` and `effectiveFreeAiLimitPeriod`, and it wins over the
+ * own column when present; a core older than the fields sends neither, and the
+ * own column is read per day as before.
  */
 import type { AdminAccountView } from '#app/lib/admin/admin-wire';
 import { shownAiLimit } from '#app/lib/plans/free-grant';
@@ -26,7 +33,9 @@ type UsagePerson = Pick<
   AdminAccountView,
   'dailyAiLimit' | 'freeDailyAiLimit' | 'allowanceExpiresAt' | 'aiUsedToday'
 > &
-  Partial<Pick<AdminAccountView, 'aiLimitPeriod' | 'aiUsedThisWeek'>>;
+  Partial<
+    Pick<AdminAccountView, 'aiLimitPeriod' | 'aiUsedThisWeek' | 'effectiveFreeAiLimit' | 'effectiveFreeAiLimitPeriod'>
+  >;
 
 /**
  * The limit that binds, its window and the count in THAT window.
@@ -41,10 +50,13 @@ interface ReadUsage {
 }
 
 function readUsage({ person, now }: { person: UsagePerson; now: Date }): ReadUsage {
+  // THE RESOLVED PAIR WHEN THE CORE SENT IT, else the own column per day.
+  const hasEffective = person.effectiveFreeAiLimit !== undefined;
   const shown = shownAiLimit({
     dailyAiLimit: person.dailyAiLimit,
     aiLimitPeriod: person.aiLimitPeriod,
-    freeDailyAiLimit: person.freeDailyAiLimit,
+    freeDailyAiLimit: hasEffective ? person.effectiveFreeAiLimit : person.freeDailyAiLimit,
+    freeAiLimitPeriod: hasEffective ? person.effectiveFreeAiLimitPeriod : 'day',
     allowanceExpiresAt: person.allowanceExpiresAt,
     now,
   });

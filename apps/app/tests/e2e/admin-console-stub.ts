@@ -38,6 +38,15 @@
  * core built before labels sends, so every other spec keeps talking to that
  * older core.
  *
+ * ── A new account on a weekly free default, only when a spec asks ───────
+ *
+ * `weeklyDefault` adds one new account that holds no free limit of its own
+ * (`freeDailyAiLimit` 0, nothing paid) on an instance whose standing free
+ * default is ten photos a week (2026-10-12, `PROTOCOL.md` §5.20). `'resolved'`
+ * plays a core that sends the resolved pair (`effectiveFreeAiLimit` and its
+ * period); `'own-column-only'` plays one built before it, which sends neither,
+ * so the same person reads as having no photos. Left out, nobody is added.
+ *
  * ── Fresh sign-ups and every invitation state, only when a spec asks ────
  *
  * `fresh` adds somebody who joined a day ago and has never signed in, so the
@@ -98,6 +107,8 @@ export interface AdminConsoleStub {
   fresh?: boolean;
   /** Adds an expired, a revoked and an accepted invitation to the two pending ones. */
   everyInviteState?: boolean;
+  /** Adds one new account on a weekly free default of ten. See {@link WEEKLY_DEFAULT_PERSON_ID}. */
+  weeklyDefault?: 'resolved' | 'own-column-only';
 }
 
 /** A fresh stub: nobody signed in yet, nothing unanswered, no gates. */
@@ -135,6 +146,16 @@ export const FRESH_PERSON_ID = 9010;
 /** The address of the person `fresh` adds. Exported so a spec can find the row. */
 export const FRESH_PERSON_EMAIL = 'fresh.signup@example.invalid';
 
+/** The id of the new account `weeklyDefault` adds. */
+export const WEEKLY_DEFAULT_PERSON_ID = 9020;
+
+/** The address of the new account `weeklyDefault` adds. Exported so a spec can find the row. */
+export const WEEKLY_DEFAULT_PERSON_EMAIL = 'new.on.weekly.default@example.invalid';
+
+/** The weekly default the stub's instance holds, and the units the new account spent this week. */
+export const WEEKLY_DEFAULT_LIMIT = 10;
+export const WEEKLY_DEFAULT_USED_THIS_WEEK = 4;
+
 /** The address of the expired invitation `everyInviteState` adds. */
 export const EXPIRED_INVITE_EMAIL = 'expired.invitee@example.invalid';
 
@@ -154,6 +175,12 @@ interface AccountFixture {
   lastSeenAt: string | null;
   /** Present only when the stub plays a core with labels. See `labels`. */
   label?: string | null;
+  /** Present only on the account `weeklyDefault` adds. */
+  freeDailyAiLimit?: number;
+  aiUsedThisWeek?: number;
+  /** Present only when the stub plays a core that sends the resolved free limit. See `weeklyDefault`. */
+  effectiveFreeAiLimit?: number;
+  effectiveFreeAiLimitPeriod?: 'day' | 'week';
 }
 
 /** Everybody but the signed-in administrator, whose row is added with the id the session carries. */
@@ -220,6 +247,32 @@ function freshAccount(): AccountFixture {
   };
 }
 
+/**
+ * A new account on an instance with a weekly free default: no limit of its own
+ * and nothing paid, so the own column reads 0 and only the resolved pair, when
+ * the stub sends it, says what the proxy lets this person read.
+ */
+function weeklyDefaultAccount(mode: 'resolved' | 'own-column-only'): AccountFixture {
+  const base: AccountFixture = {
+    id: WEEKLY_DEFAULT_PERSON_ID,
+    email: WEEKLY_DEFAULT_PERSON_EMAIL,
+    displayName: null,
+    role: 'member',
+    dailyAiLimit: 0,
+    aiUsedToday: 1,
+    allowanceExpiresAt: null,
+    suspendedAt: null,
+    invitesLeft: null,
+    trialScans: null,
+    createdAt: CREATED_AT,
+    lastSeenAt: '2026-09-23T12:00:00.000Z',
+    freeDailyAiLimit: 0,
+    aiUsedThisWeek: WEEKLY_DEFAULT_USED_THIS_WEEK,
+  };
+  if (mode === 'own-column-only') return base;
+  return { ...base, effectiveFreeAiLimit: WEEKLY_DEFAULT_LIMIT, effectiveFreeAiLimitPeriod: 'week' };
+}
+
 /** The signed-in administrator's own row. */
 function selfAccount(id: number): AccountFixture {
   return {
@@ -241,6 +294,7 @@ function selfAccount(id: number): AccountFixture {
 /** Everybody the list shows. The administrator's own row only once the session has named them. */
 function everybody(stub: AdminConsoleStub): AccountFixture[] {
   const others = stub.fresh === true ? [...OTHER_PEOPLE, freshAccount()] : [...OTHER_PEOPLE];
+  if (stub.weeklyDefault !== undefined) others.push(weeklyDefaultAccount(stub.weeklyDefault));
   const people = stub.selfId === null ? others : [selfAccount(stub.selfId), ...others];
   const { labels } = stub;
   if (labels === undefined) return people;

@@ -67,6 +67,18 @@ export const accountViewSchema = z.object({
    * sends no key, and "no free grant" is exactly what it means.
    */
   freeDailyAiLimit: z.number().int().min(0).catch(0),
+  /**
+   * The free limit the PROXY holds this account to (2026-10-12, `PROTOCOL.md`
+   * §5.20): the row's own `freeDailyAiLimit` when above zero, else the
+   * instance's standing default. A new account holds `0` in the own column and
+   * the default here, so the console reads this one for "what may they read".
+   * ABSENT from a core older than the field, and then the own column is all
+   * there is. `.optional().catch(undefined)` rather than `.catch(0)`: a `0`
+   * invented for a missing key would say "no photos", which is the defect.
+   */
+  effectiveFreeAiLimit: z.number().int().min(0).optional().catch(undefined),
+  /** The window of {@link accountViewSchema}'s `effectiveFreeAiLimit`. Absent means `'day'`, like `aiLimitPeriod`. */
+  effectiveFreeAiLimitPeriod: z.enum(['day', 'week']).optional().catch(undefined),
   suspendedAt: z.string().nullable(),
   /**
    * How many invitations this account may still send, or `null` when the cap is
