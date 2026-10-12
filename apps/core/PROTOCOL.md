@@ -1907,7 +1907,18 @@ returns (§5.15), `invitesLeft` included and computed the same way, minus
 00:00 UTC, 2026-10-07), and on the admin surface plus `lastSeenAt`, `label`,
 `blob` and `keyRecordKinds`. **`capabilities` and `freeDailyAiLimit` on the
 admin surface are the account's OWN record** (for `capabilities`, `null` is no
-record), where the account's own view reports the effective value. `healthConsent` is on it too, and it is **read
+record), where the account's own view reports the effective value. For the free
+limit the admin view carries the effective value too, beside the own one
+(2026-10-12): `effectiveFreeAiLimit`, a number, and `effectiveFreeAiLimitPeriod`,
+`"day"` or `"week"`. They are what §5.19 resolves for the proxy: the own
+`freeDailyAiLimit` when above zero, per day, else the instance's standing
+default (`DEFAULT_FREE_DAILY_AI_LIMIT` per day or
+`DEFAULT_FREE_WEEKLY_AI_LIMIT` per week), else `0` per day. A new account on an
+instance with a weekly default of 10 therefore reads `freeDailyAiLimit: 0`,
+`effectiveFreeAiLimit: 10` and `effectiveFreeAiLimitPeriod: "week"`. Both fields
+are additive; a client that does not know them reads the own column, as before.
+`freeAiLimitPeriod` on this surface stays the window of the OWN column, always
+`"day"`. `healthConsent` is on it too, and it is **read
 only** here: `PATCH /v1/admin/accounts/:id` does not read it, because a consent
 an operator could set on somebody's behalf would prove nothing (§5.15.1). It
 carries **no verifier, no KDF

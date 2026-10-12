@@ -146,6 +146,10 @@ test('PATCH changes a role, an allowance and a name, and returns the AccountView
     'createdAt',
     'dailyAiLimit',
     'displayName',
+    // The free limit the proxy holds the account to (2026-10-12), a number and
+    // its window like the own column beside it.
+    'effectiveFreeAiLimit',
+    'effectiveFreeAiLimitPeriod',
     'email',
     // The standing free grant (2026-09-30), an operator's field.
     // The window of the free grant (2026-10-07), "day" for an own record.

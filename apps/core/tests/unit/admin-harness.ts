@@ -44,6 +44,7 @@ import { legacyModelTiers } from '../../src/ai/model-tiers.js';
 import { DEFAULT_CHAT_INPUT_POLICY } from '../../src/ai/chat-input-bounds.js';
 import type { Mailer } from '../../src/mail/mailer.js';
 import type { AiBudgetSurfaceOptions } from '../../src/server/create-app.js';
+import type { InstanceStanding } from '../../src/accounts/instance-standing.js';
 
 /** One emitted log line, kept whole so a test can assert on the message AND the fields. */
 export interface CapturedLogLine {
@@ -140,6 +141,13 @@ export interface StartAdminHarnessOptions {
    * counts as not configured, which is what every other admin test runs on.
    */
   mailer?: Mailer;
+  /**
+   * What the instance grants an account with no record of its own, put on the
+   * auth context the way `main.ts` does, so `create-app.ts` hands the SAME
+   * object to the admin routes. Absent is no standing, every self-hosted
+   * instance's state.
+   */
+  standing?: InstanceStanding;
 }
 
 /**
@@ -196,7 +204,7 @@ export async function startAdminHarness(options: StartAdminHarnessOptions): Prom
   };
 
   const app = createApp({
-    authContext: { ...fixture.ctx, store: accounts },
+    authContext: { ...fixture.ctx, store: accounts, standing: options.standing },
     storage: createFakeStorageAdapter(),
     rotation: createFakeRotationStore(),
     // Required on every app. The pulse has no operator flag, so a harness that

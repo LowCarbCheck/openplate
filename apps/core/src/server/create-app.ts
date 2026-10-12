@@ -881,6 +881,10 @@ export function createApp(options: CreateAppOptions): Express {
       // an operator reads in the console is counted against the same
       // `MEMBER_INVITE_LIFETIME_CAP` the route refuses on.
       memberInvites: options.authContext.memberInvites?.policy ?? null,
+      // The SAME standing the proxy enforces and the account view reports,
+      // read once above, so the console's effective free limit is the enforced
+      // one (2026-10-12).
+      standing,
       // The SAME minter the auth handlers use, so an operator-sent reset and a
       // self-service one produce tokens of the same shape.
       mintResetToken: options.authContext.mintResetToken,

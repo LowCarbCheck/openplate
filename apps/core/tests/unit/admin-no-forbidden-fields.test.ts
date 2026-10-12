@@ -170,6 +170,10 @@ test('the account body carries exactly the documented metadata fields and nothin
     'createdAt',
     'dailyAiLimit',
     'displayName',
+    // The free limit the proxy holds the account to (2026-10-12), a number and
+    // its window like the own column beside it.
+    'effectiveFreeAiLimit',
+    'effectiveFreeAiLimitPeriod',
     'email',
     // The standing free grant (2026-09-30), a number the operator set.
     // The window of the free grant (2026-10-07), "day" for an own record.

@@ -7,6 +7,10 @@ change moves the minor.
 
 ## [Unreleased]
 
+### Added
+
+- **The admin account view carries the free limit the proxy enforces.** `GET /v1/admin/accounts`, `GET /v1/admin/accounts/:id` and the `PATCH` answer add `effectiveFreeAiLimit` and `effectiveFreeAiLimitPeriod` (`"day"` or `"week"`). `freeDailyAiLimit` stays the row's own value, the one an operator edits. A new account on an instance with `DEFAULT_FREE_WEEKLY_AI_LIMIT=10` has `freeDailyAiLimit` 0 and an effective limit of 10 a week, so a console can show what the account may read instead of "no photos". Both fields are additive.
+
 ### Fixed
 
 - **Trailing slashes in an address are stripped in one pass.** The service removed a trailing `/` from `UPSTREAM_BASE_URL`, `PLANS_UPSTREAM_URL`, `SERVER_PUBLIC_URL`, `CLIENT_BASE_URL` and the mail API address with a regular expression that took quadratic time on a long run of slashes inside the value. One helper now walks back from the end once. Every address comes out exactly as before, and no setting changes.

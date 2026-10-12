@@ -12,6 +12,10 @@
  *     on an instance with no default claims a scan and is told how many are left.
  *  3. The account view reports the number the proxy enforces. Control: no default
  *     leaves the column, 0.
+ *  4. The ADMIN account view reports it too (2026-10-12), as `effectiveFreeAiLimit`
+ *     and its period beside the row's own column, which stays what the operator
+ *     wrote. Control: an own limit is kept per day under a weekly default, and
+ *     with no default the figure is 0.
  */
 import { test, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
@@ -57,10 +61,14 @@ beforeEach(async () => {
   upstreamCalls = 0;
 });
 
-async function startInstance(input: { defaultFreeDailyAiLimit: number | null }): Promise<ServiceHarness> {
+async function startInstance(input: {
+  defaultFreeDailyAiLimit: number | null;
+  adminToken?: string;
+}): Promise<ServiceHarness> {
   return startService({
     db: database.db,
     ai: { baseUrl: upstreamBaseUrl, apiKey: 'sk-the-operators-key' },
+    adminToken: input.adminToken ?? null,
     standing:
       input.defaultFreeDailyAiLimit === null
         ? null
@@ -201,6 +209,81 @@ test('CONTROL: with no default the account view reports the column', async () =>
       accessToken: plain.tokens.accessToken,
     });
     assert.equal(view.body.account.freeDailyAiLimit, 0);
+  } finally {
+    await service.close();
+  }
+});
+
+const ADMIN_TOKEN = 'admin-token-for-the-standing-limit-suite-0123456789';
+
+/** The three fields of the admin account view this file is about. */
+interface AdminFreeLimitBody {
+  account: { freeDailyAiLimit: number; effectiveFreeAiLimit: number; effectiveFreeAiLimitPeriod: string };
+}
+
+async function readAdminView(input: { service: ServiceHarness; id: number }): Promise<AdminFreeLimitBody['account']> {
+  const view = await input.service.request<AdminFreeLimitBody>({
+    method: 'GET',
+    path: `/v1/admin/accounts/${input.id}`,
+    adminToken: ADMIN_TOKEN,
+  });
+  assert.equal(view.status, 200);
+  return view.body.account;
+}
+
+test('the admin view reports the default the proxy enforces beside the row’s own column', async () => {
+  const service = await startInstance({ defaultFreeDailyAiLimit: 2, adminToken: ADMIN_TOKEN });
+  try {
+    const plain = await service.signupThroughInvite({ email: 'plain@example.org' });
+    const granted = await service.signupThroughInvite({ email: 'granted@example.org' });
+    await database.db.update(accounts).set({ freeDailyAiLimit: 7 }).where(eq(accounts.id, granted.account.id));
+
+    const plainView = await readAdminView({ service, id: plain.account.id });
+    assert.equal(plainView.freeDailyAiLimit, 0, 'the operator edits the own column, which the default never touches');
+    assert.equal(plainView.effectiveFreeAiLimit, 2);
+    assert.equal(plainView.effectiveFreeAiLimitPeriod, 'day');
+
+    const grantedView = await readAdminView({ service, id: granted.account.id });
+    assert.equal(grantedView.freeDailyAiLimit, 7);
+    assert.equal(grantedView.effectiveFreeAiLimit, 7, 'an own limit is kept whatever the default says');
+    assert.equal(grantedView.effectiveFreeAiLimitPeriod, 'day');
+  } finally {
+    await service.close();
+  }
+});
+
+test('the admin view reports a weekly default per week, and an own limit per day under it', async () => {
+  const service = await startService({
+    db: database.db,
+    ai: { baseUrl: upstreamBaseUrl, apiKey: 'sk-the-operators-key' },
+    adminToken: ADMIN_TOKEN,
+    standing: { ...NO_INSTANCE_STANDING, defaultFreeAiLimit: { limit: 10, period: 'week' } },
+  });
+  try {
+    const plain = await service.signupThroughInvite({ email: 'plain@example.org' });
+    const granted = await service.signupThroughInvite({ email: 'granted@example.org' });
+    await database.db.update(accounts).set({ freeDailyAiLimit: 5 }).where(eq(accounts.id, granted.account.id));
+
+    const plainView = await readAdminView({ service, id: plain.account.id });
+    assert.equal(plainView.freeDailyAiLimit, 0);
+    assert.equal(plainView.effectiveFreeAiLimit, 10);
+    assert.equal(plainView.effectiveFreeAiLimitPeriod, 'week');
+
+    const grantedView = await readAdminView({ service, id: granted.account.id });
+    assert.equal(grantedView.effectiveFreeAiLimit, 5);
+    assert.equal(grantedView.effectiveFreeAiLimitPeriod, 'day');
+  } finally {
+    await service.close();
+  }
+});
+
+test('CONTROL: with no default the admin view’s effective free limit is 0 per day', async () => {
+  const service = await startInstance({ defaultFreeDailyAiLimit: null, adminToken: ADMIN_TOKEN });
+  try {
+    const plain = await service.signupThroughInvite({ email: 'plain@example.org' });
+    const view = await readAdminView({ service, id: plain.account.id });
+    assert.equal(view.effectiveFreeAiLimit, 0);
+    assert.equal(view.effectiveFreeAiLimitPeriod, 'day');
   } finally {
     await service.close();
   }

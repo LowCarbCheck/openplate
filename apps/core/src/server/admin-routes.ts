@@ -75,6 +75,8 @@ import {
   type InviteSummary,
 } from '../admin/invite-store.js';
 import { memberInviteFields, type MemberInvitePolicy } from '../accounts/member-invites.js';
+import { effectiveFreeAiLimit } from '../accounts/ai-allowance.js';
+import type { InstanceStanding } from '../accounts/instance-standing.js';
 import {
   NUTRIENT_REFERENCE_BASES,
   isAccountRole,
@@ -154,6 +156,17 @@ interface AdminAccountView extends Omit<AccountView, 'capabilities' | 'aiQuota'>
    * can read either window whatever the account's `aiLimitPeriod` is.
    */
   aiUsedThisWeek: number;
+  /**
+   * The free limit the proxy holds this account to (2026-10-12): its own
+   * `freeDailyAiLimit` when above zero, else the instance's standing default.
+   * `freeDailyAiLimit` stays the row's OWN value, which is what a PATCH edits,
+   * so a new account on an instance with a weekly default reads `0` there and
+   * `10` here. Beside it, because an operator's console that read only the
+   * own column printed "no photos" for a person the proxy lets read ten a week.
+   */
+  effectiveFreeAiLimit: number;
+  /** The window {@link AdminAccountView.effectiveFreeAiLimit} counts in, `"day"` or `"week"`. */
+  effectiveFreeAiLimitPeriod: AiLimitPeriod;
   /**
    * The account's OWN capability record: `null` is no record, so the instance
    * default decides, and `[]` is a record that grants nothing. Not the effective
@@ -297,9 +310,16 @@ interface AdminStatsView {
 function toAccountView(input: {
   summary: AdminAccountSummary;
   memberInvites: MemberInvitePolicy | null;
+  standing: InstanceStanding;
   now: Date;
 }): AdminAccountView {
-  const { summary, memberInvites, now } = input;
+  const { summary, memberInvites, standing, now } = input;
+  // THE SAME FUNCTION AND THE SAME `standing` THE PROXY RESERVES AGAINST, so
+  // the figure the console shows is the figure that is enforced.
+  const freeAiLimit = effectiveFreeAiLimit({
+    own: summary.freeDailyAiLimit,
+    instanceDefault: standing.defaultFreeAiLimit,
+  });
   return {
     id: summary.id,
     email: summary.email,
@@ -314,6 +334,8 @@ function toAccountView(input: {
     // written. The instance's weekly default is the account view's to show.
     freeDailyAiLimit: summary.freeDailyAiLimit,
     freeAiLimitPeriod: 'day',
+    effectiveFreeAiLimit: freeAiLimit.limit,
+    effectiveFreeAiLimitPeriod: freeAiLimit.period,
     capabilities: toWireCapabilities(summary.capabilities),
     trialScans: trialScansView({ granted: summary.trialScans, used: summary.trialScansUsed }),
     trialEndsAt: summary.trialEndsAt?.toISOString() ?? null,
@@ -977,6 +999,16 @@ export interface AdminRoutesOptions {
    */
   memberInvites: MemberInvitePolicy | null;
   /**
+   * What the instance grants an account with no record of its own, whose free
+   * default turns the row's `freeDailyAiLimit` into the
+   * `effectiveFreeAiLimit` the account view reports (2026-10-12).
+   *
+   * IT IS NOT CONFIGURED HERE, for the reason `aiInstanceDailyLimit` is not:
+   * `create-app.ts` hands over the SAME object the AI proxy and the account
+   * view read, so the console cannot show a default the proxy does not hold.
+   */
+  standing: InstanceStanding;
+  /**
    * The instance's stored settings (M234), or `null` for a build that wires
    * none, which takes `PATCH /settings` away and leaves it answering the
    * ordinary unknown-path 404.
@@ -1097,7 +1129,12 @@ export function createAdminRoutes(options: AdminRoutesOptions): Router {
       });
       res.status(200).json({
         accounts: page.accounts.map((summary) =>
-          toAccountView({ summary, memberInvites: options.memberInvites, now: options.now() }),
+          toAccountView({
+            summary,
+            memberInvites: options.memberInvites,
+            standing: options.standing,
+            now: options.now(),
+          }),
         ),
         total: page.total,
         limit: limit.value,
@@ -1166,7 +1203,14 @@ export function createAdminRoutes(options: AdminRoutesOptions): Router {
       }
       res
         .status(200)
-        .json({ account: toAccountView({ summary, memberInvites: options.memberInvites, now: options.now() }) });
+        .json({
+          account: toAccountView({
+            summary,
+            memberInvites: options.memberInvites,
+            standing: options.standing,
+            now: options.now(),
+          }),
+        });
     }),
   );
 
@@ -1401,7 +1445,14 @@ export function createAdminRoutes(options: AdminRoutesOptions): Router {
       logger.info('Account changed by admin', { accountId });
       res
         .status(200)
-        .json({ account: toAccountView({ summary, memberInvites: options.memberInvites, now: options.now() }) });
+        .json({
+          account: toAccountView({
+            summary,
+            memberInvites: options.memberInvites,
+            standing: options.standing,
+            now: options.now(),
+          }),
+        });
     }),
   );
 

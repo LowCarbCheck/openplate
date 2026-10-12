@@ -44,6 +44,7 @@ import { createFakeInviteStore } from './fake-invite-store.js';
 import { createFakeFeedbackAdminStore, createFakeFeedbackImageStore } from './feedback-harness.js';
 import { createAuthFixture } from './auth-context-fixture.js';
 import { createSilentLogger } from '../../src/logger.js';
+import { NO_INSTANCE_STANDING } from '../../src/accounts/instance-standing.js';
 import {
   DEFAULT_SERVICE_MAX_DAILY_AI_LIMIT,
   SERVICE_PRINCIPAL_ROUTES,
@@ -138,6 +139,7 @@ function buildAdminRouters(): Router[] {
       aiBudget: null,
       trial: null,
       memberInvites: null,
+      standing: NO_INSTANCE_STANDING,
       // `null` is what a build that wires no settings surface passes. The route
       // is registered either way, which is what this enumeration needs: the
       // scope gate must refuse it whether or not the surface behind it exists.
