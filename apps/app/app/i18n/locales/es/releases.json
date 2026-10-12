@@ -1,4 +1,10 @@
 {
+  "v0_68_1": {
+    "date": "2026-10-12",
+    "fixed": {
+      "01": "La lista de personas de administración ya no indica que una cuenta nueva no tiene fotos."
+    }
+  },
   "v0_68_0": {
     "date": "2026-10-11",
     "added": {
@@ -22,15 +28,6 @@
     },
     "fixed": {
       "01": "Las correcciones de dependencias resuelven las alertas de seguridad abiertas."
-    }
-  },
-  "v0_66_0": {
-    "date": "2026-10-06",
-    "changed": {
-      "01": "El prompt para fotos ahora desglosa cada alimento del plato como un elemento independiente.",
-      "02": "El prompt para fotos ahora califica su nivel de certeza según lo que se observa en la foto.",
-      "03": "Los avisos de embarazo ahora indican los alimentos que corresponden a cada categoría.",
-      "04": "Los prompts ahora señalan dudas sobre huevo, alcohol y carne, y comparten una misma línea para el embarazo."
     }
   }
 }

@@ -8525,6 +8525,13 @@
     "at": "2026-09-14",
     "tr": "Anahtarları değişti"
   },
+  "60f44ffc14720c93": {
+    "en": "A new account no longer reads \"No photos\" in the admin people list.",
+    "path": "releases:v0_68_1.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-12",
+    "tr": "Yeni bir hesap, yönetici kişi listesinde artık \"No photos\" olarak görünmez."
+  },
   "60fec6a9c8bbcf19": {
     "en": "Imported {{count}} weigh-ins from YAZIO.",
     "path": "common:settings.data.yazio.successWeighIns_other",
@@ -9378,6 +9385,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Bu bağlantı denemesi çok uzun sürdü ve zaman aşımına uğradı. Tekrar bağlanmayı dene."
+  },
+  "6b4fa41f3e3509eb": {
+    "en": "The admin people list no longer says a new account has no photos.",
+    "path": "releases:v0_68_1.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-12",
+    "tr": "Yönetici kişi listesinde, yeni bir hesabın fotoğrafı olmadığı ifadesi artık yer almıyor."
   },
   "6b53117a6e3da362": {
     "en": "Account",

@@ -8525,6 +8525,13 @@
     "at": "2026-09-14",
     "es": "Su clave cambió"
   },
+  "60f44ffc14720c93": {
+    "en": "A new account no longer reads \"No photos\" in the admin people list.",
+    "path": "releases:v0_68_1.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-12",
+    "es": "Una cuenta nueva ya no muestra «No photos» en la lista de personas de administración."
+  },
   "60fec6a9c8bbcf19": {
     "en": "Imported {{count}} weigh-ins from YAZIO.",
     "path": "common:settings.data.yazio.successWeighIns_other",
@@ -9378,6 +9385,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Este intento de conexión tardó demasiado tiempo y caducó. Intenta conectarte de nuevo."
+  },
+  "6b4fa41f3e3509eb": {
+    "en": "The admin people list no longer says a new account has no photos.",
+    "path": "releases:v0_68_1.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-12",
+    "es": "La lista de personas de administración ya no indica que una cuenta nueva no tiene fotos."
   },
   "6b53117a6e3da362": {
     "en": "Account",

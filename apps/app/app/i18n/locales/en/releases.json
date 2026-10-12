@@ -1,4 +1,10 @@
 {
+  "v0_68_1": {
+    "date": "2026-10-12",
+    "fixed": {
+      "01": "The admin people list no longer says a new account has no photos."
+    }
+  },
   "v0_68_0": {
     "date": "2026-10-11",
     "added": {
@@ -22,15 +28,6 @@
     },
     "fixed": {
       "01": "Dependency fixes clear the open security alerts."
-    }
-  },
-  "v0_66_0": {
-    "date": "2026-10-06",
-    "changed": {
-      "01": "The photo prompt now lists every food on a plate as its own item.",
-      "02": "The photo prompt now rates its confidence by what the photo shows.",
-      "03": "The pregnancy flags now name the foods behind each category.",
-      "04": "The prompts now flag uncertain egg, alcohol and meat, and share one pregnancy line."
     }
   }
 }

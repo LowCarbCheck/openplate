@@ -8525,6 +8525,13 @@
     "at": "2026-09-14",
     "fr": "Sa clé a changé"
   },
+  "60f44ffc14720c93": {
+    "en": "A new account no longer reads \"No photos\" in the admin people list.",
+    "path": "releases:v0_68_1.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-12",
+    "fr": "Un nouveau compte n'affiche plus « No photos » dans la liste des personnes de l'administration."
+  },
   "60fec6a9c8bbcf19": {
     "en": "Imported {{count}} weigh-ins from YAZIO.",
     "path": "common:settings.data.yazio.successWeighIns_other",
@@ -9378,6 +9385,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Cette tentative de connexion a pris trop de temps et a expiré. Essaie de te reconnecter."
+  },
+  "6b4fa41f3e3509eb": {
+    "en": "The admin people list no longer says a new account has no photos.",
+    "path": "releases:v0_68_1.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-12",
+    "fr": "La liste des personnes de l'administration n'indique plus qu'un nouveau compte n'a aucune photo."
   },
   "6b53117a6e3da362": {
     "en": "Account",

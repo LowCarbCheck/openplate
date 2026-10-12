@@ -1,4 +1,10 @@
 {
+  "v0_68_1": {
+    "date": "2026-10-12",
+    "fixed": {
+      "01": "La liste des personnes de l'administration n'indique plus qu'un nouveau compte n'a aucune photo."
+    }
+  },
   "v0_68_0": {
     "date": "2026-10-11",
     "added": {
@@ -22,15 +28,6 @@
     },
     "fixed": {
       "01": "Des corrections de dépendances éliminent les alertes de sécurité ouvertes."
-    }
-  },
-  "v0_66_0": {
-    "date": "2026-10-06",
-    "changed": {
-      "01": "L'invite de photo liste désormais chaque aliment d'une assiette comme un élément distinct.",
-      "02": "L'invite de photo évalue désormais son niveau de confiance selon ce que montre la photo.",
-      "03": "Les indicateurs de grossesse nomment désormais les aliments qui correspondent à chaque catégorie.",
-      "04": "Les invites signalent désormais les doutes sur les œufs, l'alcool et la viande, et partagent une seule ligne pour la grossesse."
     }
   }
 }

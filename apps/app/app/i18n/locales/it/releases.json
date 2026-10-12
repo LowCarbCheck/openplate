@@ -1,4 +1,10 @@
 {
+  "v0_68_1": {
+    "date": "2026-10-12",
+    "fixed": {
+      "01": "L'elenco degli utenti nell'area di amministrazione non indica più che un nuovo account non ha foto."
+    }
+  },
   "v0_68_0": {
     "date": "2026-10-11",
     "added": {
@@ -22,15 +28,6 @@
     },
     "fixed": {
       "01": "Le correzioni delle dipendenze risolvono gli avvisi di sicurezza aperti."
-    }
-  },
-  "v0_66_0": {
-    "date": "2026-10-06",
-    "changed": {
-      "01": "Il prompt per le foto ora elenca ogni alimento presente nel piatto come voce separata.",
-      "02": "Il prompt per le foto ora valuta il proprio livello di confidenza in base a ciò che mostra la foto.",
-      "03": "I contrassegni per la gravidanza ora indicano i singoli alimenti associati a ciascuna categoria.",
-      "04": "I prompt ora segnalano uova, alcolici e carne incerti, e condividono un'unica riga per la gravidanza."
     }
   }
 }

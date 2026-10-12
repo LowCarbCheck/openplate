@@ -1,4 +1,10 @@
 {
+  "v0_68_1": {
+    "date": "2026-10-12",
+    "fixed": {
+      "01": "Yönetici kişi listesinde, yeni bir hesabın fotoğrafı olmadığı ifadesi artık yer almıyor."
+    }
+  },
   "v0_68_0": {
     "date": "2026-10-11",
     "added": {
@@ -22,15 +28,6 @@
     },
     "fixed": {
       "01": "Bağımlılık düzeltmeleri açık güvenlik uyarılarını giderir."
-    }
-  },
-  "v0_66_0": {
-    "date": "2026-10-06",
-    "changed": {
-      "01": "Fotoğraf istemi artık bir tabaktaki her yiyeceği ayrı bir öge olarak listeler.",
-      "02": "Fotoğraf istemi artık güven derecesini fotoğrafın gösterdiklerine göre belirler.",
-      "03": "Hamilelik işaretleri artık her kategorinin arkasındaki yiyecekleri adlandırır.",
-      "04": "İstemler artık şüpheli yumurta, alkol ve eti işaretler ve tek bir hamilelik satırını paylaşır."
     }
   }
 }

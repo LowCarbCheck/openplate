@@ -1,4 +1,10 @@
 {
+  "v0_68_1": {
+    "date": "2026-10-12",
+    "fixed": {
+      "01": "Die Personenliste im Adminbereich zeigt für neue Konten nicht mehr an, dass keine Fotos vorhanden sind."
+    }
+  },
   "v0_68_0": {
     "date": "2026-10-11",
     "added": {
@@ -22,15 +28,6 @@
     },
     "fixed": {
       "01": "Aktualisierte Abhängigkeiten beheben die offenen Sicherheitswarnungen."
-    }
-  },
-  "v0_66_0": {
-    "date": "2026-10-06",
-    "changed": {
-      "01": "Der Foto-Prompt führt jetzt jedes Lebensmittel auf einem Teller als eigenen Eintrag auf.",
-      "02": "Der Foto-Prompt bewertet seine Konfidenz jetzt danach, was das Foto zeigt.",
-      "03": "Die Schwangerschaftshinweise benennen jetzt die Lebensmittel hinter jeder Kategorie.",
-      "04": "Die Prompts markieren jetzt unsicheres Ei, unsicheren Alkohol sowie unsicheres Fleisch und teilen sich eine gemeinsame Schwangerschaftszeile."
     }
   }
 }
