@@ -10779,6 +10779,13 @@
     "at": "2026-09-14",
     "es": "Pega el enlace completo, tal y como lo recibiste."
   },
+  "79bd5a9df34b299b": {
+    "en": "The diary and Insights now show vitamins and minerals at a glance.",
+    "path": "releases:v0_69_0.added.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-13",
+    "es": "El diario y Análisis muestran ahora las vitaminas y los minerales de un vistazo."
+  },
   "79f1e1ae7556b2d7": {
     "en": "The phone's bottom bar has a Menu tab.",
     "path": "releases:v0_46_0.changed.01",

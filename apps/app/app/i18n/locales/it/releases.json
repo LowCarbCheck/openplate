@@ -1,4 +1,10 @@
 {
+  "v0_69_0": {
+    "date": "2026-10-13",
+    "added": {
+      "01": "Il diario e Analisi ora mostrano vitamine e minerali a colpo d'occhio."
+    }
+  },
   "v0_68_1": {
     "date": "2026-10-12",
     "fixed": {
@@ -17,17 +23,6 @@
     "fixed": {
       "01": "Un'istanza spostata non indirizza mai un browser verso un altro host.",
       "02": "Una pagina che acquisisce o perde la barra di scorrimento non fa più scatti laterali."
-    }
-  },
-  "v0_67_0": {
-    "date": "2026-10-07",
-    "changed": {
-      "01": "Il tema chiaro non usa più il bianco puro.",
-      "02": "La quota IA può essere calcolata a settimana, e l'app indica quando si ripristina.",
-      "03": "Il tema scuro è stato leggermente schiarito rispetto al quasi nero."
-    },
-    "fixed": {
-      "01": "Le correzioni delle dipendenze risolvono gli avvisi di sicurezza aperti."
     }
   }
 }

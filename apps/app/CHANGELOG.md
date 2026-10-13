@@ -11,9 +11,11 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+## [0.69.0] - 2026-10-13
+
 ### Added
 
-- **The diary and Insights now show vitamins and minerals at a glance.** Under "What you ate", the diary's day card says how many nutrients that day has enough data for, lists the three the log was lightest on against the reference amount, and names a limit it went over, such as sodium, in words. Insights' Nutrition tab shows the same block for its window in place of the plain button. Each block links into the Nutrients screen for the same days, and that screen now opens a single day with `/nutrients?day=YYYY-MM-DD`. The rules of the Nutrients screen hold: below the coverage bar there is no number, only how much of the logged food carried figures. The reference amounts load after the page has painted, into a box that is already the right size, so nothing moves. With the 90-day window, Insights reads and links the last 30 days, the longest window the Nutrients screen offers.
+- **The diary and Insights now show vitamins and minerals at a glance.** Under "What you ate", the diary's day card says how many nutrients that day has enough data for, lists the three the log was lightest on against the reference amount, and names a limit it went over, such as sodium, in words. Insights' Nutrition tab shows the same block for its window in place of the plain button. Each block links into the Nutrients screen for the same days, and that screen now opens a single day with `/nutrients?day=YYYY-MM-DD`. The rules of the Nutrients screen hold: below the coverage bar there is no number, only how much of the logged food carried figures. The reference amounts load after the page has painted, into a box that is already the right size, so nothing moves. With the 90-day window, Insights reads and links the last 30 days, the longest window the Nutrients screen offers. ([58c9c2ee](https://github.com/LowCarbCheck/openplate/commit/58c9c2ee))
 
 ## [0.68.1] - 2026-10-12
 

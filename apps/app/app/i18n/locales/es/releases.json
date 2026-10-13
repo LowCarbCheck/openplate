@@ -1,4 +1,10 @@
 {
+  "v0_69_0": {
+    "date": "2026-10-13",
+    "added": {
+      "01": "El diario y Análisis muestran ahora las vitaminas y los minerales de un vistazo."
+    }
+  },
   "v0_68_1": {
     "date": "2026-10-12",
     "fixed": {
@@ -17,17 +23,6 @@
     "fixed": {
       "01": "Una instancia trasladada nunca dirige el navegador hacia otro host.",
       "02": "Las páginas que muestran u ocultan su barra de desplazamiento ya no dan saltos laterales."
-    }
-  },
-  "v0_67_0": {
-    "date": "2026-10-07",
-    "changed": {
-      "01": "El tema claro ya no muestra un blanco puro.",
-      "02": "La cuota de IA puede contar por semana, y la app indica cuándo se restablece.",
-      "03": "El tema oscuro se aclara respecto al negro casi puro."
-    },
-    "fixed": {
-      "01": "Las correcciones de dependencias resuelven las alertas de seguridad abiertas."
     }
   }
 }

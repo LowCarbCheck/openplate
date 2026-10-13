@@ -1,4 +1,10 @@
 {
+  "v0_69_0": {
+    "date": "2026-10-13",
+    "added": {
+      "01": "The diary and Insights now show vitamins and minerals at a glance."
+    }
+  },
   "v0_68_1": {
     "date": "2026-10-12",
     "fixed": {
@@ -17,17 +23,6 @@
     "fixed": {
       "01": "A moved instance never points a browser at another host.",
       "02": "A page that gains or loses its scrollbar no longer jumps sideways."
-    }
-  },
-  "v0_67_0": {
-    "date": "2026-10-07",
-    "changed": {
-      "01": "The light theme no longer paints pure white.",
-      "02": "The AI allowance can count per week, and the app says when it comes back.",
-      "03": "The dark theme is lifted off near-black."
-    },
-    "fixed": {
-      "01": "Dependency fixes clear the open security alerts."
     }
   }
 }

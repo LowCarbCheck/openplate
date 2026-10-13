@@ -1,4 +1,10 @@
 {
+  "v0_69_0": {
+    "date": "2026-10-13",
+    "added": {
+      "01": "Le journal et Analyses affichent désormais les vitamines et les minéraux d'un coup d'œil."
+    }
+  },
   "v0_68_1": {
     "date": "2026-10-12",
     "fixed": {
@@ -17,17 +23,6 @@
     "fixed": {
       "01": "Une instance déplacée ne redirige jamais un navigateur vers un autre hôte.",
       "02": "Une page dont la barre de défilement apparaît ou disparaît ne saute plus latéralement."
-    }
-  },
-  "v0_67_0": {
-    "date": "2026-10-07",
-    "changed": {
-      "01": "Le thème clair n'affiche plus de blanc pur.",
-      "02": "Le quota d'IA peut être calculé par semaine, et l'application indique quand il se réinitialise.",
-      "03": "Le thème sombre s'éloigne du noir presque pur."
-    },
-    "fixed": {
-      "01": "Des corrections de dépendances éliminent les alertes de sécurité ouvertes."
     }
   }
 }

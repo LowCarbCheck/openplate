@@ -1,4 +1,10 @@
 {
+  "v0_69_0": {
+    "date": "2026-10-13",
+    "added": {
+      "01": "Günlük ve İçgörüler artık vitamin ve mineralleri bir bakışta gösterir."
+    }
+  },
   "v0_68_1": {
     "date": "2026-10-12",
     "fixed": {
@@ -17,17 +23,6 @@
     "fixed": {
       "01": "Taşınan bir örnek, tarayıcıyı asla başka bir ana bilgisayara yönlendirmez.",
       "02": "Kaydırma çubuğu eklenen veya kaybolan bir sayfa artık yana doğru sıçramaz."
-    }
-  },
-  "v0_67_0": {
-    "date": "2026-10-07",
-    "changed": {
-      "01": "Açık tema artık tamamen beyaz boyamıyor.",
-      "02": "Yapay zeka kotası haftalık sayılabilir ve uygulama ne zaman yenileneceğini belirtir.",
-      "03": "Koyu tema tam siyahtan biraz açıldı."
-    },
-    "fixed": {
-      "01": "Bağımlılık düzeltmeleri açık güvenlik uyarılarını giderir."
     }
   }
 }

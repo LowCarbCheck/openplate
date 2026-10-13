@@ -1,4 +1,10 @@
 {
+  "v0_69_0": {
+    "date": "2026-10-13",
+    "added": {
+      "01": "Das Tagebuch und Einblicke zeigen Vitamine und Mineralstoffe jetzt auf einen Blick."
+    }
+  },
   "v0_68_1": {
     "date": "2026-10-12",
     "fixed": {
@@ -17,17 +23,6 @@
     "fixed": {
       "01": "Eine verschobene Instanz leitet einen Browser niemals auf einen anderen Host um.",
       "02": "Eine Seite, die ihre Scrollleiste erhält oder verliert, springt nicht mehr zur Seite."
-    }
-  },
-  "v0_67_0": {
-    "date": "2026-10-07",
-    "changed": {
-      "01": "Das helle Farbschema zeichnet kein reines Weiß mehr.",
-      "02": "Das KI-Kontingent kann pro Woche zählen, und die App zeigt an, wann es wieder verfügbar ist.",
-      "03": "Das dunkle Farbschema ist nun heller als Fast-Schwarz."
-    },
-    "fixed": {
-      "01": "Aktualisierte Abhängigkeiten beheben die offenen Sicherheitswarnungen."
     }
   }
 }
