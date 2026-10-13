@@ -1,4 +1,11 @@
 {
+  "v0_69_1": {
+    "date": "2026-10-13",
+    "fixed": {
+      "01": "Kalori payı, yüksek lifli bir günde karbonhidratları artık eksik saymaz.",
+      "02": "Eski günlük günleri artık vitamin ve minerallerini gösteriyor."
+    }
+  },
   "v0_69_0": {
     "date": "2026-10-13",
     "added": {
@@ -9,20 +16,6 @@
     "date": "2026-10-12",
     "fixed": {
       "01": "Yönetici kişi listesinde, yeni bir hesabın fotoğrafı olmadığı ifadesi artık yer almıyor."
-    }
-  },
-  "v0_68_0": {
-    "date": "2026-10-11",
-    "added": {
-      "01": "Yönetici konsolu yeni kayıtlarda açılır ve herkesi hızla bulur."
-    },
-    "changed": {
-      "01": "Başlık kartındaki milimetrik kağıt, üst şeridin altında solarak kaybolur.",
-      "02": "Genel bakış artık ana hedefini tek bir büyük sayı olarak en başta gösterir."
-    },
-    "fixed": {
-      "01": "Taşınan bir örnek, tarayıcıyı asla başka bir ana bilgisayara yönlendirmez.",
-      "02": "Kaydırma çubuğu eklenen veya kaybolan bir sayfa artık yana doğru sıçramaz."
     }
   }
 }

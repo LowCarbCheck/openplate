@@ -13523,6 +13523,13 @@
     "at": "2026-09-14",
     "it": "Nessun problema, lascia questi campi vuoti e compilali quando vuoi."
   },
+  "9684bd16e780efcf": {
+    "en": "Old diary days now show their vitamins and minerals.",
+    "path": "releases:v0_69_1.fixed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-13",
+    "it": "I giorni passati del diario ora mostrano le relative vitamine e minerali."
+  },
   "96da283c8edaa233": {
     "en": "{{count}} weigh-ins skipped: their values aren't weights between 20 and 350 kg.",
     "path": "common:settings.data.yazio.skipped.implausibleWeight_other",
@@ -20172,6 +20179,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Non stai contribuendo a nessuno studio. Per partecipare ne serve l'impronta stampata sui moduli di consenso."
+  },
+  "e162a673c92abd96": {
+    "en": "The calorie share no longer undercounts carbs on a high fiber day.",
+    "path": "releases:v0_69_1.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-13",
+    "it": "La ripartizione delle calorie non sottostima più i carboidrati nei giorni ad alto contenuto di fibre."
   },
   "e1643934c13d78cf": {
     "en": "In your trial you logged {{count}} meals with AI.",

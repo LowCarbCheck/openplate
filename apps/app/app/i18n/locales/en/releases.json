@@ -1,4 +1,11 @@
 {
+  "v0_69_1": {
+    "date": "2026-10-13",
+    "fixed": {
+      "01": "The calorie share no longer undercounts carbs on a high fiber day.",
+      "02": "Old diary days now show their vitamins and minerals."
+    }
+  },
   "v0_69_0": {
     "date": "2026-10-13",
     "added": {
@@ -9,20 +16,6 @@
     "date": "2026-10-12",
     "fixed": {
       "01": "The admin people list no longer says a new account has no photos."
-    }
-  },
-  "v0_68_0": {
-    "date": "2026-10-11",
-    "added": {
-      "01": "The admin console opens on new sign-ups and finds anyone fast."
-    },
-    "changed": {
-      "01": "The graph paper on the hero card fades out below the head band.",
-      "02": "The Overview now leads with your main goal as one large figure."
-    },
-    "fixed": {
-      "01": "A moved instance never points a browser at another host.",
-      "02": "A page that gains or loses its scrollbar no longer jumps sideways."
     }
   }
 }

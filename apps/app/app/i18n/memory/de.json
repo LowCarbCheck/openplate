@@ -13523,6 +13523,13 @@
     "at": "2026-09-14",
     "de": "Kein Stress: Du kannst diese Felder leer lassen und die Werte jederzeit später eintragen."
   },
+  "9684bd16e780efcf": {
+    "en": "Old diary days now show their vitamins and minerals.",
+    "path": "releases:v0_69_1.fixed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-13",
+    "de": "Ältere Tagebuch-Tage zeigen jetzt ihre Vitamine und Mineralstoffe an."
+  },
   "96da283c8edaa233": {
     "en": "{{count}} weigh-ins skipped: their values aren't weights between 20 and 350 kg.",
     "path": "common:settings.data.yazio.skipped.implausibleWeight_other",
@@ -20172,6 +20179,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Du trägst zu keiner Studie bei. Zum Mitmachen brauchst du den Fingerabdruck aus den Einwilligungsunterlagen einer Studie."
+  },
+  "e162a673c92abd96": {
+    "en": "The calorie share no longer undercounts carbs on a high fiber day.",
+    "path": "releases:v0_69_1.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-13",
+    "de": "Der Kalorienanteil unterschätzt Kohlenhydrate an Tagen mit vielen Ballaststoffen nicht mehr."
   },
   "e1643934c13d78cf": {
     "en": "In your trial you logged {{count}} meals with AI.",

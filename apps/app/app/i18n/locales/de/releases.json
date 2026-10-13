@@ -1,4 +1,11 @@
 {
+  "v0_69_1": {
+    "date": "2026-10-13",
+    "fixed": {
+      "01": "Der Kalorienanteil unterschätzt Kohlenhydrate an Tagen mit vielen Ballaststoffen nicht mehr.",
+      "02": "Ältere Tagebuch-Tage zeigen jetzt ihre Vitamine und Mineralstoffe an."
+    }
+  },
   "v0_69_0": {
     "date": "2026-10-13",
     "added": {
@@ -9,20 +16,6 @@
     "date": "2026-10-12",
     "fixed": {
       "01": "Die Personenliste im Adminbereich zeigt für neue Konten nicht mehr an, dass keine Fotos vorhanden sind."
-    }
-  },
-  "v0_68_0": {
-    "date": "2026-10-11",
-    "added": {
-      "01": "Die Admin-Konsole öffnet sich bei neuen Registrierungen und findet jeden schnell."
-    },
-    "changed": {
-      "01": "Das Millimeterpapier auf der Hero-Karte blendet unter dem Kopfband aus.",
-      "02": "Die Übersicht beginnt jetzt mit deinem Hauptziel als einzelne große Zahl."
-    },
-    "fixed": {
-      "01": "Eine verschobene Instanz leitet einen Browser niemals auf einen anderen Host um.",
-      "02": "Eine Seite, die ihre Scrollleiste erhält oder verliert, springt nicht mehr zur Seite."
     }
   }
 }

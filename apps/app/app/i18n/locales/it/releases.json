@@ -1,4 +1,11 @@
 {
+  "v0_69_1": {
+    "date": "2026-10-13",
+    "fixed": {
+      "01": "La ripartizione delle calorie non sottostima più i carboidrati nei giorni ad alto contenuto di fibre.",
+      "02": "I giorni passati del diario ora mostrano le relative vitamine e minerali."
+    }
+  },
   "v0_69_0": {
     "date": "2026-10-13",
     "added": {
@@ -9,20 +16,6 @@
     "date": "2026-10-12",
     "fixed": {
       "01": "L'elenco degli utenti nell'area di amministrazione non indica più che un nuovo account non ha foto."
-    }
-  },
-  "v0_68_0": {
-    "date": "2026-10-11",
-    "added": {
-      "01": "La console di amministrazione si apre sulle nuove registrazioni e trova chiunque rapidamente."
-    },
-    "changed": {
-      "01": "La carta millimetrata sulla scheda principale sfuma sotto la fascia superiore.",
-      "02": "La Panoramica ora si apre con il tuo obiettivo principale mostrato come una singola cifra grande."
-    },
-    "fixed": {
-      "01": "Un'istanza spostata non indirizza mai un browser verso un altro host.",
-      "02": "Una pagina che acquisisce o perde la barra di scorrimento non fa più scatti laterali."
     }
   }
 }

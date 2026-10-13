@@ -1,4 +1,11 @@
 {
+  "v0_69_1": {
+    "date": "2026-10-13",
+    "fixed": {
+      "01": "La part de calories ne sous-estime plus les glucides lors d'une journée riche en fibres.",
+      "02": "Les anciennes journées du journal affichent désormais leurs vitamines et minéraux."
+    }
+  },
   "v0_69_0": {
     "date": "2026-10-13",
     "added": {
@@ -9,20 +16,6 @@
     "date": "2026-10-12",
     "fixed": {
       "01": "La liste des personnes de l'administration n'indique plus qu'un nouveau compte n'a aucune photo."
-    }
-  },
-  "v0_68_0": {
-    "date": "2026-10-11",
-    "added": {
-      "01": "La console d'administration s'ouvre sur les nouvelles inscriptions et trouve rapidement n'importe qui."
-    },
-    "changed": {
-      "01": "Le papier millimétré de la carte principale s'estompe sous le bandeau d'en-tête.",
-      "02": "La Vue d'ensemble met désormais en avant ton objectif principal sous la forme d'un grand chiffre."
-    },
-    "fixed": {
-      "01": "Une instance déplacée ne redirige jamais un navigateur vers un autre hôte.",
-      "02": "Une page dont la barre de défilement apparaît ou disparaît ne saute plus latéralement."
     }
   }
 }

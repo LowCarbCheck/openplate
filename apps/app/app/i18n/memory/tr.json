@@ -13523,6 +13523,13 @@
     "at": "2026-09-14",
     "tr": "Acele etme, bunları boş bırakabilir ve dilediğin zaman ekleyebilirsin."
   },
+  "9684bd16e780efcf": {
+    "en": "Old diary days now show their vitamins and minerals.",
+    "path": "releases:v0_69_1.fixed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-13",
+    "tr": "Eski günlük günleri artık vitamin ve minerallerini gösteriyor."
+  },
   "96da283c8edaa233": {
     "en": "{{count}} weigh-ins skipped: their values aren't weights between 20 and 350 kg.",
     "path": "common:settings.data.yazio.skipped.implausibleWeight_other",
@@ -20172,6 +20179,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Herhangi bir araştırmaya katkıda bulunmuyorsun. Bir araştırmaya katılmak için onam belgelerinde basılı olan parmak izi gerekir."
+  },
+  "e162a673c92abd96": {
+    "en": "The calorie share no longer undercounts carbs on a high fiber day.",
+    "path": "releases:v0_69_1.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-13",
+    "tr": "Kalori payı, yüksek lifli bir günde karbonhidratları artık eksik saymaz."
   },
   "e1643934c13d78cf": {
     "en": "In your trial you logged {{count}} meals with AI.",
