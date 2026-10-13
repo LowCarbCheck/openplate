@@ -1513,6 +1513,7 @@
       "covered": "{{covered}} nutriments sur {{total}} disposent d'assez de données",
       "empty": "Assiette vide pour le moment.",
       "eyebrow": "Ton journal",
+      "forDay": "Affichage d'un jour : {{day}}.",
       "loggedDays": "Tu as consigné des repas {{logged}} jours sur les {{days}} derniers jours."
     },
     "limit": {
@@ -1557,6 +1558,20 @@
       "segmentLactation": "Allaitement",
       "segmentPregnancy": "Grossesse",
       "segmentSexAge": "{{sex}}, {{band}}"
+    },
+    "snapshot": {
+      "coverageNone": "Aucun aliment saisi ici n'indique de valeurs pour les vitamines ou les minéraux. Les assiettes estimées par l'IA et les aliments que tu as saisis toi-même n'en ont pas.",
+      "coveragePartial": "Seulement {{share}} des aliments saisis ici, en poids, indiquent des valeurs pour les vitamines et les minéraux. Les totaux s'affichent à partir de {{bar}}.",
+      "gapsLeadDay": "Apports les plus faibles dans le journal de ce jour, par rapport à la valeur de référence.",
+      "gapsLeadRange": "Apports les plus faibles dans ton journal, par jour enregistré, par rapport à la valeur de référence.",
+      "linkDay": "Toutes les vitamines et tous les minéraux pour ce jour",
+      "linkRange": "Toutes les vitamines et tous les minéraux pour les {{days}} derniers jours",
+      "loading": "Chargement des valeurs de référence…",
+      "noBodyMetrics": "Le calcul des déficits nécessite une valeur de référence, qui dépend de ton année de naissance et de ton sexe biologique.",
+      "noGaps": "Aucun élément disposant d'assez de données n'est descendu sous {{share}} de sa valeur de référence.",
+      "overLimit": "Au-dessus de la limite",
+      "title": "Vitamines et minéraux",
+      "unreachable": "Impossible de charger les valeurs de référence, aucun déficit ne peut être affiché pour l'instant."
     },
     "suggestions": {
       "forNutrient": "Plus riche en {{nutrient}}",

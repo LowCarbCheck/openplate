@@ -1513,6 +1513,7 @@
       "covered": "{{covered}} de {{total}} nutrientes tienen datos suficientes",
       "empty": "Plato vacío por ahora.",
       "eyebrow": "Tu registro",
+      "forDay": "Mostrando un día: {{day}}.",
       "loggedDays": "Registraste comida en {{logged}} de los últimos {{days}} días."
     },
     "limit": {
@@ -1557,6 +1558,20 @@
       "segmentLactation": "Lactancia",
       "segmentPregnancy": "Embarazo",
       "segmentSexAge": "{{sex}}, {{band}}"
+    },
+    "snapshot": {
+      "coverageNone": "Ninguno de los alimentos registrados aquí incluye datos de vitaminas o minerales. Los platos estimados por IA y los alimentos que escribiste tú mismo no tienen ninguno.",
+      "coveragePartial": "Solo el {{share}} de los alimentos registrados aquí, por peso, incluye datos de vitaminas y minerales. Los totales se muestran a partir del {{bar}}.",
+      "gapsLeadDay": "Menor presencia en el registro de este día, como proporción de la cantidad de referencia.",
+      "gapsLeadRange": "Menor presencia en tu registro, por día registrado, como proporción de la cantidad de referencia.",
+      "linkDay": "Todas las vitaminas y minerales de este día",
+      "linkRange": "Todas las vitaminas y minerales de los últimos {{days}} días",
+      "loading": "Cargando cantidades de referencia…",
+      "noBodyMetrics": "Las carencias necesitan una cantidad de referencia, y eso depende de tu año de nacimiento y sexo biológico.",
+      "noGaps": "Ningún elemento con suficientes datos quedó por debajo del {{share}} de su cantidad de referencia.",
+      "overLimit": "Por encima del límite",
+      "title": "Vitaminas y minerales",
+      "unreachable": "No se pudieron cargar las cantidades de referencia, por lo que no hay carencias que mostrar ahora mismo."
     },
     "suggestions": {
       "forNutrient": "Mayor contenido de {{nutrient}}",

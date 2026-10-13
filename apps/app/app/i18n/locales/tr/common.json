@@ -1513,6 +1513,7 @@
       "covered": "{{total}} besin maddesinden {{covered}} tanesi için yeterli veri var",
       "empty": "Şimdilik tabak boş.",
       "eyebrow": "Kaydın",
+      "forDay": "Tek bir gün gösteriliyor: {{day}}.",
       "loggedDays": "Son {{days}} günün {{logged}} gününde gıda kaydı girdin."
     },
     "limit": {
@@ -1557,6 +1558,20 @@
       "segmentLactation": "Emzirme",
       "segmentPregnancy": "Hamilelik",
       "segmentSexAge": "{{sex}}, {{band}}"
+    },
+    "snapshot": {
+      "coverageNone": "Buraya kaydedilen yiyeceklerin hiçbirinde vitamin veya mineral değeri yok. Yapay zekanın tahmin ettiği tabaklar ve senin elle girdiğin yiyecekler bunları içermez.",
+      "coveragePartial": "Buraya kaydedilen yiyeceklerin ağırlıkça yalnızca {{share}} kadarı vitamin ve mineral değerleri taşıyor. Toplamlar {{bar}} sonrasında gösterilir.",
+      "gapsLeadDay": "Referans miktarın payı olarak, bu günün günlüğünde en az yer alanlar.",
+      "gapsLeadRange": "Referans miktarın payı olarak, kaydedilen gün başına günlüğünde en az yer alanlar.",
+      "linkDay": "Bu gün için tüm vitaminler ve mineraller",
+      "linkRange": "Son {{days}} gün için tüm vitaminler ve mineraller",
+      "loading": "Referans miktarlar yükleniyor…",
+      "noBodyMetrics": "Eksiklerin belirlenmesi için bir referans miktarı gerekir, bu da doğum yılına ve biyolojik cinsiyetine bağlıdır.",
+      "noGaps": "Yeterli veriye sahip hiçbir değer, referans miktarının {{share}} oranının altında kalmadı.",
+      "overLimit": "Sınırın üstünde",
+      "title": "Vitaminler ve mineraller",
+      "unreachable": "Referans miktarlar yüklenemedi, bu nedenle şu anda gösterilecek bir eksiklik yok."
     },
     "suggestions": {
       "forNutrient": "Daha yüksek {{nutrient}}",

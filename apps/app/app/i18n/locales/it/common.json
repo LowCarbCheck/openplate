@@ -1513,6 +1513,7 @@
       "covered": "{{covered}} nutrienti su {{total}} hanno dati a sufficienza",
       "empty": "Piatto vuoto, finora.",
       "eyebrow": "Il tuo registro",
+      "forDay": "Mostra un solo giorno: {{day}}.",
       "loggedDays": "Hai registrato cibo in {{logged}} degli ultimi {{days}} giorni."
     },
     "limit": {
@@ -1557,6 +1558,20 @@
       "segmentLactation": "Allattamento",
       "segmentPregnancy": "Gravidanza",
       "segmentSexAge": "{{sex}}, {{band}}"
+    },
+    "snapshot": {
+      "coverageNone": "Nessun alimento registrato qui include dati su vitamine o minerali. I piatti stimati dall'IA e gli alimenti che hai inserito a mano non ne hanno.",
+      "coveragePartial": "Solo il {{share}} del cibo registrato qui, in termini di peso, include dati su vitamine e minerali. I totali partono da {{bar}}.",
+      "gapsLeadDay": "I valori più bassi registrati in questo giorno, come quota della quantità di riferimento.",
+      "gapsLeadRange": "I valori più bassi nel tuo diario, per giorno registrato, come quota della quantità di riferimento.",
+      "linkDay": "Tutte le vitamine e i minerali di questo giorno",
+      "linkRange": "Tutte le vitamine e i minerali degli ultimi {{days}} giorni",
+      "loading": "Caricamento delle quantità di riferimento…",
+      "noBodyMetrics": "I deficit richiedono una quantità di riferimento, che dipende dal tuo anno di nascita e dal sesso biologico.",
+      "noGaps": "Nessun elemento con dati sufficienti è rimasto sotto il {{share}} della sua quantità di riferimento.",
+      "overLimit": "Sopra il limite",
+      "title": "Vitamine e minerali",
+      "unreachable": "Impossibile caricare le quantità di riferimento, quindi al momento non ci sono deficit da mostrare."
     },
     "suggestions": {
       "forNutrient": "Più ricco di {{nutrient}}",
