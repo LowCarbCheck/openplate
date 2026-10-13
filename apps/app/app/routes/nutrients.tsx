@@ -53,6 +53,8 @@ import {
   listLocalFoodLogs,
   resolveLocalTimezone,
 } from '#app/lib/local-store';
+import { readMicronutrientBackfillLedger } from '#app/lib/local-store/micronutrient-backfill';
+import { withBackfilledMicronutrients } from '#app/lib/micronutrient-backfill';
 import { todayInTimezone } from '#app/lib/user-days';
 import { formatDayLabel } from '#app/lib/format-day-label';
 import { NUTRIENT_RANGES, resolveNutrientWindow } from '#app/lib/nutrient-window';
@@ -177,8 +179,10 @@ export async function clientLoader({ request, serverLoader }: Route.ClientLoader
   });
   const { fromDate, toDate } = nutrientWindow;
 
+  // Old entries whose food had no vitamins when they were logged borrow the
+  // block LowCarbCheck answered later, exactly as the diary's block does.
   const window = computeMicronutrientsInWindow(
-    await listLocalFoodLogs(),
+    withBackfilledMicronutrients({ logs: await listLocalFoodLogs(), ledger: await readMicronutrientBackfillLedger() }),
     { fromDate, toDate },
     {
       minCoverageFraction: NUTRIENT_COVERAGE_THRESHOLD,

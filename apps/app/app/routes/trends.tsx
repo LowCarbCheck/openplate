@@ -18,6 +18,8 @@ import {
   resolveLocalTimezone,
   upsertLocalWeightEntryForDay,
 } from '#app/lib/local-store';
+import { readMicronutrientBackfillLedger } from '#app/lib/local-store/micronutrient-backfill';
+import { hasPendingBackfill, withBackfilledMicronutrients } from '#app/lib/micronutrient-backfill';
 import { noteActivity } from '#app/lib/gamification/record';
 import { enumerateDates, shiftDate, todayInTimezone } from '#app/lib/user-days';
 import { startOfWeek } from '#app/lib/trend-week';
@@ -330,12 +332,18 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   // the last 30, and the block says which window it shows. `windowLogs`
   // already reaches back past the chart's range, so this is no second read.
   const nutrientRange = nutrientRangeFor(range);
+  const nutrientFromDate = shiftDate(today, -(nutrientRange - 1));
+  const nutrientLogs = windowLogs.filter((log) => log.dayKey >= nutrientFromDate && log.dayKey <= today);
+  // Old entries whose food had no vitamins when they were logged borrow the
+  // block LowCarbCheck answered later (see `#app/lib/micronutrient-backfill`).
+  const backfillLedger = await readMicronutrientBackfillLedger();
   const micronutrients: MicronutrientSnapshotInputs = {
     intake: computeMicronutrientsInWindow(
-      windowLogs,
-      { fromDate: shiftDate(today, -(nutrientRange - 1)), toDate: today },
+      withBackfilledMicronutrients({ logs: nutrientLogs, ledger: backfillLedger }),
+      { fromDate: nutrientFromDate, toDate: today },
       { minCoverageFraction: DEFAULT_MIN_COVERAGE_FRACTION },
     ),
+    isFillPending: hasPendingBackfill({ logs: nutrientLogs, ledger: backfillLedger }),
     metrics: bodyMetrics,
     currentYear: Number(today.slice(0, 4)),
   };

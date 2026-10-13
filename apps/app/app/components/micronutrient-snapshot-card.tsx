@@ -37,6 +37,18 @@
  *
  * The reserve counts ONE limit row because sodium is the only ceiling upstream
  * publishes. A second ceiling over its limit would grow the cell when it lands.
+ *
+ * ── NO LAYOUT SHIFT WHEN A DAY IS FILLED IN UNDER THE READER ─────────────
+ *
+ * The rule above assumed a block's KIND is fixed at the first paint. The
+ * micronutrient backfill (`#app/lib/micronutrient-backfill`) breaks that: an
+ * old day reads "not enough data", the background job answers, and the next
+ * revalidation reads the same day as covered, a taller block. So while a fill
+ * can still arrive (`fillReserve` other than `none`), the not-enough-data
+ * answer shares one grid cell with an unseen copy of the READY body, drawn by
+ * the very component the ready state uses from a placeholder snapshot, so the
+ * box is the ready box by construction rather than by a second measurement
+ * that could drift. Nothing moves when the fill lands.
  */
 import { useId, type ReactElement, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -64,6 +76,13 @@ import { cn } from '#app/lib/utils';
 /** The days the block describes: the diary's one day, or Insights' window. */
 export type SnapshotScope = { kind: 'day' } | { kind: 'range'; days: NutrientRange };
 
+/**
+ * The ready box a not-enough-data block holds open while the backfill may
+ * still fill its days: none, or the ready body as it would be drawn with or
+ * without the body facts a reference amount needs (the two differ in height).
+ */
+export type FillReserve = 'none' | 'with-body-metrics' | 'without-body-metrics';
+
 export interface MicronutrientSnapshotCardProps {
   snapshot: MicronutrientSnapshot;
   /** The deep link into `/nutrients` for the same days. */
@@ -71,6 +90,8 @@ export interface MicronutrientSnapshotCardProps {
   scope: SnapshotScope;
   /** True while the reference amounts are still loading, so the gaps are not known yet. */
   isLoading: boolean;
+  /** The box a not-enough-data answer holds open for a fill that may still arrive. See {@link FillReserve}. */
+  fillReserve: FillReserve;
 }
 
 /** Which answer the cell under the count shows. */
@@ -316,9 +337,61 @@ function NotEnoughDataBody({ snapshot }: { snapshot: NotEnoughDataSnapshot }): R
 }
 
 /**
+ * A ready snapshot with nothing in it, drawn unseen only to size the box a
+ * filled day will need. Every displayed nutrient counted, so the count line is
+ * as long as it can get.
+ */
+function placeholderReadySnapshot(fillReserve: Exclude<FillReserve, 'none'>): ReadySnapshot {
+  const total = DISPLAYED_NUTRIENT_KEYS.length;
+  return {
+    kind: 'ready',
+    coveredCount: total,
+    totalCount: total,
+    references: fillReserve === 'with-body-metrics' ? 'available' : 'no-body-metrics',
+    gaps: [],
+    overLimits: [],
+  };
+}
+
+/**
+ * The not-enough-data answer, holding the ready box open while a fill may
+ * still arrive (see this file's header).
+ */
+function NotEnoughDataAwaitingFill({
+  snapshot,
+  scope,
+  fillReserve,
+}: {
+  snapshot: NotEnoughDataSnapshot;
+  scope: SnapshotScope;
+  fillReserve: Exclude<FillReserve, 'none'>;
+}): ReactElement {
+  return (
+    <div data-slot="micronutrient-snapshot-fill-reserve" className="grid *:col-start-1 *:row-start-1">
+      <Layer isShown>
+        <div className="space-y-3">
+          <NotEnoughDataBody snapshot={snapshot} />
+        </div>
+      </Layer>
+      <Layer isShown={false}>
+        <div className="space-y-3">
+          <ReadyBody snapshot={placeholderReadySnapshot(fillReserve)} scope={scope} isLoading={false} />
+        </div>
+      </Layer>
+    </div>
+  );
+}
+
+/**
  * @param props - see {@link MicronutrientSnapshotCardProps}.
  */
-export function MicronutrientSnapshotCard({ snapshot, to, scope, isLoading }: MicronutrientSnapshotCardProps): ReactElement {
+export function MicronutrientSnapshotCard({
+  snapshot,
+  to,
+  scope,
+  isLoading,
+  fillReserve,
+}: MicronutrientSnapshotCardProps): ReactElement {
   const { t } = useTranslation();
   const headingId = useId();
   // Only a ready block has an answer that waits on the reference list: the
@@ -337,7 +410,10 @@ export function MicronutrientSnapshotCard({ snapshot, to, scope, isLoading }: Mi
         {t('nutrients.snapshot.title')}
       </SectionEyebrow>
       {snapshot.kind === 'empty' && <p className="text-sm text-muted-foreground">{t('nutrients.hero.empty')}</p>}
-      {snapshot.kind === 'not-enough-data' && <NotEnoughDataBody snapshot={snapshot} />}
+      {snapshot.kind === 'not-enough-data' && fillReserve === 'none' && <NotEnoughDataBody snapshot={snapshot} />}
+      {snapshot.kind === 'not-enough-data' && fillReserve !== 'none' && (
+        <NotEnoughDataAwaitingFill snapshot={snapshot} scope={scope} fillReserve={fillReserve} />
+      )}
       {snapshot.kind === 'ready' && <ReadyBody snapshot={snapshot} scope={scope} isLoading={isLoading} />}
       <Link
         to={to}

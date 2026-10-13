@@ -52,6 +52,7 @@ function render(props: Partial<MicronutrientSnapshotCardProps> & { snapshot: Mic
           to: '/nutrients?day=2026-10-11',
           scope: DAY_SCOPE,
           isLoading: false,
+          fillReserve: 'none',
           ...props,
         }),
       ),
@@ -203,5 +204,34 @@ describe('the colour and the link', () => {
     const range = render({ snapshot: READY, scope: { kind: 'range', days: 30 }, to: '/nutrients?range=30' });
     assert.match(range, /All vitamins and minerals for the last 30 days/);
     assert.match(range, /per logged day/i);
+  });
+});
+
+describe('the box held open while the backfill may fill a day', () => {
+  const NOT_ENOUGH: MicronutrientSnapshot = { kind: 'not-enough-data', bestCoveredFraction: 0 };
+  /** The ready count line, which only a ready body draws. */
+  const COUNT_LINE = /nutrients have enough data/;
+
+  it('draws the ready body unseen under the not-enough-data answer', () => {
+    const markup = render({ snapshot: NOT_ENOUGH, fillReserve: 'with-body-metrics' });
+    assert.match(markup, /data-slot="micronutrient-snapshot-fill-reserve"/);
+    assert.match(markup, COUNT_LINE);
+    assert.match(markup, /data-slot="micronutrient-gap"/, 'the reserve holds the tallest gap list');
+    // What the reader sees is still the not-enough-data answer.
+    assert.match(shownLayer(markup), /Not enough data/);
+    assert.doesNotMatch(shownLayer(markup), COUNT_LINE);
+    assert.match(markup, /<div class="min-w-0 invisible" aria-hidden="true" inert=""><div class="space-y-3"><p[^>]*>\d+ of \d+ nutrients/);
+  });
+
+  it('control: with no fill pending, no ready body is drawn at all', () => {
+    const markup = render({ snapshot: NOT_ENOUGH, fillReserve: 'none' });
+    assert.doesNotMatch(markup, /micronutrient-snapshot-fill-reserve/);
+    assert.doesNotMatch(markup, COUNT_LINE);
+  });
+
+  it('without body metrics, reserves the shorter ready body, with no gap list', () => {
+    const markup = render({ snapshot: NOT_ENOUGH, fillReserve: 'without-body-metrics' });
+    assert.match(markup, COUNT_LINE);
+    assert.doesNotMatch(markup, /data-slot="micronutrient-gap"/);
   });
 });

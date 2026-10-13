@@ -165,6 +165,7 @@ function SnapshotCardFor({ def }: { def: SnapshotCardDef }): ReactElement {
             to={DAY_LINK}
             scope={DAY_SCOPE}
             isLoading={def.isLoading ?? false}
+            fillReserve="none"
           />
         </CardContent>
       </AppCard>
@@ -191,7 +192,7 @@ function DiaryPanePreview({ scenario }: { scenario: NutrientScenario }): ReactEl
           />
         </div>
         <div className="border-t pt-4">
-          <MicronutrientSnapshotCard snapshot={snapshotOf(scenario)} to={DAY_LINK} scope={DAY_SCOPE} isLoading={false} />
+          <MicronutrientSnapshotCard snapshot={snapshotOf(scenario)} to={DAY_LINK} scope={DAY_SCOPE} isLoading={false} fillReserve="none" />
         </div>
       </CardContent>
     </AppCard>
@@ -220,6 +221,7 @@ export default function NutrientsSection(): ReactElement {
                 to={nutrientsRangeHref(7)}
                 scope={weekScope}
                 isLoading={false}
+                fillReserve="none"
               />
             </CardContent>
           </AppCard>

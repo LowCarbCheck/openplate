@@ -93,6 +93,8 @@ import {
   selectLocalFrequentChips,
 } from '#app/lib/local-store';
 import type { LocalDailyTotals, LocalFoodLog, LocalFrequentChip, LocalRecentFood } from '#app/lib/local-store';
+import { readMicronutrientBackfillLedger } from '#app/lib/local-store/micronutrient-backfill';
+import { hasPendingBackfill, withBackfilledMicronutrients } from '#app/lib/micronutrient-backfill';
 import { useAppNavigate } from '#app/hooks/use-app-navigate';
 import { trackEntryRestored, trackFoodLogged, trackMealSaved } from '#app/lib/matomo-events';
 import { noteActivity } from '#app/lib/gamification/record';
@@ -1182,6 +1184,9 @@ export async function clientLoader({ request, serverLoader }: Route.ClientLoader
 
   const allLogs = await listLocalFoodLogs();
   const logsForDay = allLogs.filter((log) => log.dayKey === date).toSorted((a, b) => a.loggedAt - b.loggedAt);
+  // What LowCarbCheck answered for old entries whose food had no vitamins when
+  // they were logged. Lent to the vitamins block below and nowhere else.
+  const backfillLedger = await readMicronutrientBackfillLedger();
   const mealGroups = groupLogsByMeal(logsForDay);
   const totalsForDay = computeDailyTotals(allLogs, date);
   const summary = totalsForDay.summary ?? EMPTY_DAY_SUMMARY;
@@ -1359,10 +1364,11 @@ export async function clientLoader({ request, serverLoader }: Route.ClientLoader
       // The same window arithmetic and the same coverage bar `/nutrients`
       // uses, over the one viewed day.
       intake: computeMicronutrientsInWindow(
-        allLogs,
+        withBackfilledMicronutrients({ logs: logsForDay, ledger: backfillLedger }),
         { fromDate: date, toDate: date },
         { minCoverageFraction: DEFAULT_MIN_COVERAGE_FRACTION },
       ),
+      isFillPending: hasPendingBackfill({ logs: logsForDay, ledger: backfillLedger }),
       metrics: bodyMetrics,
       // Aged against the real `today`, like the protein reference above.
       currentYear: Number(today.slice(0, 4)),
