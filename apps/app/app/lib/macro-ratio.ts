@@ -6,27 +6,34 @@
  * A share can be read two ways (`MacroShareBasis`): by calories, the default,
  * or by grams. `computeMacroShares` is the one door for both.
  */
+import { computeMacroEnergyKcal } from '#app/lib/macro-energy';
 import type { MacroShareBasis } from '#app/lib/macro-share-basis';
 
-/** Atwater energy factor for protein, kcal per gram (this file's own copy, as each energy file keeps its own). */
-const KCAL_PER_G_PROTEIN = 4;
-/** Atwater energy factor for carbohydrate, kcal per gram. */
-const KCAL_PER_G_CARB = 4;
-/** Atwater energy factor for fat, kcal per gram. */
-const KCAL_PER_G_FAT = 9;
-
-/** Per-macro gram totals the ratio bar splits into segment widths. */
+/**
+ * Per-macro gram totals the ratio bar splits into segment widths.
+ *
+ * `carbs` is TOTAL carbs, fibre included: the gram basis reads it. `netCarbs`
+ * and `fiber` are what the calorie basis reads, because they carry different
+ * energy factors (`#app/lib/macro-energy`). All four come from the same
+ * `DaySummary`, so the two bases describe one day.
+ */
 export interface MacroRatioGrams {
   carbs: number;
+  netCarbs: number;
   protein: number;
   fat: number;
   fiber: number;
 }
 
 /** Each macro's share of the total, as a percentage of the bar's width (0-100, summing to 100). */
-export type MacroRatioPercentages = MacroRatioGrams;
+export interface MacroRatioPercentages {
+  carbs: number;
+  protein: number;
+  fat: number;
+  fiber: number;
+}
 
-/** The calorie shares: three segments, fibre is not an energy source here, and the three sum to 100. */
+/** The calorie shares: three segments (the fibre's energy sits in the carb one), and the three sum to 100. */
 export interface MacroKcalPercentages {
   carbs: number;
   protein: number;
@@ -42,7 +49,7 @@ export interface MacroKcalPercentages {
  * Fibre is counted twice on purpose: it sits inside `carbs` (total carbs) and
  * also has its segment of its own.
  */
-export function computeMacroRatioPercentages(grams: MacroRatioGrams): MacroRatioPercentages | null {
+export function computeMacroRatioPercentages(grams: Omit<MacroRatioGrams, 'netCarbs'>): MacroRatioPercentages | null {
   const total = grams.carbs + grams.protein + grams.fat + grams.fiber;
   if (total <= 0) return null;
   return {
@@ -54,16 +61,16 @@ export function computeMacroRatioPercentages(grams: MacroRatioGrams): MacroRatio
 }
 
 /**
- * Converts gram totals into each macro's share of the day's energy: protein
- * and carbs at 4 kcal per gram, fat at 9. `carbs` is TOTAL carbs, the same as
- * the "Where your calories come from" card, so the two never disagree about a
- * day. Fibre is not a segment. Returns `null` when the energy is nil, so the
- * bar draws its empty track rather than dividing by zero.
+ * Converts gram totals into each macro's share of the day's energy, by the
+ * app's one energy rule (`computeMacroEnergyKcal`): net carbs and protein at 4
+ * kcal per gram, fibre at 2, fat at 9. The "Where your calories come from" card
+ * reads the same rule, so the two never disagree about a day. Fibre is not a
+ * segment of its own: its energy is part of the carb segment. Returns `null`
+ * when the energy is nil, so the bar draws its empty track rather than dividing
+ * by zero.
  */
 export function computeMacroKcalPercentages(grams: MacroRatioGrams): MacroKcalPercentages | null {
-  const carbs = Math.max(0, grams.carbs) * KCAL_PER_G_CARB;
-  const protein = Math.max(0, grams.protein) * KCAL_PER_G_PROTEIN;
-  const fat = Math.max(0, grams.fat) * KCAL_PER_G_FAT;
+  const { carbs, protein, fat } = computeMacroEnergyKcal(grams);
   const total = carbs + protein + fat;
   if (total <= 0) return null;
   return { carbs: (carbs / total) * 100, protein: (protein / total) * 100, fat: (fat / total) * 100 };

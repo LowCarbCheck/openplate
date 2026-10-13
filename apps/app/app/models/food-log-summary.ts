@@ -2,19 +2,9 @@
  * Pure daily-totals arithmetic for the food log, kept in its own module
  * (no store or React imports) so it's directly unit-testable.
  */
-import { computeNetCarbsFromParts } from '#app/lib/net-carbs';
+import { computeMacroEnergyTotalKcal } from '#app/lib/macro-energy';
+import { computeNetCarbsFromParts, computeTotalCarbsFromParts } from '#app/lib/net-carbs';
 import type { CarbBasis } from '#app/lib/net-carbs';
-
-/**
- * Atwater energy factors: 4 kcal/g carbohydrate, 4 kcal/g protein, 9 kcal/g fat.
- * Duplicated from `daily-totals.ts`'s `_classifyEntry` (this module can't import
- * it — `daily-totals.ts` imports `summarizeDay` from here, not the other way).
- * Same precedent as the net-carbs formula, which is independently duplicated in
- * `portion-preview.ts`/`frequent-chips.ts`/`export-format.ts`.
- */
-const KCAL_PER_G_CARB = 4;
-const KCAL_PER_G_PROTEIN = 4;
-const KCAL_PER_G_FAT = 9;
 
 export interface FoodLogMacroSnapshot {
   carbs: number | null;
@@ -46,6 +36,16 @@ export interface FoodLogMacroSnapshot {
 }
 
 export interface DaySummary {
+  /**
+   * TOTAL carbs in grams, fibre included, whichever panel convention each entry
+   * was read from: per entry an `available` (EU) basis adds its fibre back
+   * (`carbs + fiber`) and a `total` or unknown basis is taken as printed, and
+   * the entries are then summed (`computeTotalCarbsFromParts`). It is NOT the
+   * sum of the printed figures, which mixed the two conventions and left the
+   * fibre of every EU-panel food out. Every reader treats it as total carbs:
+   * the ratio bar's gram basis, the trend chart's total-carbs outline, the
+   * weekly recap. `fiber` and `netCarbs` stay as they were.
+   */
   carbs: number;
   fiber: number;
   polyols: number;
@@ -108,17 +108,44 @@ function _entryNetCarbs(log: FoodLogMacroSnapshot): number {
 }
 
 /**
- * One entry's kcal contribution: reported `kcal` wins; otherwise Atwater-derive
- * when carbs, protein, and fat are all known (mirrors `daily-totals.ts`'s
- * `_classifyEntry`); otherwise the entry is uncomputable and contributes
- * nothing — never a fabricated 0 masquerading as "this food has no calories".
+ * One entry's TOTAL carbs, brought onto one basis (see `DaySummary.carbs`).
+ * An unknown `carbs` contributes nothing, as it always did in the day's sum.
+ */
+function _entryTotalCarbs(log: FoodLogMacroSnapshot): number {
+  return computeTotalCarbsFromParts(log, log.carbBasis) ?? 0;
+}
+
+/**
+ * The kcal an entry's macros stand for when it reported none: the same rule
+ * the ratio bar and the Insights split use (`computeMacroEnergyKcal`), which is
+ * net carbs at 4 kcal per gram, fibre at 2, protein at 4 and fat at 9. Net
+ * carbs are the entry's own, basis-aware and clamped at zero (`_entryNetCarbs`),
+ * so an EU-panel entry's fibre is no longer counted as carbs at 4.
+ *
+ * @param log - the entry's macro snapshot.
+ * @returns the derived kcal, or `null` when `carbs`, `protein` or `fat` is
+ *   unknown: the entry is then uncomputable, never a fabricated 0. An unknown
+ *   `fiber` counts as nothing, like in the day's fibre sum.
+ */
+export function deriveEntryKcal(log: FoodLogMacroSnapshot): number | null {
+  if (log.carbs === null || log.protein === null || log.fat === null) return null;
+  return computeMacroEnergyTotalKcal({
+    netCarbs: _entryNetCarbs(log),
+    fiber: log.fiber ?? 0,
+    protein: log.protein,
+    fat: log.fat,
+  });
+}
+
+/**
+ * One entry's kcal contribution: reported `kcal` wins; otherwise derive it
+ * when `deriveEntryKcal` can; otherwise the entry is uncomputable and
+ * contributes nothing, never a fabricated 0 masquerading as "this food has no
+ * calories".
  */
 function _entryKcal(log: FoodLogMacroSnapshot): number {
   if (log.kcal !== null) return log.kcal;
-  if (log.carbs !== null && log.protein !== null && log.fat !== null) {
-    return KCAL_PER_G_CARB * log.carbs + KCAL_PER_G_PROTEIN * log.protein + KCAL_PER_G_FAT * log.fat;
-  }
-  return 0;
+  return deriveEntryKcal(log) ?? 0;
 }
 
 /**
@@ -150,7 +177,7 @@ export function summarizeDay(logs: FoodLogMacroSnapshot[]): DaySummary {
     if (log.aiEstimated) {
       hasEstimates = true;
     }
-    carbs += log.carbs ?? 0;
+    carbs += _entryTotalCarbs(log);
     fiber += log.fiber ?? 0;
     polyols += log.polyols ?? 0;
     netCarbs += _entryNetCarbs(log);

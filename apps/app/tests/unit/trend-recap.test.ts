@@ -205,8 +205,10 @@ describe('computeWeeklyRecap — average-day macro composition', () => {
   it('averages each macro over logged days only', () => {
     const recap = computeWeeklyRecap({
       days: [
-        loggedDay('2026-07-13', { summary: makeSummary({ carbs: 40, fiber: 10, protein: 100, fat: 60 }) }),
-        loggedDay('2026-07-14', { summary: makeSummary({ carbs: 20, fiber: 6, protein: 80, fat: 40 }) }),
+        loggedDay('2026-07-13', {
+          summary: makeSummary({ carbs: 40, netCarbs: 30, fiber: 10, protein: 100, fat: 60 }),
+        }),
+        loggedDay('2026-07-14', { summary: makeSummary({ carbs: 20, netCarbs: 14, fiber: 6, protein: 80, fat: 40 }) }),
         emptyDay('2026-07-15'),
       ],
       today: '2026-07-15',
@@ -214,7 +216,7 @@ describe('computeWeeklyRecap — average-day macro composition', () => {
       proteinFloor: null,
     });
 
-    assert.deepEqual(recap.avgMacroGrams, { carbs: 30, fiber: 8, protein: 90, fat: 50 });
+    assert.deepEqual(recap.avgMacroGrams, { carbs: 30, netCarbs: 22, fiber: 8, protein: 90, fat: 50 });
   });
 
   it('is null when nothing was logged — the card omits the bar rather than drawing an empty one', () => {

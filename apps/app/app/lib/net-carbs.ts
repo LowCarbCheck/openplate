@@ -80,6 +80,34 @@ export function computeNetCarbsFromParts(parts: NetCarbsParts, basis?: CarbBasis
 }
 
 /**
+ * The entry's TOTAL carbs, fibre included, whichever convention printed it.
+ *
+ * A `total` (US) panel and an unknown basis print carbs WITH fibre, so the
+ * figure is already the total. An `available` (EU) panel prints carbs WITHOUT
+ * fibre, so the fibre row is added back. Summing the printed figures of a day
+ * that mixes both conventions is therefore wrong: the EU foods' fibre drops
+ * out of the sum, and a ratio drawn from it understates carbs (the diary read
+ * 7 % where 6 % of the calories and 13 % of the grams were right, 2026-10-13).
+ * This is the one place that normalises, and `DaySummary.carbs` sums it.
+ *
+ * An unknown `fiber` counts as nothing, the same convention the day totals
+ * use (`fiber ?? 0`); the day's `hasUnknowns` caveat is what says the fibre
+ * row was missing.
+ *
+ * @param parts - the row's carbs and fiber.
+ * @param basis - which panel convention `parts.carbs` was read from; `undefined` means unknown (treated as `total`).
+ * @returns total carbs in the row's own unit, or `null` when `carbs` itself is unknown.
+ */
+export function computeTotalCarbsFromParts(
+  parts: Pick<NetCarbsParts, 'carbs' | 'fiber'>,
+  basis?: CarbBasis,
+): number | null {
+  if (parts.carbs === null) return null;
+  if (basis === 'available') return parts.carbs + (parts.fiber ?? 0);
+  return parts.carbs;
+}
+
+/**
  * Narrows a raw form value (a radio/select's submitted string) to a
  * `CarbBasis`. Anything unrecognised — including a blank field, i.e. "not
  * sure" — resolves to `null`, never a guess. Same convention as

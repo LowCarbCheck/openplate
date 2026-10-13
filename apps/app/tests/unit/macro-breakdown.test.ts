@@ -13,7 +13,7 @@ import { withI18n } from './trends-i18n-harness';
 import { MacroBreakdown } from '../../app/components/day-summary-details';
 import type { MacroShareBasis } from '../../app/lib/macro-share-basis';
 
-const DAY = { carbs: 100, protein: 100, fat: 100, fiber: 20 };
+const DAY = { carbs: 100, netCarbs: 80, protein: 100, fat: 100, fiber: 20 };
 
 function render(basis: MacroShareBasis, grams = DAY): string {
   return renderToStaticMarkup(withI18n(createElement(MacroBreakdown, { grams, basis })));
@@ -42,7 +42,9 @@ describe('MacroBreakdown', () => {
     );
     assert.deepEqual(
       cells.filter(([, isInvisible]) => !isInvisible).map(([, , text]) => text),
-      ['24%', '24%', '53%'],
+      // Net carbs 80 g at 4 plus fibre 20 g at 2 is 360 kcal, protein 400, fat 900: 360 / 1660 and so on.
+      // (24, 24, 53 while the 100 g of total carbs was counted at 4 kcal per gram.)
+      ['22%', '24%', '54%'],
     );
   });
 
@@ -70,7 +72,7 @@ describe('MacroBreakdown', () => {
   });
 
   it('says unknown in all four cells, none invisible, when nothing is logged', () => {
-    const none = { carbs: 0, protein: 0, fat: 0, fiber: 0 };
+    const none = { carbs: 0, netCarbs: 0, protein: 0, fat: 0, fiber: 0 };
     for (const basis of ['kcal', 'grams'] as const) {
       const cells = cellsOf(render(basis, none));
       assert.equal(cells.length, 4);

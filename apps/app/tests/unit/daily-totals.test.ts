@@ -44,14 +44,14 @@ describe('computeDailyEntry', () => {
   });
 
   it('Atwater-derives kcal only when carbs, protein, and fat are all known', () => {
-    // Reported 100 + derived (4*10 + 4*5 + 9*2 = 78) = 178.
+    // Reported 100 + derived (net carbs 8 at 4, fibre 2 at 2, 4*5 + 9*2 = 32 + 4 + 20 + 18 = 74) = 174.
     const reported = makeLog({ kcal: 100 });
     const derived = makeLog({ kcal: null, carbs: 10, protein: 5, fat: 2 });
     const entry = computeDailyEntry([reported, derived]);
 
-    assert.strictEqual(entry.kcal.total, 178);
+    assert.strictEqual(entry.kcal.total, 174);
     assert.strictEqual(entry.kcal.basis, 'partly-derived');
-    assert.strictEqual(entry.kcal.derivedShare, 78 / 178);
+    assert.strictEqual(entry.kcal.derivedShare, 74 / 174);
   });
 
   it('marks a day "incomplete" (a floor) when an entry is uncomputable', () => {
@@ -59,7 +59,7 @@ describe('computeDailyEntry', () => {
     const uncomputable = makeLog({ kcal: null, carbs: null, protein: 5, fat: 2 });
     const entry = computeDailyEntry([derived, uncomputable]);
 
-    assert.strictEqual(entry.kcal.total, 78);
+    assert.strictEqual(entry.kcal.total, 74);
     assert.strictEqual(entry.kcal.basis, 'incomplete');
     assert.strictEqual(entry.kcal.derivedShare, 1);
   });

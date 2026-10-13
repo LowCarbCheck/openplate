@@ -73,15 +73,18 @@ function percentsOf(energy: [number, number, number]): Shares {
   ];
 }
 
-/** The day's sums, with every carb figure brought onto one basis. */
-function sumsOf(foods: readonly SeedFood[]): {
+/** The sums of a seeded day, in grams, beside the old sum of the printed carb figures. */
+interface DaySums {
   netCarbs: number;
   fiber: number;
   totalCarbs: number;
   printedCarbs: number;
   protein: number;
   fat: number;
-} {
+}
+
+/** The day's sums, with every carb figure brought onto one basis. */
+function sumsOf(foods: readonly SeedFood[]): DaySums {
   const sum = (pick: (food: SeedFood) => number): number => foods.reduce((acc, food) => acc + pick(food), 0);
   return {
     netCarbs: sum((food) => (food.carbBasis === 'available' ? food.carbs : food.carbs - food.fiber)),
@@ -129,7 +132,10 @@ function shiftDay(day: string, days: number): string {
  * once the transaction has committed. Every food carries its reported calories
  * as the app itself would derive them, so no entry is left without a figure.
  */
-async function logFoodsOnDays(page: Page, input: { days: readonly string[]; foods: readonly SeedFood[] }): Promise<void> {
+async function logFoodsOnDays(
+  page: Page,
+  input: { days: readonly string[]; foods: readonly SeedFood[] },
+): Promise<void> {
   await page.evaluate(
     ({ days, foods }) =>
       new Promise<void>((resolve, reject) => {
@@ -266,9 +272,7 @@ test('a day of an EU-panel food and a US-panel food gets one calorie share in th
   await page.goto('/trends?tab=nutrition&range=7');
   await expect(page.locator('[data-slot="macro-split-card"]')).toHaveAttribute('data-basis', 'kcal');
   expect(await splitRowPercents(page, today), 'the Insights row for the day agrees with the diary').toEqual(expected);
-  expect(await splitAveragePercents(page), 'the Insights average of three identical days agrees too').toEqual(
-    expected,
-  );
+  expect(await splitAveragePercents(page), 'the Insights average of three identical days agrees too').toEqual(expected);
 });
 
 test('a day of one US-panel food counts its fibre at 2 kcal per gram, not 4', async ({ page }) => {

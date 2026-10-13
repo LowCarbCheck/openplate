@@ -32,7 +32,7 @@ function makeRecap(overrides: Partial<WeeklyRecap> = {}): WeeklyRecap {
     daysUnderCeiling: null,
     daysHitProteinFloor: null,
     estimateShare: null,
-    avgMacroGrams: { carbs: 30, protein: 90, fat: 50, fiber: 8 },
+    avgMacroGrams: { carbs: 30, netCarbs: 22, protein: 90, fat: 50, fiber: 8 },
     ...overrides,
   };
 }
@@ -161,7 +161,7 @@ function renderDay(basis: 'kcal' | 'grams'): string {
   return renderToStaticMarkup(
     withI18n(
       createElement(AverageDayComposition, {
-        grams: { carbs: 30, protein: 90, fat: 50, fiber: 8 },
+        grams: { carbs: 30, netCarbs: 22, protein: 90, fat: 50, fiber: 8 },
         basis,
         onBasisChange: () => undefined,
       }),
@@ -180,12 +180,13 @@ describe('WeeklyRecapCard, the average day follows the share basis', () => {
   it('shows the calorie share as a percent by default, three figures and the fibre slot kept invisible', () => {
     const html = render(makeRecap());
     assert.ok(html.includes('data-basis="kcal"'));
-    // 30 g carbs, 90 g protein, 50 g fat: 120 + 360 + 450 = 930 kcal.
+    // 22 g net carbs at 4 plus 8 g fibre at 2 is 104 kcal, 90 g protein 360, 50 g fat 450: 914 kcal.
+    // (13, 39, 48 while the 30 g of total carbs was counted at 4 kcal per gram.)
     assert.deepEqual(figuresOf(renderDay('kcal')), [
-      ['carbs', false, 'Carbs 13%'],
+      ['carbs', false, 'Carbs 11%'],
       ['fiber', true, 'Fiber ~8 g'],
       ['protein', false, 'Protein 39%'],
-      ['fat', false, 'Fat 48%'],
+      ['fat', false, 'Fat 49%'],
     ]);
   });
 

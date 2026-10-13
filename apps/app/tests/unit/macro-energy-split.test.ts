@@ -5,10 +5,11 @@
  *
  * Every claim has a control that a plausible wrong version fails:
  *
- * - the factors are 4/4/9, so a split by GRAMS (the diary's ratio bar) gives
- *   different, checked numbers;
- * - carbs are TOTAL carbs, so a version that used net carbs gives a different,
- *   checked number on a fiber-heavy day;
+ * - the factors are 4/4/9 with fibre at 2 (`#app/lib/macro-energy`), so a split
+ *   by GRAMS (the diary's ratio bar) gives different, checked numbers;
+ * - the carb segment is net carbs at 4 plus fibre at 2, so a version that used
+ *   total carbs at 4, or net carbs alone, gives a different, checked number on
+ *   a fiber-heavy day;
  * - a partial day is `null`, and the same day without the flag is not;
  * - the range figure is POOLED, so a mean of the daily shares gives a
  *   different, checked number.
@@ -65,14 +66,29 @@ describe('computeMacroEnergySplit', () => {
     assertShare(totalOf(shares), 100);
   });
 
-  it('counts total carbs, the figure the app derives calories from, not net carbs', () => {
-    // 50 g carbs of which 40 g fiber: net carbs are 10 g. With total carbs the
-    // carb energy is 200 kcal beside 200 kcal of protein, a 50/50 split; with
-    // net carbs it would be 40 kcal, about 17 percent.
+  it('counts net carbs at 4 kcal per gram and fibre at 2, not total carbs at 4', () => {
+    // 50 g carbs of which 40 g fiber: net carbs are 10 g. The carb energy is
+    // 4 x 10 + 2 x 40 = 120 kcal beside 200 kcal of protein, so 120 / 320 =
+    // 37.5 percent. Total carbs at 4 would be 200 kcal, a 50/50 split (the
+    // rule before 2026-10-13); net carbs alone would be 40 kcal, 16.7 percent.
     const shares = computeMacroEnergySplit(summary({ protein: 50, carbs: 50, fiber: 40, netCarbs: 10 }));
 
     assert.ok(shares !== null);
-    assertShare(shares.carbs, 50);
+    assertShare(shares.carbs, 37.5);
+    assert.ok(Math.abs(shares.carbs - 50) > 1, 'CONTROL: not the old total-carbs share');
+    assert.ok(Math.abs(shares.carbs - (40 / 240) * 100) > 1, 'CONTROL: not the net-carbs-only share');
+  });
+
+  it('does not move with the total carbs when net carbs and fibre stay put', () => {
+    const low = computeMacroEnergySplit(summary({ protein: 50, carbs: 20, fiber: 40, netCarbs: 10 }));
+    const high = computeMacroEnergySplit(summary({ protein: 50, carbs: 90, fiber: 40, netCarbs: 10 }));
+
+    assert.deepStrictEqual(low, high);
+    // Control: the gram basis does read the total carbs.
+    assert.notDeepStrictEqual(
+      computeMacroEnergySplit(summary({ protein: 50, carbs: 20, fiber: 40, netCarbs: 10 }), 'grams'),
+      computeMacroEnergySplit(summary({ protein: 50, carbs: 90, fiber: 40, netCarbs: 10 }), 'grams'),
+    );
   });
 
   it('gives null for a day with missing macros, and a split for the same day without the flag', () => {

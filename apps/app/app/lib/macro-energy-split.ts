@@ -1,37 +1,32 @@
 /**
  * Where a day's calories come from (M239/03): the share of energy from
- * protein, carbs and fat, worked out from grams with the Atwater factors
- * 4 / 4 / 9. Pure: a day summary in, three percentages out.
+ * protein, carbs and fat, worked out from grams by the app's one energy rule
+ * (`computeMacroEnergyKcal` in `#app/lib/macro-energy`): net carbs and protein
+ * at 4 kcal per gram, fibre at 2, fat at 9. Pure: a day summary in, three
+ * percentages out. The diary's ratio bar reads the same rule, so the two agree
+ * about a day.
  *
  * THIS IS NOT `kcal.total`. A reported calorie figure on a label can differ
- * from 4/4/9 times its macros (rounding, fiber counted at 2 kcal, alcohol), so
- * the card that draws these shares says it is worked out from the macros.
+ * from the sum of these factors (rounding, polyols, alcohol), so the card that
+ * draws these shares says it is worked out from the macros.
  *
- * CARBS MEANS TOTAL CARBS (`DaySummary.carbs`), not net carbs. That is how the
- * app already counts energy from carbs wherever it derives calories:
- * `_classifyEntry` in `app/models/daily-totals.ts` and `_entryKcal` in
- * `app/models/food-log-summary.ts` both multiply the entry's `carbs` by 4.
- * Using net carbs here would make this split disagree with the app's own
- * derived calorie totals.
+ * THE CARB SEGMENT IS NET CARBS AT 4 PLUS FIBRE AT 2. It used to be total carbs
+ * at 4, and `DaySummary.carbs` used to be a sum of printed figures that left
+ * the fibre of every EU-panel food out, so a high-fibre day read far too low
+ * on carbs. Polyols are not counted.
  *
  * THE SAME THREE SEGMENTS CAN BE READ BY GRAMS. The card carries a kcal/g
  * control (`#app/lib/macro-share-basis`), and on `'grams'` the share is each
- * macro's grams over the three macros' grams, with no Atwater factor: one
- * gram weighs one gram. The maths, the pooling and the `null` rules are the
- * same on both bases.
+ * macro's grams over the three macros' grams, with no energy factor: one
+ * gram weighs one gram. The carb grams are TOTAL carbs (`DaySummary.carbs`).
+ * The pooling and the `null` rules are the same on both bases.
  *
  * A day that is `hasUnknowns` gives `null`: some macro is missing, so any split
  * drawn from what is known would be a guess dressed as a proportion.
  */
+import { computeMacroEnergyKcal } from '#app/lib/macro-energy';
 import type { MacroShareBasis } from '#app/lib/macro-share-basis';
 import type { DaySummary } from '#app/models/food-log-summary';
-
-/** Atwater energy factor for protein, kcal per gram. */
-const KCAL_PER_G_PROTEIN = 4;
-/** Atwater energy factor for carbohydrate, kcal per gram. */
-const KCAL_PER_G_CARB = 4;
-/** Atwater energy factor for fat, kcal per gram. */
-const KCAL_PER_G_FAT = 9;
 
 /** Each macro's share of the worked-out energy (or of the grams), in percent. The three sum to 100. */
 export interface MacroEnergyShares {
@@ -51,7 +46,7 @@ interface MacroEnergy {
  * The energy split of one day (or one averaged week).
  *
  * @param summary - the day's macro summary, or `null` for a day with nothing logged.
- * @param basis - `'kcal'` for the energy share (4/4/9, the default), `'grams'` for the gram share.
+ * @param basis - `'kcal'` for the energy share (`#app/lib/macro-energy`, the default), `'grams'` for the gram share.
  * @returns the three shares in percent, or `null` when nothing was logged, the
  *   day has missing macros, or the macros add up to nothing at all.
  */
@@ -87,13 +82,13 @@ export function computeRangeEnergySplit(
   return sharesOf(pooled);
 }
 
-/** Grams times the Atwater factors on the kcal basis, plain grams on the gram basis. Negative grams cannot happen upstream, but are clamped so a share can never go negative. */
+/** The energy rule on the kcal basis, plain total-carb, protein and fat grams on the gram basis. */
 function energyOf(summary: DaySummary, basis: MacroShareBasis): MacroEnergy {
-  const isKcal = basis === 'kcal';
+  if (basis === 'kcal') return computeMacroEnergyKcal(summary);
   return {
-    protein: Math.max(0, summary.protein) * (isKcal ? KCAL_PER_G_PROTEIN : 1),
-    carbs: Math.max(0, summary.carbs) * (isKcal ? KCAL_PER_G_CARB : 1),
-    fat: Math.max(0, summary.fat) * (isKcal ? KCAL_PER_G_FAT : 1),
+    protein: Math.max(0, summary.protein),
+    carbs: Math.max(0, summary.carbs),
+    fat: Math.max(0, summary.fat),
   };
 }
 

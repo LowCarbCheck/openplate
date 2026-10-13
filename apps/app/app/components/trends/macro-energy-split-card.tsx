@@ -10,9 +10,10 @@
  * `invisible`, so the card keeps one size whichever is chosen and nothing moves
  * when the person switches.
  *
- * The note under the title is load-bearing: the split is 4/4/9 times the
- * grams, which is not the calorie total a label reports, so the card says so
- * rather than letting the two figures disagree silently.
+ * The note under the title is load-bearing: the split is worked out from the
+ * grams (net carbs and protein at 4, fibre at 2, fat at 9), which is not the
+ * calorie total a label reports, so the card says so rather than letting the
+ * two figures disagree silently.
  *
  * A day with nothing logged or with missing macros has NO split, and is drawn
  * as an empty track with its reason in words, never as a guessed proportion.
@@ -33,7 +34,7 @@ import { bucketByWeek } from '#app/lib/trend-buckets';
 import type { TrendDay } from '#app/lib/trend-chart';
 import { cn } from '#app/lib/utils';
 
-/** Segment order, left to right: the diary ratio bar's order with fiber left out (fiber is not an energy source here). */
+/** Segment order, left to right: the diary ratio bar's order with fiber left out (its energy sits in the carb segment). */
 const SPLIT_ORDER = ['carbs', 'protein', 'fat'] as const;
 
 type SplitMacro = (typeof SPLIT_ORDER)[number];

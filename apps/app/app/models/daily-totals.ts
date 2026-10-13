@@ -6,13 +6,8 @@
  * `basis`/`derivedShare`/`estimateShare` fields let the UI caveat exactly how
  * trustworthy that number is (all reported vs. Atwater-derived vs. a floor).
  */
-import { summarizeDay } from './food-log-summary';
+import { deriveEntryKcal, summarizeDay } from './food-log-summary';
 import type { DaySummary, FoodLogMacroSnapshot } from './food-log-summary';
-
-/** Atwater energy factors: 4 kcal/g carbohydrate, 4 kcal/g protein, 9 kcal/g fat. */
-const KCAL_PER_G_CARB = 4;
-const KCAL_PER_G_PROTEIN = 4;
-const KCAL_PER_G_FAT = 9;
 
 /**
  * How a day's kcal total was arrived at:
@@ -67,19 +62,18 @@ export function computeDailyEntry(logs: FoodLogMacroSnapshot[]): DailyTotals {
 }
 
 /**
- * Classifies one entry's kcal contribution: reported kcal wins; otherwise
- * Atwater-derive only when carbs, protein, and fat are all known; otherwise the
- * entry is uncomputable (null).
+ * Classifies one entry's kcal contribution: reported kcal wins; otherwise derive
+ * it with the app's one energy rule (`deriveEntryKcal`: net carbs at 4, fibre
+ * at 2, protein at 4, fat at 9) when carbs, protein, and fat are all known;
+ * otherwise the entry is uncomputable (null).
  */
 function _classifyEntry(log: FoodLogMacroSnapshot): EntryKcal | null {
   if (log.kcal !== null) {
     return { kcal: log.kcal, isDerived: false, aiEstimated: log.aiEstimated };
   }
-  if (log.carbs !== null && log.protein !== null && log.fat !== null) {
-    const derived = KCAL_PER_G_CARB * log.carbs + KCAL_PER_G_PROTEIN * log.protein + KCAL_PER_G_FAT * log.fat;
-    return { kcal: derived, isDerived: true, aiEstimated: log.aiEstimated };
-  }
-  return null;
+  const derived = deriveEntryKcal(log);
+  if (derived === null) return null;
+  return { kcal: derived, isDerived: true, aiEstimated: log.aiEstimated };
 }
 
 /** Rolls the classified entries up into the day's `DayKcal`. */

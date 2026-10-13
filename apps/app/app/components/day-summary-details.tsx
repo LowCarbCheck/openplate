@@ -516,8 +516,9 @@ const MACRO_DOT_CLASS = {
  * is the dot rather than the text colour of the figure itself.
  *
  * THE SHARE IS BY CALORIES UNLESS THE PERSON CHOSE GRAMS. The calorie share
- * (protein and carbs at 4 kcal per gram, fat at 9) has three segments: fibre
- * is not an energy source here. The grid still has FOUR cells in both modes,
+ * (net carbs and protein at 4 kcal per gram, fibre at 2, fat at 9; see
+ * `#app/lib/macro-energy`) has three segments: the fibre's energy sits in the
+ * carb segment and fibre has no cell of its own there. The grid still has FOUR cells in both modes,
  * so switching never moves the line below: in calorie mode the fibre cell is
  * drawn `invisible`, which keeps its box and takes it out of the accessibility
  * tree. It carries the very text the gram mode shows, so its height is the
@@ -597,6 +598,7 @@ export function WhatYouAte({
   // computed from different numbers.
   const grams: MacroRatioGrams = {
     carbs: summary.carbs,
+    netCarbs: summary.netCarbs,
     protein: summary.protein,
     fat: summary.fat,
     fiber: summary.fiber,

@@ -49,8 +49,9 @@ export interface WeeklyRecap {
    * population as `avgNetCarbs` for the same reason: dividing by elapsed days
    * would quietly shrink every macro by however many days the user skipped, and
    * report a composition nobody ate. Carbs here are TOTAL carbs with fiber
-   * carried as its own figure alongside, matching how `MacroRatioBar` is fed on
-   * the diary — the two bars must describe the same quantities.
+   * carried as its own figure alongside, and net carbs as a third, matching how
+   * `MacroRatioBar` is fed on the diary — the two bars must describe the same
+   * quantities.
    */
   avgMacroGrams: MacroRatioGrams | null;
 }
@@ -103,6 +104,7 @@ function _avgMacroGrams(logged: readonly SummarizedDay[]): MacroRatioGrams | nul
   if (logged.length === 0) return null;
   return {
     carbs: _mean(logged.map((day) => day.summary.carbs)),
+    netCarbs: _mean(logged.map((day) => day.summary.netCarbs)),
     protein: _mean(logged.map((day) => day.summary.protein)),
     fat: _mean(logged.map((day) => day.summary.fat)),
     fiber: _mean(logged.map((day) => day.summary.fiber)),

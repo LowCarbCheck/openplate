@@ -1,7 +1,7 @@
 /**
  * The macro ratio bar (M129/01), a single stacked-flex bar whose segment
  * widths are each macro's share of the day, BY CALORIES (three segments:
- * carbs, protein, fat; fibre is not an energy source here) or BY GRAMS (four
+ * carbs, protein, fat; the fibre's energy sits in the carb one) or BY GRAMS (four
  * segments, fibre as its own). The caller passes the basis; the person's choice
  * lives in `#app/lib/macro-share-basis`. Pure percentage math lives in
  * `#app/lib/macro-ratio` so the zero-guard is unit-testable without rendering

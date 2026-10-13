@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Fixed
+
+- **The calorie share no longer undercounts carbs on a high fiber day.** The diary's "What you ate" bar and the Insights "Where your calories come from" card read a day's carbs as the plain sum of each food's printed figure. A food from an EU label (BLS and curated LowCarbCheck foods) prints carbs without its fiber, and a food from a US label, an AI estimate or an older entry prints them with it, so the sum dropped the fiber of every EU food and a day with 7.6 g net carbs and 28 g fiber read 7 % carbs where 6 % is right. The day's carbs are now totalled on one basis, and the calorie share counts net carbs at 4 kcal per gram and fiber at 2 (EU Regulation 1169/2011, Annex XIV) in both places, so they agree. A food with no reported calories gets the same rule when its calories are worked out. A short note under the shares says fiber counts at 2 kcal per gram. The gram share is unchanged in meaning and now uses the total carbs.
+
 ## [0.69.0] - 2026-10-13
 
 ### Added

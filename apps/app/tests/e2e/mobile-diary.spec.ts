@@ -640,8 +640,8 @@ const MACRO_CELL_COUNT = 4;
 
 /**
  * The cells a person SEES by default. The share is by calories until the
- * person taps "g", and fibre is not an energy source, so its cell is kept as
- * an invisible box and three are drawn.
+ * person taps "g", and the fibre's energy sits in the carb cell, so its own cell is
+ * kept as an invisible box and three are drawn.
  */
 const VISIBLE_KCAL_CELL_COUNT = 3;
 

@@ -12,7 +12,7 @@ import { withI18n } from './trends-i18n-harness';
 import { MacroRatioBar } from '../../app/components/macro-ratio-bar';
 import type { MacroShareBasis } from '../../app/lib/macro-share-basis';
 
-const DAY = { carbs: 100, protein: 100, fat: 100, fiber: 20 };
+const DAY = { carbs: 100, netCarbs: 80, protein: 100, fat: 100, fiber: 20 };
 
 function render(basis: MacroShareBasis, grams = DAY): string {
   return renderToStaticMarkup(withI18n(createElement(MacroRatioBar, { grams, basis })));
@@ -31,15 +31,16 @@ describe('MacroRatioBar', () => {
     assert.deepEqual(segmentsOf(render('grams')), ['carbs', 'fiber', 'protein', 'fat']);
   });
 
-  it('sizes the segments by the basis: fat is 53 percent of the energy but 31 percent of the grams', () => {
-    // 100 g of each: fat is 900 of 1700 kcal. By grams fat is 100 of 320.
-    assert.match(render('kcal'), /data-macro="fat"[^>]*width:52\.9/);
+  it('sizes the segments by the basis: fat is 54 percent of the energy but 31 percent of the grams', () => {
+    // Net carbs 80 g at 4 plus fibre 20 g at 2 is 360 kcal, protein 400, fat 900:
+    // fat is 900 of 1660 kcal. By grams fat is 100 of 320.
+    assert.match(render('kcal'), /data-macro="fat"[^>]*width:54\.2/);
     assert.match(render('grams'), /data-macro="fat"[^>]*width:31\.2/);
   });
 
   it('names the basis in the sentence a screen reader gets, with each percent', () => {
     const kcal = render('kcal');
-    assert.ok(kcal.includes('Macro ratio by calories: 24% carbs, 24% protein, 53% fat'), kcal);
+    assert.ok(kcal.includes('Macro ratio by calories: 22% carbs, 24% protein, 54% fat'), kcal);
     assert.ok(!kcal.includes('fiber'), 'a calorie sentence has no fibre in it');
 
     const grams = render('grams');
@@ -52,7 +53,7 @@ describe('MacroRatioBar', () => {
   });
 
   it('draws the empty track with its words when there is nothing to share', () => {
-    const none = { carbs: 0, protein: 0, fat: 0, fiber: 0 };
+    const none = { carbs: 0, netCarbs: 0, protein: 0, fat: 0, fiber: 0 };
     for (const basis of ['kcal', 'grams'] as const) {
       const html = render(basis, none);
       assert.ok(html.includes('No macros logged yet'));

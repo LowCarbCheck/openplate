@@ -118,12 +118,14 @@ describe('summarizeDay', () => {
   });
 
   it('Atwater-derives kcal for an entry with no reported kcal but known carbs/protein/fat', () => {
-    // 4*10 + 4*5 + 9*2 = 40 + 20 + 18 = 78 — never silently dropped to 0.
+    // Net carbs 10 - 2 = 8 at 4, fibre 2 at 2, protein 5 at 4, fat 2 at 9:
+    // 32 + 4 + 20 + 18 = 74 — never silently dropped to 0. (It was 78 while
+    // the fibre was counted inside the carbs at 4 kcal per gram.)
     const log = makeLog({ kcal: null, carbs: 10, protein: 5, fat: 2 });
 
     const summary = summarizeDay([log]);
 
-    assert.strictEqual(summary.kcal, 78);
+    assert.strictEqual(summary.kcal, 74);
   });
 
   it('mixes reported and Atwater-derived kcal across entries in one day', () => {
@@ -132,7 +134,7 @@ describe('summarizeDay', () => {
 
     const summary = summarizeDay([reported, derived]);
 
-    assert.strictEqual(summary.kcal, 178);
+    assert.strictEqual(summary.kcal, 174);
   });
 
   it('contributes nothing (not a fabricated 0) for an entry with no kcal and incomplete Atwater inputs', () => {
