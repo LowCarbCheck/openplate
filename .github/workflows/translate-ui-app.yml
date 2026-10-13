@@ -32,11 +32,43 @@
 # so a sibling workflow never queues behind this run.
 #
 # ── WHY THE GATE RUNS THE BROWSER TIER ──
-# The hook's last stage is five Playwright specs against the production build.
+# The hook's last stage is the browser tier against the production build. On
+# 2026-10-13 that tier was 829 tests in 168 spec files behind `workers: 1`, and
+# a serial run on a runner did not finish in 30 minutes: every run of this
+# workflow from 2026-10-05 on was cancelled by the job timeout, so the
+# translate job never ran. The gate now runs the FULL tier through the sharded
+# runner (`scripts/e2e-sharded.sh`, via `test:e2e:scoped` with
+# `OPENPLATE_E2E_FULL=1`, which also sets retries to 1, as the release gate
+# does). The runner has 4 vCPUs, so the script's own default (one shard per 4
+# CPUs) would pick ONE shard; the count is set by hand to 3. The number is a
+# first guess, not a measurement. After the first run, read the per-shard wall
+# times in the log and adjust `OPENPLATE_E2E_SHARDS` and `timeout-minutes`.
 # Before this file it had only ever run on a host with a cached Chromium; a
 # runner starts with none, so the gate installs Chromium and its system
 # libraries first. It is in the gate because a stage the runner skips is a
 # stage a bot commit can break.
+#
+# THE GATE RUNS BEFORE THE TRANSLATION, ON PURPOSE. It proves the commit that
+# triggered the run, and the money is only spent after it is green: a broken
+# tree never buys a string. The translated tree gets the three cheap checks in
+# the `translate` job. The full browser tier does not run on it. Some specs do
+# render German, but the repository rule is that a test asserts the shape of
+# wordsmith-owned wording and never the words, and the nightly runs the full
+# tier on origin/main within a day (ADR-0022). That is the accepted price.
+#
+# A RE-RUN CANNOT BUY THE SAME STRING TWICE AFTER A GREEN COMMIT. The memory is
+# keyed by a hash of the English text, and the bot commits it. If a run buys
+# strings and then fails a check before the commit, that memory is lost with
+# the runner, and the next run buys them again. `--budget` (default 0.05 USD
+# per language) caps that loss at one budget per run.
+#
+# ── THE ALERT ──
+# This workflow was cancelled on every run for eight days and nobody saw it.
+# The `alert` job posts to Campfire when the gate or the translate job ends red
+# or cancelled. It needs the repository secret `CAMPFIRE_ALERT_URL`, the bot
+# messages URL of a Campfire room (`https://<host>/rooms/<id>/<bot key>/messages`).
+# With no secret it warns and exits green. A Campfire outage warns too: an alert
+# that fails must not turn a finished run red.
 #
 # ── WHY THERE IS NO SCHEDULE ──
 # Nothing moves the English bundle except a commit to this repository, and that
@@ -90,7 +122,7 @@ jobs:
   # tracked file.
   gate:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         # FULL HISTORY. `tests/unit/translate-lib-provenance.test.ts` hashes
@@ -168,8 +200,11 @@ jobs:
         run: |
           FONTCONFIG_FILE="$PWD/tests/e2e/fonts.conf" fc-match monospace
           FONTCONFIG_FILE="$PWD/tests/e2e/fonts.conf" fc-match monospace | grep -q '"Liberation Mono"'
-      - name: Browser smoke tier against the production build
-        run: CI=true pnpm test:e2e
+      - name: Browser tier against the production build
+        env:
+          OPENPLATE_E2E_FULL: '1'
+          OPENPLATE_E2E_SHARDS: '3'
+        run: CI=true pnpm test:e2e:scoped
 
   translate:
     needs: gate
@@ -446,3 +481,31 @@ jobs:
         run: |
           echo "translate:ui refused the spend. English shipped; the translation is waiting." >&2
           exit 1
+
+  # Runs even when `gate` fails and `translate` is skipped, and when either is
+  # cancelled (a timeout is a cancel). No checkout and no `apps/app` folder here.
+  alert:
+    needs: [gate, translate]
+    if: ${{ always() && (contains(fromJSON('["failure","cancelled"]'), needs.gate.result) || contains(fromJSON('["failure","cancelled"]'), needs.translate.result)) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - name: Post to Campfire
+        env:
+          CAMPFIRE_ALERT_URL: ${{ secrets.CAMPFIRE_ALERT_URL }}
+          GATE_RESULT: ${{ needs.gate.result }}
+          TRANSLATE_RESULT: ${{ needs.translate.result }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$CAMPFIRE_ALERT_URL" ]; then
+            echo "::warning::CAMPFIRE_ALERT_URL is not set. No alert was sent."
+            exit 0
+          fi
+          body="🔴 <b>[openplate]</b> Translate UI (app): gate ${GATE_RESULT}, translate ${TRANSLATE_RESULT}. <a href=\"${RUN_URL}\">Open the run</a>"
+          if ! curl --fail --silent --show-error --max-time 10 \
+            -H 'Content-Type: text/html' --data-binary "$body" "$CAMPFIRE_ALERT_URL" >/dev/null; then
+            echo "::warning::The Campfire post failed."
+          fi
