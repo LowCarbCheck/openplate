@@ -1434,6 +1434,13 @@
     "at": "2026-09-14",
     "de": "{{count}} Lebensmittel wird eingetragen · ~{{netCarbs}} g Netto-KH"
   },
+  "0f5ccf92ae8b76d1": {
+    "en": "All vitamins and minerals for this day",
+    "path": "common:nutrients.snapshot.linkDay",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-13",
+    "de": "Alle Vitamine und Mineralstoffe für diesen Tag"
+  },
   "0f745058b7ba1d00": {
     "en": "Cancel",
     "path": "common:settings.data.yazio.cancel",
@@ -2567,6 +2574,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Lebensmittel konnten anhand deiner Beschreibung nicht erkannt werden."
+  },
+  "1b05edf0f82d1740": {
+    "en": "None of the food logged here carries vitamin or mineral figures. Plates estimated by AI and foods you typed in yourself have none.",
+    "path": "common:nutrients.snapshot.coverageNone",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-13",
+    "de": "Keines der hier eingetragenen Lebensmittel enthält Angaben zu Vitaminen oder Mineralstoffen. Von der KI geschätzte Teller und selbst eingegebene Lebensmittel enthalten keine."
   },
   "1b1a1fff84512499": {
     "en": "Read the privacy notice",
@@ -3855,6 +3869,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-29",
     "de": "Du hast noch {{count}} Tage Testphase."
+  },
+  "290bdd0837878525": {
+    "en": "Showing one day: {{day}}.",
+    "path": "common:nutrients.hero.forDay",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-13",
+    "de": "Ein Tag wird angezeigt: {{day}}."
   },
   "292c1d93ff155676": {
     "en": "Saved meals",
@@ -6292,6 +6313,13 @@
     "at": "2026-09-14",
     "de": "Foto-Schätzungen für dieses Konto laufen bis zum {{date}}."
   },
+  "49689f5e10503111": {
+    "en": "Lightest in this day's log, as a share of the reference amount.",
+    "path": "common:nutrients.snapshot.gapsLeadDay",
+    "model": "hand-written",
+    "at": "2026-10-13",
+    "de": "Davon war an diesem Tag in deinem Tagebuch am wenigsten, als Anteil am Referenzwert."
+  },
   "49906b802bd76122": {
     "en": "Seen this week",
     "path": "common:admin.filter.views.seen",
@@ -8636,6 +8664,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "{{count}} Lebensmittel"
+  },
+  "621c2bc555fc3401": {
+    "en": "Only {{share}} of the food logged here, by weight, carries vitamin and mineral figures. Totals show from {{bar}}.",
+    "path": "common:nutrients.snapshot.coveragePartial",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-13",
+    "de": "Nur {{share}} der hier eingetragenen Lebensmittel, gemessen am Gewicht, enthält Angaben zu Vitaminen und Mineralstoffen. Summen werden ab {{bar}} angezeigt."
   },
   "621cdcc1f6ce26ff": {
     "en": "Shared with you",
@@ -14594,6 +14629,13 @@
     "at": "2026-09-14",
     "de": "Details zum Lebensmittel"
   },
+  "a284ef0ef9afdbf9": {
+    "en": "Above the limit",
+    "path": "common:nutrients.snapshot.overLimit",
+    "model": "hand-written",
+    "at": "2026-10-13",
+    "de": "Über der Obergrenze"
+  },
   "a2c5de712da7372e": {
     "en": "Invitation only · Installs like an app · Works offline · Photo estimates included",
     "path": "common:landing.hero.ticksManaged",
@@ -14866,6 +14908,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Zuckeralkohole (Polyole)"
+  },
+  "a533cca41c021cbf": {
+    "en": "Nothing with enough data came in under {{share}} of its reference amount.",
+    "path": "common:nutrients.snapshot.noGaps",
+    "model": "hand-written",
+    "at": "2026-10-13",
+    "de": "Nichts mit genug Daten lag unter {{share}} seines Referenzwerts."
   },
   "a54244d0fefe3919": {
     "en": "From our food database",
@@ -16456,6 +16505,13 @@
     "at": "2026-09-18",
     "de": "Noch nicht"
   },
+  "b7a96c7e9a434523": {
+    "en": "Vitamins and minerals",
+    "path": "common:nutrients.snapshot.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-13",
+    "de": "Vitamine und Mineralstoffe"
+  },
   "b7ac4a633f5b07fd": {
     "en": "The key other people seal their diary to. It is made on this device and travels with your account.",
     "path": "common:sharing.identity.description",
@@ -16539,6 +16595,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Anmelden"
+  },
+  "b85742686f7eef84": {
+    "en": "Gaps need a reference amount, and that depends on your year of birth and biological sex.",
+    "path": "common:nutrients.snapshot.noBodyMetrics",
+    "model": "hand-written",
+    "at": "2026-10-13",
+    "de": "Lücken brauchen einen Referenzwert, und der hängt von deinem Geburtsjahr und deinem biologischen Geschlecht ab."
   },
   "b85879a1ce5fc261": {
     "en": "The bot check could not load, so sign-up is unavailable right now.",
@@ -18892,6 +18955,13 @@
     "at": "2026-09-14",
     "de": "Wenig Kohlenhydrate"
   },
+  "d485975586dc366f": {
+    "en": "Loading reference amounts…",
+    "path": "common:nutrients.snapshot.loading",
+    "model": "hand-written",
+    "at": "2026-10-13",
+    "de": "Referenzwerte werden geladen…"
+  },
   "d48daa4fa7102eda": {
     "en": "Invitation sent to {{email}}",
     "path": "common:admin.invite.sentTitle",
@@ -19367,6 +19437,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-23",
     "de": "Registrieren"
+  },
+  "d9a15b18d2fd8db2": {
+    "en": "Reference amounts could not be loaded, so there are no gaps to show right now.",
+    "path": "common:nutrients.snapshot.unreachable",
+    "model": "hand-written",
+    "at": "2026-10-13",
+    "de": "Die Referenzwerte konnten nicht geladen werden, daher gibt es gerade keine Lücken zu zeigen."
   },
   "d9c282129442ab0f": {
     "en": "Type your email address and we will send you a link to set a new one.",
@@ -20957,6 +21034,13 @@
     "at": "2026-09-24",
     "de": "Ein YAZIO-Tagebuch lässt sich unter Daten & Sicherung importieren."
   },
+  "ead53f4503a59a5d": {
+    "en": "Lightest in your log, per logged day, as a share of the reference amount.",
+    "path": "common:nutrients.snapshot.gapsLeadRange",
+    "model": "hand-written",
+    "at": "2026-10-13",
+    "de": "Davon war in deinem Tagebuch pro eingetragenem Tag am wenigsten, als Anteil am Referenzwert."
+  },
   "eae3dcb1a0fddfbd": {
     "en": "Started {{when}}, never ended.",
     "path": "common:fasting.history.stillOpenHint",
@@ -21117,6 +21201,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "In diesem Zeitraum wurde nichts gelesen."
+  },
+  "ec4c83940e5eb2a6": {
+    "en": "All vitamins and minerals for the last {{days}} days",
+    "path": "common:nutrients.snapshot.linkRange",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-13",
+    "de": "Alle Vitamine und Mineralstoffe für die letzten {{days}} Tage"
   },
   "ec5afd6c80e08023": {
     "en": "Active",

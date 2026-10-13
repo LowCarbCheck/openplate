@@ -1513,6 +1513,7 @@
       "covered": "{{covered}} von {{total}} Nährstoffen haben genug Daten",
       "empty": "Noch ein leerer Teller.",
       "eyebrow": "Dein Tagebuch",
+      "forDay": "Ein Tag wird angezeigt: {{day}}.",
       "loggedDays": "Du hast an {{logged}} der letzten {{days}} Tage etwas eingetragen."
     },
     "limit": {
@@ -1557,6 +1558,20 @@
       "segmentLactation": "Stillzeit",
       "segmentPregnancy": "Schwangerschaft",
       "segmentSexAge": "{{sex}}, {{band}}"
+    },
+    "snapshot": {
+      "coverageNone": "Keines der hier eingetragenen Lebensmittel enthält Angaben zu Vitaminen oder Mineralstoffen. Von der KI geschätzte Teller und selbst eingegebene Lebensmittel enthalten keine.",
+      "coveragePartial": "Nur {{share}} der hier eingetragenen Lebensmittel, gemessen am Gewicht, enthält Angaben zu Vitaminen und Mineralstoffen. Summen werden ab {{bar}} angezeigt.",
+      "gapsLeadDay": "Davon war an diesem Tag in deinem Tagebuch am wenigsten, als Anteil am Referenzwert.",
+      "gapsLeadRange": "Davon war in deinem Tagebuch pro eingetragenem Tag am wenigsten, als Anteil am Referenzwert.",
+      "linkDay": "Alle Vitamine und Mineralstoffe für diesen Tag",
+      "linkRange": "Alle Vitamine und Mineralstoffe für die letzten {{days}} Tage",
+      "loading": "Referenzwerte werden geladen…",
+      "noBodyMetrics": "Lücken brauchen einen Referenzwert, und der hängt von deinem Geburtsjahr und deinem biologischen Geschlecht ab.",
+      "noGaps": "Nichts mit genug Daten lag unter {{share}} seines Referenzwerts.",
+      "overLimit": "Über der Obergrenze",
+      "title": "Vitamine und Mineralstoffe",
+      "unreachable": "Die Referenzwerte konnten nicht geladen werden, daher gibt es gerade keine Lücken zu zeigen."
     },
     "suggestions": {
       "forNutrient": "Mehr {{nutrient}}",

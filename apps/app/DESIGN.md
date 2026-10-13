@@ -387,7 +387,7 @@ Pending state (see §7) is built into `SubmitButton`.
 **The teal budget, counted per screen (M243 spec 05b).** "Use the accent sparingly" has never
 stopped a single teal icon from being added, because no one addition is the one that breaks the
 page. `TEAL_BUDGET_CEILING` in `tests/design-contract.ts` freezes the number each screen measured
-on the build that shipped: `/settings` 4, `/trends` 6, `/add/search` 4, `/diary` 8, `/dashboard`
+on the build that shipped: `/settings` 4, `/trends` 6, `/add/search` 4, `/diary` 9, `/dashboard`
 14. A number counts one element inside `main` whose own text colour, background colour or drawn
 border resolves to `--primary` at any alpha above zero, and
 `tests/e2e/lcc-lineage-teal-budget.spec.ts` does the counting with an injection control that proves

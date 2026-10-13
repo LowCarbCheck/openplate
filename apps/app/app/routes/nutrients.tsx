@@ -53,7 +53,10 @@ import {
   listLocalFoodLogs,
   resolveLocalTimezone,
 } from '#app/lib/local-store';
-import { shiftDate, todayInTimezone } from '#app/lib/user-days';
+import { todayInTimezone } from '#app/lib/user-days';
+import { formatDayLabel } from '#app/lib/format-day-label';
+import { NUTRIENT_RANGES, resolveNutrientWindow } from '#app/lib/nutrient-window';
+import type { NutrientRange, NutrientWindow } from '#app/lib/nutrient-window';
 import { readBodyMetrics } from '#app/models/body-metrics';
 import {
   buildNutrientRows,
@@ -65,8 +68,8 @@ import {
   pickLightestNutrients,
 } from '#app/lib/nutrient-reference';
 import type { NutrientRow, NutrientSourceFood, ReferenceAmount } from '#app/lib/nutrient-reference';
-import { fetchNutrientReferenceList, fetchNutrientSources } from '#app/lib/nutrient-reference-client';
-import { readCachedServerInstance } from '#app/hooks/use-server-instance';
+import { fetchNutrientSources } from '#app/lib/nutrient-reference-client';
+import { loadInstanceNutrientReferences } from '#app/lib/instance-nutrient-references';
 import { CONFIG } from '#app/config';
 import type { NutrientKey } from '#app/lib/micronutrients';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
@@ -105,21 +108,10 @@ export const handle = {
  */
 export const NUTRIENT_COVERAGE_THRESHOLD = DEFAULT_MIN_COVERAGE_FRACTION;
 
-/** Selectable windows, in days — the same three `/trends` offers, so the two screens agree on what "a window" is. */
-const ALLOWED_RANGES = [7, 14, 30] as const;
-type NutrientRange = (typeof ALLOWED_RANGES)[number];
-const DEFAULT_RANGE: NutrientRange = 7;
-
 /** How many nutrients get a suggestion block. Three is a shortlist; eighteen would be a catalogue nobody reads. */
 const SUGGESTION_NUTRIENT_LIMIT = 3;
 /** Foods shown per suggested nutrient. */
 const SUGGESTION_FOOD_LIMIT = 4;
-
-/** Parses an explicit `range` search param, falling back to the default on anything invalid. */
-function parseRange(raw: string | null): NutrientRange {
-  const value = Number(raw);
-  return ALLOWED_RANGES.find((allowed) => allowed === value) ?? DEFAULT_RANGE;
-}
 
 //////////////////////////////////////////////////////////////////////////////
 // Server loader — none needed (this route's data is entirely on-device plus a
@@ -154,9 +146,11 @@ export interface NutrientSuggestion {
 export interface NutrientsData {
   rows: NutrientRow[];
   suggestions: NutrientSuggestion[];
-  range: NutrientRange;
-  fromDate: string;
-  toDate: string;
+  /**
+   * The days read: the last 7, 14 or 30 (`?range=`), or one day on its own
+   * (`?day=`, the diary's deep link). See `#app/lib/nutrient-window`.
+   */
+  window: NutrientWindow;
   /** Days in the window carrying at least one entry — the denominator behind every per-day figure. */
   loggedDays: number;
   /** Entries logged across the window. `0` is the empty state. */
@@ -174,9 +168,14 @@ export async function clientLoader({ request, serverLoader }: Route.ClientLoader
   const config = await serverLoader().catch(() => ({ syncServerUrl: null }));
   const profile = await getLocalProfileGoals();
   const timezone = resolveLocalTimezone(profile);
-  const toDate = todayInTimezone(timezone);
-  const range = parseRange(new URL(request.url).searchParams.get('range'));
-  const fromDate = shiftDate(toDate, -(range - 1));
+  const today = todayInTimezone(timezone);
+  const searchParams = new URL(request.url).searchParams;
+  const nutrientWindow = resolveNutrientWindow({
+    day: searchParams.get('day'),
+    range: searchParams.get('range'),
+    today,
+  });
+  const { fromDate, toDate } = nutrientWindow;
 
   const window = computeMicronutrientsInWindow(
     await listLocalFoodLogs(),
@@ -186,16 +185,12 @@ export async function clientLoader({ request, serverLoader }: Route.ClientLoader
     },
   );
 
-  // WHOSE REFERENCE VALUES THIS INSTANCE SHOWS, straight off the handshake
-  // the app already reads once per tab (M234 spec 07). ABSENT IS NOT A
-  // DEFAULT: a service older than the field, and an instance with no server at
-  // all, both leave this `null`, and the request then names no basis and takes
-  // whatever this app's own server is configured with. A basis invented here
-  // would show one body's numbers under another body's name.
-  const instance = config.syncServerUrl === null ? null : await readCachedServerInstance(config.syncServerUrl);
-  // Fail-open: `[]` here (API off, offline, upstream down) means every row
-  // reports "no published reference" and the screen still shows the log.
-  const references = await fetchNutrientReferenceList({ basis: instance?.nutrientReferenceBasis ?? null });
+  // WHOSE REFERENCE VALUES THIS INSTANCE SHOWS: the one resolution the diary
+  // and Insights panes share (`loadInstanceNutrientReferences`, which says why
+  // an absent basis is not a default). Fail-open: `[]` here (API off, offline,
+  // upstream down) means every row reports "no published reference" and the
+  // screen still shows the log.
+  const references = await loadInstanceNutrientReferences({ syncServerUrl: config.syncServerUrl });
   const metrics = readBodyMetrics(profile);
   const rows = buildNutrientRows({
     byNutrient: window.byNutrient,
@@ -205,7 +200,7 @@ export async function clientLoader({ request, serverLoader }: Route.ClientLoader
     // The user's own calendar year, taken from their local today rather than
     // the device clock's UTC year — the same instant is two different years for
     // a few hours every 31 December.
-    currentYear: Number(toDate.slice(0, 4)),
+    currentYear: Number(today.slice(0, 4)),
   });
 
   const trackingFocus = profile?.trackingFocus ?? null;
@@ -223,9 +218,7 @@ export async function clientLoader({ request, serverLoader }: Route.ClientLoader
   return {
     rows,
     suggestions,
-    range,
-    fromDate,
-    toDate,
+    window: nutrientWindow,
     loggedDays: window.loggedDays,
     totalEntries: window.totalEntries,
     hasReferenceMetrics: metrics.biologicalSex !== null && metrics.birthYear !== null,
@@ -248,8 +241,14 @@ export function HydrateFallback(): ReactElement {
 // Shared bits
 //////////////////////////////////////////////////////////////////////////////
 
-/** The window picker — a search param, like `/trends`, so the choice survives a reload and is shareable. */
-function RangeControls({ range }: { range: NutrientRange }): ReactElement {
+/**
+ * The window picker, a search param like `/trends`, so the choice survives a
+ * reload and is shareable. Each link carries `range` alone, so picking one
+ * leaves a single-day view.
+ *
+ * @param active - the range on screen, or null while one day is shown.
+ */
+function RangeControls({ active }: { active: NutrientRange | null }): ReactElement {
   const { t } = useTranslation();
   const labelKeys = {
     7: 'nutrients.range.week',
@@ -259,15 +258,15 @@ function RangeControls({ range }: { range: NutrientRange }): ReactElement {
 
   return (
     <fieldset className="grid grid-cols-3 gap-2" aria-label={t('nutrients.range.group')}>
-      {ALLOWED_RANGES.map((option) => (
+      {NUTRIENT_RANGES.map((option) => (
         <Button
           key={option}
           asChild
           size="sm"
           className="min-h-11 whitespace-normal px-1 text-xs leading-tight"
-          variant={range === option ? 'default' : 'outline'}
+          variant={active === option ? 'default' : 'outline'}
         >
-          <Link to={`?range=${option}`} preventScrollReset aria-current={range === option ? 'true' : undefined}>
+          <Link to={`?range=${option}`} preventScrollReset aria-current={active === option ? 'true' : undefined}>
             {t(labelKeys[option])}
           </Link>
         </Button>
@@ -335,6 +334,39 @@ function ShareBar({ share }: { share: number }): ReactElement {
     <div className="h-1.5 w-full overflow-hidden bg-primary/15" aria-hidden="true">
       <div className="h-full bg-primary" style={{ width: `${Math.min(share, 1) * 100}%` }} />
     </div>
+  );
+}
+
+/**
+ * Which days the screen read, under the hero's count: one day by its date, or
+ * how many of the last N days carried an entry.
+ *
+ * `data-day` names the single day in its `YYYY-MM-DD` form, because the browser
+ * tier checks that the diary's link opened that day and the formatted label is
+ * a language's business.
+ */
+function WindowLine({
+  nutrientWindow,
+  loggedDays,
+  language,
+}: {
+  nutrientWindow: NutrientWindow;
+  loggedDays: number;
+  language: string;
+}): ReactElement {
+  const { t } = useTranslation();
+
+  if (nutrientWindow.kind === 'day') {
+    return (
+      <p data-slot="nutrients-window" data-day={nutrientWindow.day} className="text-sm text-muted-foreground">
+        {t('nutrients.hero.forDay', { day: formatDayLabel(nutrientWindow.day, language) })}
+      </p>
+    );
+  }
+  return (
+    <p data-slot="nutrients-window" className="text-sm text-muted-foreground">
+      {t('nutrients.hero.loggedDays', { logged: loggedDays, days: nutrientWindow.range })}
+    </p>
   );
 }
 
@@ -537,8 +569,8 @@ function SuggestionsCard({
 //////////////////////////////////////////////////////////////////////////////
 
 export default function Nutrients({ loaderData }: Route.ComponentProps) {
-  const { t } = useTranslation();
-  const { rows, suggestions, range, loggedDays, totalEntries, hasReferenceMetrics } = loaderData;
+  const { t, i18n: i18next } = useTranslation();
+  const { rows, suggestions, window: nutrientWindow, loggedDays, totalEntries, hasReferenceMetrics } = loaderData;
 
   const withData = rows.filter((row) => row.intake.hasEnoughData).length;
 
@@ -551,18 +583,18 @@ export default function Nutrients({ loaderData }: Route.ComponentProps) {
             <SectionEyebrow>{t('nutrients.hero.eyebrow')}</SectionEyebrow>
             {totalEntries === 0 ?
               <p className="text-lg font-semibold">{t('nutrients.hero.empty')}</p>
-            : <>
-                <p className="text-3xl font-semibold tabular-nums tracking-tight">
-                  {t('nutrients.hero.covered', { covered: withData, total: rows.length })}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {t('nutrients.hero.loggedDays', { logged: loggedDays, days: range })}
-                </p>
-              </>
+            : <p className="text-3xl font-semibold tabular-nums tracking-tight">
+                {t('nutrients.hero.covered', { covered: withData, total: rows.length })}
+              </p>
             }
+            {/* Under the count, or under "Empty plate so far." for a single
+                day, which still has to say which day it is. */}
+            {(totalEntries > 0 || nutrientWindow.kind === 'day') && (
+              <WindowLine nutrientWindow={nutrientWindow} loggedDays={loggedDays} language={i18next.language} />
+            )}
           </div>
 
-          <RangeControls range={range} />
+          <RangeControls active={nutrientWindow.kind === 'range' ? nutrientWindow.range : null} />
 
           <p className="text-xs text-muted-foreground">{t('nutrients.coverage.why')}</p>
 

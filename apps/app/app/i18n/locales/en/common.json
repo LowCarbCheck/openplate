@@ -1513,6 +1513,7 @@
       "covered": "{{covered}} of {{total}} nutrients have enough data",
       "empty": "Empty plate so far.",
       "eyebrow": "Your log",
+      "forDay": "Showing one day: {{day}}.",
       "loggedDays": "You logged food on {{logged}} of the last {{days}} days."
     },
     "limit": {
@@ -1557,6 +1558,20 @@
       "segmentLactation": "Breastfeeding",
       "segmentPregnancy": "Pregnancy",
       "segmentSexAge": "{{sex}}, {{band}}"
+    },
+    "snapshot": {
+      "coverageNone": "None of the food logged here carries vitamin or mineral figures. Plates estimated by AI and foods you typed in yourself have none.",
+      "coveragePartial": "Only {{share}} of the food logged here, by weight, carries vitamin and mineral figures. Totals show from {{bar}}.",
+      "gapsLeadDay": "Lightest in this day's log, as a share of the reference amount.",
+      "gapsLeadRange": "Lightest in your log, per logged day, as a share of the reference amount.",
+      "linkDay": "All vitamins and minerals for this day",
+      "linkRange": "All vitamins and minerals for the last {{days}} days",
+      "loading": "Loading reference amounts…",
+      "noBodyMetrics": "Gaps need a reference amount, and that depends on your year of birth and biological sex.",
+      "noGaps": "Nothing with enough data came in under {{share}} of its reference amount.",
+      "overLimit": "Above the limit",
+      "title": "Vitamins and minerals",
+      "unreachable": "Reference amounts could not be loaded, so there are no gaps to show right now."
     },
     "suggestions": {
       "forNutrient": "Higher in {{nutrient}}",

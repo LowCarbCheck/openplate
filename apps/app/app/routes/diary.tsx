@@ -76,7 +76,9 @@ import {
   computeDailyTotalsInRange,
   computeLocalHabitStrip,
   computeLocalRecentFoods,
+  computeMicronutrientsInWindow,
   daysSinceExport,
+  DEFAULT_MIN_COVERAGE_FRACTION,
   daysSinceFirstData,
   deleteLocalFoodLog,
   getLocalBodyMetrics,
@@ -105,6 +107,9 @@ import { DayBudgetRows } from '#app/components/day-budget-rows';
 import { buildDayBudgetRows, formatBudgetFigure, formatBudgetHeadline } from '#app/lib/day-budget-rows';
 import type { AnimatedHeadlines } from '#app/lib/day-budget-rows';
 import { DayVerdictChip, SuggestionsDisclosure, WhatYouAte } from '#app/components/day-summary-details';
+import { MicronutrientSnapshotBlock } from '#app/components/micronutrient-snapshot-block';
+import type { MicronutrientSnapshotInputs } from '#app/components/micronutrient-snapshot-block';
+import { nutrientsDayHref } from '#app/lib/nutrient-window';
 import { Button } from '#app/components/ui/button';
 import { Badge } from '#app/components/ui/badge';
 import { Card, CardContent } from '#app/components/ui/card';
@@ -1151,6 +1156,14 @@ export interface DiaryData {
    * here for the same reason.
    */
   saveMealHintSlots: MealType[];
+  /**
+   * The viewed day's vitamins and minerals, as far as the log alone can say:
+   * the intake and coverage of that one day, the body facts a reference
+   * amount is looked up by, and the year to age them against. The reference
+   * amounts themselves are read by the block after the page paints, so this
+   * loader never waits on the network for them (`MicronutrientSnapshotBlock`).
+   */
+  micronutrients: MicronutrientSnapshotInputs;
 }
 
 export async function clientLoader({ request, serverLoader }: Route.ClientLoaderArgs): Promise<DiaryData> {
@@ -1342,6 +1355,18 @@ export async function clientLoader({ request, serverLoader }: Route.ClientLoader
     calendarDayLevels,
     calendarMode,
     saveMealHintSlots,
+    micronutrients: {
+      // The same window arithmetic and the same coverage bar `/nutrients`
+      // uses, over the one viewed day.
+      intake: computeMicronutrientsInWindow(
+        allLogs,
+        { fromDate: date, toDate: date },
+        { minCoverageFraction: DEFAULT_MIN_COVERAGE_FRACTION },
+      ),
+      metrics: bodyMetrics,
+      // Aged against the real `today`, like the protein reference above.
+      currentYear: Number(today.slice(0, 4)),
+    },
   };
 }
 clientLoader.hydrate = true as const;
@@ -1868,6 +1893,7 @@ function DaySummaryCard({
   date,
   loggedFoodNames,
   celebrating,
+  micronutrients,
 }: {
   summary: DaySummary;
   goals: DiaryGoals;
@@ -1878,6 +1904,8 @@ function DaySummaryCard({
   loggedFoodNames: readonly string[];
   /** True while a one-time celebration is playing, which pulses this card's edge. */
   celebrating: boolean;
+  /** The day's vitamins and minerals, for the block under "What you ate". */
+  micronutrients: MicronutrientSnapshotInputs;
 }) {
   const { t, i18n } = useTranslation();
   const gaps = computeDayGaps({
@@ -2028,6 +2056,13 @@ function DaySummaryCard({
         </div>
         <div className="border-t pt-4">
           <WhatYouAte summary={summary} caveat={getSummaryCaveat(summary, t)} kcalLine={kcalLine} />
+        </div>
+        {/* What the day held beyond the macros: the vitamin and mineral
+            count, the gaps, and the door into `/nutrients` for this one day.
+            A part of the day summary, not a second hero, so it sits inside
+            this card and draws no surface of its own. */}
+        <div className="border-t pt-4">
+          <MicronutrientSnapshotBlock {...micronutrients} to={nutrientsDayHref(date)} scope={{ kind: 'day' }} />
         </div>
         <SuggestionsDisclosure gaps={gaps} addBase={addBase} dateKey={date} loggedFoodNames={loggedFoodNames} />
       </CardContent>
@@ -2910,6 +2945,7 @@ export default function Diary({ loaderData }: Route.ComponentProps) {
     calendarDayLevels,
     calendarMode,
     saveMealHintSlots,
+    micronutrients,
   } = loaderData;
   const justAddedLogId = useJustAddedLogId(logs);
   // One-time celebrations for genuine firsts only — see `#app/lib/celebration`
@@ -2979,6 +3015,7 @@ export default function Diary({ loaderData }: Route.ComponentProps) {
           date={date}
           loggedFoodNames={logs.map((log) => log.name)}
           celebrating={celebration !== null}
+          micronutrients={micronutrients}
         />
       )}
 

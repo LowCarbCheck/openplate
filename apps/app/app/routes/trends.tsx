@@ -5,7 +5,9 @@ import { useTranslation } from 'react-i18next';
 import { parseWithZod } from '@conform-to/zod/v4';
 import {
   computeDailyTotalsInRange,
+  computeMicronutrientsInWindow,
   computeSlotTotalsInRange,
+  DEFAULT_MIN_COVERAGE_FRACTION,
   getEarliestLocalFoodLogDayKey,
   getLocalBodyMetrics,
   getLocalProfileGoals,
@@ -56,6 +58,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '#app/
 import i18n from '#app/i18n/i18n';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 import { ADD_SEARCH_PATH } from '#app/lib/intake-hrefs';
+import { MicronutrientSnapshotBlock } from '#app/components/micronutrient-snapshot-block';
+import type { MicronutrientSnapshotInputs } from '#app/components/micronutrient-snapshot-block';
+import { nutrientRangeFor, nutrientsRangeHref } from '#app/lib/nutrient-window';
 
 export { RouteErrorBoundary as ErrorBoundary };
 
@@ -312,11 +317,28 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   // energy addition, so a pregnant person's day cannot read as met here and
   // missed there. Resolved in the loader rather than in the component, because
   // the stage is a store read and the grid is pure arithmetic on its result.
+  const bodyMetrics = await getLocalBodyMetrics();
   const adherenceGoals: AdherenceGoals = resolveAdherenceGoals({
     goals,
-    bodyMetrics: await getLocalBodyMetrics(),
+    bodyMetrics,
     today,
   }).goals;
+
+  // The Nutrition tab's vitamins and minerals, over the `/nutrients` window
+  // that answers this range, so the block and the screen its link opens read
+  // the same days. `/nutrients` stops at 30 days, so the 90-day range reads
+  // the last 30, and the block says which window it shows. `windowLogs`
+  // already reaches back past the chart's range, so this is no second read.
+  const nutrientRange = nutrientRangeFor(range);
+  const micronutrients: MicronutrientSnapshotInputs = {
+    intake: computeMicronutrientsInWindow(
+      windowLogs,
+      { fromDate: shiftDate(today, -(nutrientRange - 1)), toDate: today },
+      { minCoverageFraction: DEFAULT_MIN_COVERAGE_FRACTION },
+    ),
+    metrics: bodyMetrics,
+    currentYear: Number(today.slice(0, 4)),
+  };
 
   // The same 91-day window, ascending — the weight chart's series.
   const weightWindowStart = shiftDate(today, -(WEIGHT_WINDOW_DAYS - 1));
@@ -372,6 +394,8 @@ export async function clientLoader({ request }: Route.ClientLoaderArgs) {
     }),
     targetWeightKg: profile?.targetWeightKg ?? null,
     todayWeightKg: weightRows.find((row) => row.dayKey === today)?.weightKg ?? null,
+    micronutrients,
+    nutrientRange,
   };
 }
 clientLoader.hydrate = true as const;
@@ -591,12 +615,13 @@ export default function Trends({ loaderData }: Route.ComponentProps) {
     gamificationVisibility,
     fastTargets,
     windowLogs,
+    micronutrients,
+    nutrientRange,
   } = loaderData;
   // Device-local display preference, shared with `/settings/profile` (which owns
   // the toggle). Read once per mount, so returning here after switching it
   // there picks the new unit up.
   const [weightUnit] = useState<WeightUnit>(readStoredWeightUnit);
-  const { t } = useTranslation();
 
   if (!hasAnyData) {
     return (
@@ -686,10 +711,19 @@ export default function Trends({ loaderData }: Route.ComponentProps) {
             <div className="@3xl:col-span-2">
               <MacroEnergySplitCard days={entries} isWeekly={range >= WEEKLY_BARS_FROM_RANGE} />
             </div>
+            {/* Vitamins and minerals for the window, and the door into
+                `/nutrients` for the same days. It replaced a bare button to
+                that screen, which said nothing about what was behind it. */}
             <div className="@3xl:col-span-2">
-              <Button variant="outline" size="sm" asChild>
-                <Link to="/nutrients">{t('nav.nutrients')}</Link>
-              </Button>
+              <Card data-slot="insights-micronutrient-card">
+                <CardContent className="p-6">
+                  <MicronutrientSnapshotBlock
+                    {...micronutrients}
+                    to={nutrientsRangeHref(nutrientRange)}
+                    scope={{ kind: 'range', days: nutrientRange }}
+                  />
+                </CardContent>
+              </Card>
             </div>
           </>
         )}
