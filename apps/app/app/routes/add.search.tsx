@@ -1885,8 +1885,26 @@ function SearchStep({
             one exact entry in one tap. Disabled rather than hidden while the
             box is empty: a button that appears as you type moves the layout
             under your thumb. */}
-        {hasAiProvider && (
-          <>
+        {/* ONE BOX FOR BOTH ANSWERS, drawn from the first paint (2026-10-13).
+            Whether this device has an AI is known only after a read, and the
+            screen used to draw nothing until then: the answer then pushed
+            "Add manually" and everything under it down by 56 to 108 px, and a
+            tap aimed at that button pressed it and released on whatever had
+            moved under the finger. Both answers are now layers of one grid
+            cell, so the cell is as tall as the taller of the two in every
+            width and language, and the answer only shows one of them. A
+            hidden layer is `invisible`, `inert` and `aria-hidden`.
+            THE OFFER CARD IS THE ONE ANSWER NOT DRAWN HIDDEN: it reads the
+            offer and counts as seen once it is in the viewport, and a hidden
+            card is still in the viewport, so it waits for a known `absent`
+            as before. */}
+        <div data-slot="ai-intake-answer" className="grid [&>*]:col-start-1 [&>*]:row-start-1">
+          <div
+            data-ai-intake-layer="connected"
+            className={cn('grid gap-2', !hasAiProvider && 'invisible [&_*]:transition-none')}
+            inert={!hasAiProvider}
+            aria-hidden={hasAiProvider ? undefined : true}
+          >
             <Button
               type="button"
               onClick={() => submitToAi(searchValue, 'text')}
@@ -1896,20 +1914,27 @@ function SearchStep({
               <Sparkles className="h-4 w-4" aria-hidden="true" /> {t('add.aiIntake.submit')}
             </Button>
             <p className="text-xs text-muted-foreground">{t('add.aiIntake.hint')}</p>
-          </>
-        )}
-        {/* NO AI, so no button that cannot work. The search below is
-            unaffected and needs no AI at all, which is what this says before
-            it offers the way to get one, and which way out is offered depends
-            on why there is none. */}
-        {aiConnection === 'absent' && (
-          <NoAiIntakeNotice
-            door={aiDoor}
-            byokMessage={t('add.aiIntake.needsProvider')}
-            byokLinkLabel={t('add.aiIntake.connect')}
-            byokHref="/settings/ai?next=add"
-          />
-        )}
+          </div>
+          {/* NO AI, so no button that cannot work. The search below is
+              unaffected and needs no AI at all, which is what this says
+              before it offers the way to get one, and which way out is
+              offered depends on why there is none. */}
+          <div
+            data-ai-intake-layer="absent"
+            className={cn(aiConnection !== 'absent' && 'invisible [&_*]:transition-none')}
+            inert={aiConnection !== 'absent'}
+            aria-hidden={aiConnection === 'absent' ? undefined : true}
+          >
+            {(aiConnection === 'absent' || aiDoor.kind !== 'plans') && (
+              <NoAiIntakeNotice
+                door={aiDoor}
+                byokMessage={t('add.aiIntake.needsProvider')}
+                byokLinkLabel={t('add.aiIntake.connect')}
+                byokHref="/settings/ai?next=add"
+              />
+            )}
+          </div>
+        </div>
         {!isOnline && searchValue.trim() !== query && (
           <p className="text-xs text-muted-foreground">{t('add.search.offlinePending')}</p>
         )}

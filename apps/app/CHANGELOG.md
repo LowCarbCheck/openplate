@@ -11,6 +11,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+### Fixed
+
+- **The add screen no longer jumps when it learns about AI.** Under the search box, the "Log with AI" button or the note about connecting an AI used to appear a moment after the screen, and pushed "Can't find it? Add manually" and the rest of the page down. A tap aimed at that button in that moment did nothing. The space is now kept from the first paint.
+
 ## [0.69.1] - 2026-10-13
 
 ### Fixed

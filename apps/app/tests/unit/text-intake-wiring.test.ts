@@ -59,7 +59,13 @@ describe('/add/search hands words to /add/photo', () => {
     assert.match(ADD_ROUTE, /import \{ useAiIntake \} from '#app\/components\/add\/use-ai-connection'/);
     assert.match(ADD_ROUTE, /const \{ connection: aiConnection, door: aiDoor \} = useAiIntake\(\);/);
     assert.match(ADD_ROUTE, /const hasAiProvider = aiConnection === 'connected';/);
-    assert.match(ADD_ROUTE, /\{hasAiProvider && \([\s\S]*?t\('add\.aiIntake\.submit'\)/);
+    // A LAYER THAT IS SHOWN, not a branch that is drawn (2026-10-13): the
+    // button keeps its box from the first paint and is hidden and inert until
+    // an AI is known, so its arrival moves nothing below it.
+    assert.match(
+      ADD_ROUTE,
+      /data-ai-intake-layer="connected"[\s\S]*?!hasAiProvider && 'invisible[\s\S]*?inert=\{!hasAiProvider\}[\s\S]*?t\('add\.aiIntake\.submit'\)/,
+    );
   });
 
   it('explains the gap through the shared notice, which knows where the door is', () => {
@@ -67,7 +73,11 @@ describe('/add/search hands words to /add/photo', () => {
     // instance redirects that page away and nobody there brings a provider.
     // The BYOK sentence and its link are handed to the notice as the branch
     // that is true only on an open instance.
-    assert.match(ADD_ROUTE, /\{aiConnection === 'absent' && \([\s\S]*?<NoAiIntakeNotice/);
+    // Shown only for a known `absent`, in the same reserved cell as the button.
+    assert.match(
+      ADD_ROUTE,
+      /data-ai-intake-layer="absent"[\s\S]*?aiConnection !== 'absent' && 'invisible[\s\S]*?inert=\{aiConnection !== 'absent'\}[\s\S]*?<NoAiIntakeNotice/,
+    );
     assert.match(ADD_ROUTE, /door=\{aiDoor\}/);
     assert.match(ADD_ROUTE, /byokMessage=\{t\('add\.aiIntake\.needsProvider'\)\}/);
     assert.match(ADD_ROUTE, /byokHref="\/settings\/ai\?next=add"/);
