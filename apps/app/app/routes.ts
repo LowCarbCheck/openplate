@@ -371,5 +371,9 @@ export default [
     // Relays food proposals to LowCarbCheck when backfill is on (M251/04),
     // see app/routes/api.food-proposals.ts.
     route('/api/food-proposals', 'routes/api.food-proposals.ts'),
+    // Resource route: the vitamins and minerals of foods old diary entries
+    // name by LowCarbCheck slug (the micronutrient backfill, 2026-10-13), see
+    // app/routes/api.food-micronutrients.ts.
+    route('/api/food-micronutrients', 'routes/api.food-micronutrients.ts'),
   ]),
 ] satisfies RouteConfig;

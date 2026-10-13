@@ -145,6 +145,21 @@ const VitaminsWireSchema = blockWireSchema(VITAMIN_KEYS).nullish().catch(null);
 const MineralsWireSchema = blockWireSchema(MINERAL_KEYS).nullish().catch(null);
 
 /**
+ * The two micronutrient blocks as LowCarbCheck sends them on EVERY food
+ * object: a search result here, and the single-food detail
+ * (`GET /api/v1/foods/:slug`) the micronutrient backfill reads
+ * (`#app/services/food-db/micronutrients.server`). One schema for both, so a
+ * food's vitamins mean the same thing whichever endpoint delivered them.
+ */
+export const MicronutrientBlocksWireSchema = z.object({
+  vitamins: VitaminsWireSchema,
+  minerals: MineralsWireSchema,
+});
+
+/** The two blocks as parsed off the wire, before {@link toMicronutrientsPer100g} maps them. */
+export type RawMicronutrientBlocks = z.infer<typeof MicronutrientBlocksWireSchema>;
+
+/**
  * Any value `JSON.parse` can yield off the LCC search endpoint, before this
  * module validates it. A closed JSON value type rather than `unknown`: the
  * input is always JSON, it just isn't trusted yet.
@@ -208,8 +223,11 @@ export class FoodResolutionParseError extends Error {
  *  - Neither block present ⇒ `undefined`, so `FoodMatch.micronutrientsPer100g`
  *    is simply absent rather than an empty object nobody can distinguish from
  *    a populated one.
+ *
+ * Exported for the backfill's detail read, which must map a food exactly the
+ * way the search path does.
  */
-function toMicronutrients(raw: RawSearchResult): MicronutrientsPer100g | undefined {
+export function toMicronutrientsPer100g(raw: RawMicronutrientBlocks): MicronutrientsPer100g | undefined {
   const micronutrients: MicronutrientsPer100g = {};
   if (raw.vitamins) {
     // SAFETY: `VitaminsWireSchema` is built from `VITAMIN_KEYS` — the very key list `Vitamins` is declared over — and every member parses to `number | null`, so a parsed block carries exactly those keys with those value types.
@@ -223,7 +241,7 @@ function toMicronutrients(raw: RawSearchResult): MicronutrientsPer100g | undefin
 }
 
 function toFoodMatch(raw: RawSearchResult): FoodMatch {
-  const micronutrientsPer100g = toMicronutrients(raw);
+  const micronutrientsPer100g = toMicronutrientsPer100g(raw);
   const match: FoodMatch = {
     slug: raw.slug,
     locale: raw.locale,
