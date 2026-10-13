@@ -22,6 +22,7 @@ import AppWrapper from '#app/components/app-wrapper';
 import { AppLoading } from '#app/components/app-loading';
 import { OutboxSyncController } from '#app/components/outbox-sync-controller';
 import { SyncController } from '#app/components/sync-controller';
+import { MicronutrientBackfillController } from '#app/components/micronutrient-backfill-controller';
 import { ErrorFallback } from '#app/components/route-error-boundary';
 import { useSyncSession } from '#app/components/sync-status';
 import { getSyncSessionSnapshot } from '#app/lib/sync/sync-session';
@@ -385,6 +386,9 @@ export default function PersonalLayout() {
           nothing, and attaches nothing at all unless `CORE_URL` is set.
           MOUNTED EVEN WHILE WAITING, because it is what ends the wait. */}
       <SyncController />
+      {/* Asks LowCarbCheck once, in the background, for the vitamins of old
+          entries whose food had none when they were logged; renders nothing. */}
+      <MicronutrientBackfillController />
       {/* Asks the consent gate again once the account and the instance's
           consent version arrive; renders nothing. */}
       <ConsentGateWatcher />

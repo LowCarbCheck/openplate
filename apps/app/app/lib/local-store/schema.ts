@@ -626,6 +626,56 @@ export const DELETED_ENTITIES_TABLE = 'deletedEntities';
 /** Cell: epoch-ms the delete happened. Diagnostics only, nothing branches on it. */
 export const DELETED_AT_CELL = 'deletedAt';
 
+// ---------------------------------------------------------------------------
+// The micronutrient backfill ledger (2026-10-13): device-local, never synced
+// ---------------------------------------------------------------------------
+
+/**
+ * Table: what LowCarbCheck answered about each food slug this device's old
+ * entries name, one row per slug, keyed by the slug itself.
+ *
+ * ── Why it exists ──────────────────────────────────────────────────────────
+ *
+ * Until 2026-10-13 the BLS foods in LowCarbCheck carried no vitamins, so an
+ * entry logged from one snapshotted no `micronutrientsPer100g` and its day
+ * reads "not enough data" for ever. `#app/lib/micronutrient-backfill-job`
+ * asks once per distinct slug and writes the answer HERE, and
+ * `withBackfilledMicronutrients` (`#app/lib/micronutrient-backfill`) lends a
+ * `filled` row's block to every entry with that slug and no block of its own,
+ * at the moment the micronutrient screens read the log.
+ *
+ * ── Why the block is NOT written onto the entry ──────────────────────────
+ *
+ * A food log is a merged entity, and the merge is whole-record
+ * last-writer-wins by `(lamport, deviceId)` (`merge-entities.ts`,
+ * `pickMergeWinner`). `stampSnapshot` (`snapshot-sync.ts`) gives every entry
+ * whose content hash changed a stamp one above its baseline, so a block
+ * written onto an old entry would be a CHANGE that competes with any offline
+ * edit of the same entry on another device, and either the edit or the block
+ * would lose the whole record. No write onto the entry can be safe against
+ * that without a merge every device agrees on. A table the merge never sees
+ * is safe by construction: the entry is never written, so no edit can lose to
+ * the backfill, on this device or any other.
+ *
+ * ── It is device-local bookkeeping and MUST NOT sync ──────────────────────
+ *
+ * Absent from `LocalStoreSnapshot` for the delete journal's reasons:
+ * `backup.ts` never exports it, `snapshot-partition.ts` never classifies it,
+ * and each device fills its own view with its own calls. It lives in the
+ * primary database so an erase (`device-erase.ts`) deletes it with the diary:
+ * the slugs a person ate are diary content.
+ *
+ * No {@link SCHEMA_VERSION} bump, for the journal's reason: that number
+ * versions the entity shapes a backup and a peer's sync blob carry, and is
+ * bound into the sync envelope's AAD, so a bump would stop an older second
+ * device decrypting the sync for a table that never travels. A build that has
+ * never heard of this table reads a database holding it unchanged.
+ */
+export const MICRONUTRIENT_BACKFILL_TABLE = 'micronutrientBackfill';
+
+/** Cell: the JSON-serialized `BackfillLedgerEntry` (`#app/lib/micronutrient-backfill`). */
+export const MICRONUTRIENT_BACKFILL_CELL = 'entry';
+
 /**
  * The namespaced key one entity occupies in the delete journal, in the sync
  * baseline and in a tombstone: `foodLog:abc`.
