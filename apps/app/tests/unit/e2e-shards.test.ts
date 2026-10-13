@@ -39,7 +39,14 @@ import {
   resetFontconfigCache,
   writeFontsConfFor,
 } from '../e2e/font-cache';
-import { E2E_RETRIES_VAR, E2E_SHARD_VAR, parseShardNumber, retriesFromEnv } from '../e2e/shard';
+import {
+  E2E_RETRIES_VAR,
+  E2E_SHARD_VAR,
+  E2E_TIMEOUT_FACTOR_VAR,
+  parseShardNumber,
+  retriesFromEnv,
+  timeoutFactorFromEnv,
+} from '../e2e/shard';
 
 /** The three ports a base stands for. */
 const PORTS_PER_SHARD = 3;
@@ -188,6 +195,37 @@ describe('the retry count', () => {
     for (const raw of ['4', '-1', '1.5', 'one', ' 1']) {
       const named = new RegExp(`${E2E_RETRIES_VAR}=${raw.replace('.', '\\.')} is not a retry count`);
       assert.throws(() => retriesFromEnv(raw), named, `${JSON.stringify(raw)} must be refused`);
+    }
+  });
+});
+
+describe('the timeout factor', () => {
+  it('reads as 1 when unset or blank, so the local gate and the nightly stay as strict as today', () => {
+    assert.equal(timeoutFactorFromEnv(undefined), 1);
+    assert.equal(timeoutFactorFromEnv(''), 1);
+    assert.equal(timeoutFactorFromEnv('   '), 1);
+
+    // THE CONTROL. A parser that returned 1 for everything would pass the lines above.
+    assert.equal(timeoutFactorFromEnv('3'), 3);
+  });
+
+  it('reads a number from 1 to 5, whole or not', () => {
+    assert.equal(timeoutFactorFromEnv('3'), 3);
+    assert.equal(timeoutFactorFromEnv('2.5'), 2.5);
+    assert.equal(timeoutFactorFromEnv('1'), 1);
+    assert.equal(timeoutFactorFromEnv('5'), 5);
+    assert.equal(timeoutFactorFromEnv(' 2 '), 2);
+  });
+
+  it('refuses anything else, naming the variable and the value', () => {
+    // THE CONTROL for the refusals: a parser that threw on everything would pass them, so the
+    // accepted edges are asserted not to throw.
+    assert.doesNotThrow(() => timeoutFactorFromEnv('1'));
+    assert.doesNotThrow(() => timeoutFactorFromEnv('5'));
+
+    for (const raw of ['NaN', '0', '0.5', '-1', '5.1', '6', 'Infinity', 'three', '1e0', '0x3', '2,5', '1 2']) {
+      const named = new RegExp(`${E2E_TIMEOUT_FACTOR_VAR}=${raw.replace('.', '\\.')} is not a timeout factor`);
+      assert.throws(() => timeoutFactorFromEnv(raw), named, `${JSON.stringify(raw)} must be refused`);
     }
   });
 });

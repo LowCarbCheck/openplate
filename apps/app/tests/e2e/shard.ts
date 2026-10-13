@@ -69,3 +69,38 @@ export function retriesFromEnv(value: string | undefined): number {
   }
   return parsed;
 }
+
+/** The variable that scales the per-spec timeout, for a runner slower than the dev host. */
+export const E2E_TIMEOUT_FACTOR_VAR = 'OPENPLATE_E2E_TIMEOUT_FACTOR';
+
+/** The smallest factor: 1 is the host figure, and a gate may never be stricter than that. */
+const MIN_TIMEOUT_FACTOR = 1;
+
+/** The largest factor: more than this is a hang being hidden, not a slow runner. */
+const MAX_TIMEOUT_FACTOR = 5;
+
+/** A plain decimal number and nothing else, so `1e1`, `0x2` and `Infinity` are refused. */
+const DECIMAL_NUMBER = /^[0-9]+(\.[0-9]+)?$/;
+
+/**
+ * Reads the timeout factor, or refuses it.
+ *
+ * Unset or blank is 1, today's behaviour, so the local gate and the nightly stay exactly as strict
+ * as they are. Anything else must be a finite decimal number from 1 to 5, and is refused in one
+ * sentence that names the variable and the value: a typo that quietly read as 1 would leave a slow
+ * runner failing on timeouts, and one that read as a large number would hide a hang.
+ *
+ * @param raw - the variable's value.
+ */
+export function timeoutFactorFromEnv(raw: string | undefined): number {
+  const value = raw?.trim() ?? '';
+  if (value === '') return MIN_TIMEOUT_FACTOR;
+  const parsed = Number(value);
+  const isInRange = parsed >= MIN_TIMEOUT_FACTOR && parsed <= MAX_TIMEOUT_FACTOR;
+  if (!DECIMAL_NUMBER.test(value) || !Number.isFinite(parsed) || !isInRange) {
+    throw new Error(
+      `${E2E_TIMEOUT_FACTOR_VAR}=${raw} is not a timeout factor: it has to be a number from ${MIN_TIMEOUT_FACTOR} to ${MAX_TIMEOUT_FACTOR}.`,
+    );
+  }
+  return parsed;
+}

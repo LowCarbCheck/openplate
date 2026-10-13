@@ -74,7 +74,14 @@ import {
   E2E_CORE_URL,
 } from './tests/e2e/env';
 import { writeFontsConfFor } from './tests/e2e/font-cache';
-import { E2E_RETRIES_VAR, E2E_SHARD_VAR, parseShardNumber, retriesFromEnv } from './tests/e2e/shard';
+import {
+  E2E_RETRIES_VAR,
+  E2E_SHARD_VAR,
+  E2E_TIMEOUT_FACTOR_VAR,
+  parseShardNumber,
+  retriesFromEnv,
+  timeoutFactorFromEnv,
+} from './tests/e2e/shard';
 import { buildTierServerCommand } from './tests/e2e/server-env';
 
 /** The build artefact the production server serves. */
@@ -117,7 +124,12 @@ if (!existsSync(SERVER_BUNDLE)) {
   throw new Error(`${SERVER_BUNDLE} is missing: run \`pnpm build\` before \`pnpm test:e2e\`.`);
 }
 
-/** How long one spec may take, end to end. */
+/**
+ * How long one spec may take, end to end, on the dev host. This is the HOST figure: a slower
+ * runner scales it with `OPENPLATE_E2E_TIMEOUT_FACTOR` (`timeoutFactorFromEnv`, 1 to 5), and CI
+ * sets 3 because its 4 vCPUs run the tier about three times slower. Unset means 1, so the local
+ * gate and the nightly keep exactly this figure.
+ */
 const SPEC_TIMEOUT_MS = 30_000;
 
 /** How long the production server has to answer its first request. */
@@ -137,7 +149,7 @@ export default defineConfig({
   // that test as flaky BY NAME instead of failing the gate. A typo throws at load, never reads as 0.
   retries: retriesFromEnv(process.env[E2E_RETRIES_VAR]),
   reporter: 'list',
-  timeout: SPEC_TIMEOUT_MS,
+  timeout: SPEC_TIMEOUT_MS * timeoutFactorFromEnv(process.env[E2E_TIMEOUT_FACTOR_VAR]),
   // PLAYWRIGHT EMPTIES ITS OUTPUT FOLDER AT THE START OF A RUN. Several shards of one checkout
   // would each empty the one `test-results/` and delete the traces of a sibling that is still
   // writing, so a shard gets a folder of its own inside it. A run that is not sharded keeps

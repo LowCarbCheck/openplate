@@ -201,9 +201,11 @@ jobs:
           FONTCONFIG_FILE="$PWD/tests/e2e/fonts.conf" fc-match monospace
           FONTCONFIG_FILE="$PWD/tests/e2e/fonts.conf" fc-match monospace | grep -q '"Liberation Mono"'
       - name: Browser tier against the production build
+        # The runner is about 3x slower than the host, and the 30 s per-test default failed three loop specs on 2026-10-13.
         env:
           OPENPLATE_E2E_FULL: '1'
           OPENPLATE_E2E_SHARDS: '3'
+          OPENPLATE_E2E_TIMEOUT_FACTOR: '3'
         run: CI=true pnpm test:e2e:scoped
 
   translate:

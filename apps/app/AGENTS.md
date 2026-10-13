@@ -69,6 +69,10 @@ and at least 1. Shard `i` takes the derived base plus `3 * (i - 1)`, its own
 fontconfig cache directory, and its own output folder `test-results/shard-<i>`
 (ADR-0017, amendment of 2026-10-02). `pnpm test:e2e` stays the plain serial run.
 
+`OPENPLATE_E2E_TIMEOUT_FACTOR` (1 to 5, read by `playwright.config.ts`) scales the
+30 s per-test timeout for a slower runner. Unset means 1, so the local gate and
+the nightly keep the host figure. The GitHub Actions browser tier sets 3.
+
 **Two tiers ([ADR-0022](.adr/0022-the-push-gate-runs-a-scoped-browser-tier.md)).**
 The push gate runs the smoke set, the specs whose area matches the touched
 code, and the spec files the push changed. Shared code and unmapped app paths
