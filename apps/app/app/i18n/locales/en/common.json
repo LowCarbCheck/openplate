@@ -637,6 +637,7 @@
     },
     "drilldown": {
       "netCarbsDefinition": "Net carbs = carbs minus fiber, minus any sugar alcohols.",
+      "fiberEnergyNote": "The calorie share counts fiber at 2 kcal per gram.",
       "noTarget": "No target set",
       "derivedTag": "from your targets",
       "referenceTag": "reference",

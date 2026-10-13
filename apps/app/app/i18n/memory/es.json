@@ -9932,6 +9932,13 @@
     "at": "2026-09-14",
     "es": "Coste estimado de este escaneo: {{cost}} ({{inputTokens}} tokens de entrada / {{outputTokens}} de salida)"
   },
+  "71131db2f1f5261b": {
+    "en": "The calorie share counts fiber at 2 kcal per gram.",
+    "path": "common:diary.drilldown.fiberEnergyNote",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-13",
+    "es": "La proporción de calorías calcula la fibra a 2 kcal por gramo."
+  },
   "71247c57afad5e6b": {
     "en": "You haven't added any foods yet. Use \"Add manually\" to create one. It'll show up here.",
     "path": "common:add.custom.empty",

@@ -637,6 +637,7 @@
     },
     "drilldown": {
       "netCarbsDefinition": "Glucides nets = glucides moins fibres, moins les polyols éventuels.",
+      "fiberEnergyNote": "La part de calories compte les fibres à 2 kcal par gramme.",
       "noTarget": "Aucune cible définie",
       "derivedTag": "selon tes cibles",
       "referenceTag": "référence",

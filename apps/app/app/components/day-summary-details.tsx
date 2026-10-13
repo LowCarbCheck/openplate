@@ -616,6 +616,7 @@ export function WhatYouAte({
       <div className="space-y-1">
         {kcalLine}
         <p className="text-xs text-muted-foreground">{t('diary.drilldown.netCarbsDefinition')}</p>
+        <p className="text-xs text-muted-foreground">{t('diary.drilldown.fiberEnergyNote')}</p>
         {caveat && <p className="text-xs text-muted-foreground">{caveat}</p>}
       </div>
       {/*

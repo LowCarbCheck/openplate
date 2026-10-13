@@ -637,6 +637,7 @@
     },
     "drilldown": {
       "netCarbsDefinition": "Carbohidratos netos = carbohidratos menos fibra, menos los polialcoholes.",
+      "fiberEnergyNote": "La proporción de calorías calcula la fibra a 2 kcal por gramo.",
       "noTarget": "Sin objetivo establecido",
       "derivedTag": "de tus objetivos",
       "referenceTag": "referencia",

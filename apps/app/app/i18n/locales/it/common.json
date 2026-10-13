@@ -637,6 +637,7 @@
     },
     "drilldown": {
       "netCarbsDefinition": "Carboidrati netti = carboidrati meno fibre, meno eventuali polioli.",
+      "fiberEnergyNote": "La ripartizione calorica calcola le fibre a 2 kcal per grammo.",
       "noTarget": "Nessun obiettivo impostato",
       "derivedTag": "dai tuoi obiettivi",
       "referenceTag": "riferimento",

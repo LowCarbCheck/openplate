@@ -637,6 +637,7 @@
     },
     "drilldown": {
       "netCarbsDefinition": "Netto-Kohlenhydrate = Kohlenhydrate minus Ballaststoffe, minus Zuckeralkohole.",
+      "fiberEnergyNote": "Der Kalorienanteil berechnet Ballaststoffe mit 2 kcal pro Gramm.",
       "noTarget": "Kein Ziel gesetzt",
       "derivedTag": "aus deinen Zielen",
       "referenceTag": "Richtwert",

@@ -637,6 +637,7 @@
     },
     "drilldown": {
       "netCarbsDefinition": "Net karbonhidrat = karbonhidrat eksi lif, eksi şeker alkolleri.",
+      "fiberEnergyNote": "Kalori payı, lifi gram başına 2 kcal olarak hesaplar.",
       "noTarget": "Hedef belirlenmedi",
       "derivedTag": "hedeflerinden",
       "referenceTag": "referans",
