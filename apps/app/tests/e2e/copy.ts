@@ -433,6 +433,20 @@ const englishCatalogSchema = catalogSchema
       preferences: z.object({ whatsNew: z.object({ label: z.string(), description: z.string() }) }),
       about: z.object({ whatsNew: z.string(), whatsNewValue: z.string() }),
     }),
+  )
+  // The vitamins and minerals block on the diary and Insights, and the words of
+  // `/nutrients` its links open. English only until the translation run has
+  // bought `nutrients.snapshot` for the other five catalogs.
+  .and(
+    z.object({
+      nutrients: z.object({
+        hero: z.object({ covered: z.string() }),
+        range: z.object({ week: z.string() }),
+        coverage: z.object({ notEnoughData: z.string() }),
+        name: z.object({ magnesium: z.string() }),
+        snapshot: z.object({ title: z.string(), linkDay: z.string(), linkRange: z.string() }),
+      }),
+    }),
   );
 
 /** Every English string this tier reads, validated against the shipped bundle. */

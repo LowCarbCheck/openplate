@@ -140,6 +140,8 @@ export const PATH_RULES: ReadonlyArray<PathRule> = [
     area: 'diary-and-add',
   },
   { pattern: /^app\/components\/(food-caution-chip|report-estimate)\b/, area: 'scan' },
+  // The vitamins and minerals block sits on the diary and on Insights; its spec walks both.
+  { pattern: /^app\/components\/micronutrient-snapshot-/, area: 'diary-and-add' },
 
   // Hooks and lib, by name prefix. Both are shared by many screens, so only a name that says what
   // it serves is mapped; the rest (`utils`, `store`, `env`, `macros`) fall through to `all`.
@@ -156,6 +158,9 @@ export const PATH_RULES: ReadonlyArray<PathRule> = [
     pattern: /^app\/lib\/(gamification\/|repeated-meal|save-meal-hint|usual-at-slot|add-|catch-up-|query-parts)/,
     area: 'diary-and-add',
   },
+  // Only the block's own builder. `nutrient-window` and `instance-nutrient-references` also feed
+  // `/nutrients`, whose specs live in other areas, so they stay unmapped and run the full tier.
+  { pattern: /^app\/lib\/micronutrient-snapshot\b/, area: 'diary-and-add' },
   { pattern: /^app\/hooks\/use-leave-when-another-tab-signs-out/, area: 'sign-out' },
   { pattern: /^app\/hooks\/use-people-filter/, area: 'admin' },
   { pattern: /^app\/hooks\/use-(update-status|install-affordance)/, area: 'offline-and-updates' },
