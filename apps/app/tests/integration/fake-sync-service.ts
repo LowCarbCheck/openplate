@@ -1462,6 +1462,17 @@ export async function startFakeSyncService(options: { port?: number } = {}): Pro
   });
 
   const server: Server = createServer(app);
+  // NO IDLE TIMEOUT ON A KEPT-ALIVE SOCKET. Node closes an idle one about six
+  // seconds after its last answer (five, plus a one-second buffer), and
+  // Playwright's request client, which every `route.fetch` in a browser stub
+  // goes through, keeps idle sockets with no limit of its own. A request sent
+  // on a socket in the instant the server closes it dies with ECONNRESET
+  // ("socket hang up"), and the spec fails with it. A probe that idled a
+  // socket for 5990 to 6014 ms before the second POST lost 5 of 75 requests.
+  // Chromium retries such a request by itself, so only the stubs ever saw it.
+  // With the timeout off, the server never closes a socket a client may reuse;
+  // `close()` still ends the idle ones (Node 19 and later).
+  server.keepAliveTimeout = 0;
   const port = options.port ?? 0;
   await new Promise<void>((resolve, reject) => {
     // A bare `listen` with nothing but a success callback is how this tier
