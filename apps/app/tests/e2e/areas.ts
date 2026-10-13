@@ -92,6 +92,9 @@ export const PATH_RULES: ReadonlyArray<PathRule> = [
   { pattern: /^app\/routes\/oauth\.openrouter\.callback\.tsx$/, area: 'settings' },
   { pattern: /^app\/routes\/admin[^/]*\.tsx$/, area: 'admin' },
   { pattern: /^app\/routes\/(trends|insights)/, area: 'insights' },
+  // The micronutrient backfill's route serves the diary's vitamins block, not the scan, so it sits
+  // above the `api.food-` rule; its spec lives with the block's.
+  { pattern: /^app\/routes\/api\.food-micronutrients\.ts$/, area: 'diary-and-add' },
   { pattern: /^app\/routes\/(add\.photo|api\.food-|pantry)/, area: 'scan' },
   {
     pattern: /^app\/routes\/(add|diary|dashboard|meals|foods|catch-up|awards|fasting)[.\w$]*\.tsx$/,
@@ -141,7 +144,7 @@ export const PATH_RULES: ReadonlyArray<PathRule> = [
   },
   { pattern: /^app\/components\/(food-caution-chip|report-estimate)\b/, area: 'scan' },
   // The vitamins and minerals block sits on the diary and on Insights; its spec walks both.
-  { pattern: /^app\/components\/micronutrient-snapshot-/, area: 'diary-and-add' },
+  { pattern: /^app\/components\/(micronutrient-snapshot-|micronutrient-backfill-)/, area: 'diary-and-add' },
 
   // Hooks and lib, by name prefix. Both are shared by many screens, so only a name that says what
   // it serves is mapped; the rest (`utils`, `store`, `env`, `macros`) fall through to `all`.
@@ -161,6 +164,9 @@ export const PATH_RULES: ReadonlyArray<PathRule> = [
   // Only the block's own builder. `nutrient-window` and `instance-nutrient-references` also feed
   // `/nutrients`, whose specs live in other areas, so they stay unmapped and run the full tier.
   { pattern: /^app\/lib\/micronutrient-snapshot\b/, area: 'diary-and-add' },
+  // The backfill that lends old entries their vitamins: the pure core, its client and its job. The
+  // ledger itself lives in `local-store/`, which stays unmapped and runs the full tier.
+  { pattern: /^app\/lib\/micronutrient-backfill\b/, area: 'diary-and-add' },
   { pattern: /^app\/hooks\/use-leave-when-another-tab-signs-out/, area: 'sign-out' },
   { pattern: /^app\/hooks\/use-people-filter/, area: 'admin' },
   { pattern: /^app\/hooks\/use-(update-status|install-affordance)/, area: 'offline-and-updates' },
