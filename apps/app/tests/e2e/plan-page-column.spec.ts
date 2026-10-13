@@ -48,6 +48,22 @@ const WIDTHS = [1960, 2545] as const;
 async function readColumn(page: Page): Promise<{ left: number; width: number }> {
   const inset = page.locator('main [data-slot="settings-inset"]').first();
   await expect(inset).toBeVisible();
+  // A slow runner can hide the inset for a moment after the visibility check
+  // (a lazy chunk or a hydration swap), so wait for two reads in a row to name
+  // the same box before the columns are compared.
+  let previous: string | null = null;
+  await expect
+    .poll(
+      async () => {
+        const read = await inset.boundingBox();
+        const current = read === null ? null : JSON.stringify(read);
+        const isSettled = current !== null && current === previous;
+        previous = current;
+        return isSettled;
+      },
+      { message: 'the settings inset keeps one box across two reads' },
+    )
+    .toBe(true);
   const box = await inset.boundingBox();
   if (box === null) throw new Error('the settings inset has no box');
   return { left: box.x, width: box.width };

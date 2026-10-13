@@ -637,6 +637,11 @@ test('at 360 px in German, a long food name ends in "…" so the delete and quic
 test('every undo control is the icon button, and every line of its row is whole at 390 and 360 px, in all six languages', async ({
   page,
 }) => {
+  // A loop over 36 cases (2 widths x 6 languages x 3 undo paths). It hit the
+  // 30 s default on a 4 vCPU CI runner on 2026-10-13, at the Italian locale,
+  // on the first attempt and on the retry. 120 s covers a runner about 3x slower
+  // than the host.
+  test.setTimeout(120_000);
   await seedUndoDiary(page);
 
   const cutOff: string[] = [];
