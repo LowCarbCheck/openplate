@@ -23,6 +23,7 @@ says what it sends.
 | [topologies.md](topologies.md) | **Start here.** What should I actually run? Five rungs and one variant, from "nothing" to "everything", with the compose file for each. |
 | [self-hosting.md](self-hosting.md) | Running it: compose walkthroughs, first run, HTTPS, backups, upgrading. |
 | [configuration.md](configuration.md) | The food database key, the Content-Security-Policy, analytics, managed instances, custom and instance-provided AI endpoints, the OpenRouter flow. |
+| [food-database-api.md](food-database-api.md) | Experimental. The contract a food database must meet, so you can point `FOOD_DB_API_URL` at a server other than lowcarbcheck.org. |
 | [environment-variables.md](environment-variables.md) | Every variable the app, the core server and the inference service read, with its default. The settings that stop the boot, and sign-up with a Turnstile captcha. |
 | [sync.md](sync.md) | Turning on sync across devices, and what the encryption does and does not hide. |
 | [family-setup.md](family-setup.md) | Sharing one AI bill across a household, with a per-person spend limit and per-person revocation. Provider sub-keys first; a managed instance when your provider has none. |

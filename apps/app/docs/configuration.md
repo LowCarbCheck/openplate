@@ -55,6 +55,17 @@ anonymous tier is 1,000 credits a day and the free key 100,000 a month;
 LowCarbCheck sees the address of your app server, not the addresses of its users. On the
 anonymous tier, everyone on your instance shares one daily allowance.
 
+Vitamins and minerals come from the same database. A food search returns them with the macros,
+so they cost no extra credit. After an update, the app also fills in vitamins for foods in old
+diary entries. It asks once per distinct food on each device, and each ask costs one credit.
+That is a one-time cost, and it can use a large part of the anonymous daily allowance on a
+shared address. If the allowance runs out, the app retries later. Foods that you type by hand
+and AI plate estimates never carry vitamins. With `FOOD_DB_API_URL` empty, there are no
+vitamins at all.
+
+To use a food database other than lowcarbcheck.org, point `FOOD_DB_API_URL` at it. The
+[food database API contract](food-database-api.md) (experimental) lists what it must answer.
+
 An instance with no key keeps working. It is the anonymous tier, and for one person trying
 openplate out it is usually enough. A household, or anything that scans several plates a
 day, wants the free key.
