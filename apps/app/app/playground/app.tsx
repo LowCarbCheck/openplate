@@ -84,6 +84,7 @@ export const SECTIONS: readonly SectionEntry[] = [
   { def: { id: 'admin-invitations', title: 'Admin: invitations' }, load: () => import('./sections/admin-invitations') },
   { def: { id: 'admin-stats', title: 'Admin: stats row' }, load: () => import('./sections/admin-stats') },
   { def: { id: 'surfaces', title: 'Surfaces' }, load: () => import('./sections/surfaces') },
+  { def: { id: 'nutrients', title: 'Nutrients' }, load: () => import('./sections/nutrients') },
 ];
 
 /** One `lazy` per section, made once: a fresh `lazy()` per render would suspend on every render. */
