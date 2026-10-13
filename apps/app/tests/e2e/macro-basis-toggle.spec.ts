@@ -50,9 +50,13 @@ const TAP_FLOOR_PX = 44;
 /** The one logged food, in grams of each macro. Carbs are TOTAL carbs, fibre sits inside them and also has its own share by grams. */
 const FOOD = { carbs: 20, fiber: 5, protein: 30, fat: 15 };
 
-/** The calorie share of {@link FOOD}, in the order the cells are drawn (carbs, protein, fat): 4, 4 and 9 kcal per gram. */
+/**
+ * The calorie share of {@link FOOD}, in the order the cells are drawn (carbs, protein, fat): net carbs and
+ * protein at 4 kcal per gram, fibre at 2, fat at 9. The food has no carb basis, so its carbs are total carbs
+ * and its net carbs are the carbs less the fibre. It was 24, 36, 40 while the whole 20 g counted at 4.
+ */
 function expectedKcalPercents(): number[] {
-  const energy = [FOOD.carbs * 4, FOOD.protein * 4, FOOD.fat * 9];
+  const energy = [(FOOD.carbs - FOOD.fiber) * 4 + FOOD.fiber * 2, FOOD.protein * 4, FOOD.fat * 9];
   const total = energy.reduce((sum, kcal) => sum + kcal, 0);
   return energy.map((kcal) => Math.round((kcal / total) * 100));
 }
