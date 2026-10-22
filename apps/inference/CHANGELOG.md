@@ -7,9 +7,12 @@ change moves the minor.
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-10-22
+
 ### Fixed
 
-- **The bearer header and base URLs are parsed in linear time.** The `Authorization` parser let two parts of its pattern match the same tab, so a header with a long tab run and a line break took quadratic time before its `401`. The trailing-slash cleanup of `MODEL_RUNTIME_URL`, `LCC_API_URL` and `OFF_API_URL` had the same flaw on a long run of slashes. Both now finish in one pass. Every key and address is read exactly as before, and no setting changes.
+- **The bearer header and base URLs are parsed in linear time.** The `Authorization` parser let two parts of its pattern match the same tab, so a header with a long tab run and a line break took quadratic time before its `401`. The trailing-slash cleanup of `MODEL_RUNTIME_URL`, `LCC_API_URL` and `OFF_API_URL` had the same flaw on a long run of slashes. Both now finish in one pass. Every key and address is read exactly as before, and no setting changes. ([c0440b74](https://github.com/LowCarbCheck/openplate/commit/c0440b74))
+- **The image runs on Node.js 24.22.1, which fixes CVE-2026-111497.** Older Node.js releases could be made to crash, leak memory or run code while they decompress Brotli data from an attacker (rated High). The service's requests to LowCarbCheck and Open Food Facts accept Brotli answers. Pull the new image and restart; no setting changes. ([Node.js advisory](https://nodejs.org/en/blog/vulnerability/october-2026-security-releases))
 
 ## [0.3.1] - 2026-10-07
 
