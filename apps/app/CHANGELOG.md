@@ -11,9 +11,12 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+## [0.69.2] - 2026-10-22
+
 ### Fixed
 
-- **The add screen no longer jumps when it learns about AI.** Under the search box, the "Log with AI" button or the note about connecting an AI used to appear a moment after the screen, and pushed "Can't find it? Add manually" and the rest of the page down. A tap aimed at that button in that moment did nothing. The space is now kept from the first paint.
+- **The add screen no longer jumps when it learns about AI.** Under the search box, the "Log with AI" button or the note about connecting an AI used to appear a moment after the screen, and pushed "Can't find it? Add manually" and the rest of the page down. A tap aimed at that button in that moment did nothing. The space is now kept from the first paint. ([7f2d5c66](https://github.com/LowCarbCheck/openplate/commit/7f2d5c66))
+- **The server runs on a Node.js release with a security fix.** The image is rebuilt on Node.js 24.22.1. Older Node.js releases could be made to crash, leak memory or run code while they decompress Brotli data from an attacker (CVE-2026-111497, rated High). The server's own requests to other services accept Brotli answers. Pull the new image and restart; no setting changes. ([Node.js advisory](https://nodejs.org/en/blog/vulnerability/october-2026-security-releases))
 
 ## [0.69.1] - 2026-10-13
 

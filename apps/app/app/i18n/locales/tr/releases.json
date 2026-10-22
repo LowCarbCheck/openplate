@@ -1,4 +1,11 @@
 {
+  "v0_69_2": {
+    "date": "2026-10-22",
+    "fixed": {
+      "01": "Ekleme ekranı, yapay zekayı algıladığında artık kayma yapmıyor.",
+      "02": "Sunucu, güvenlik düzeltmesi içeren bir Node.js sürümünde çalışır."
+    }
+  },
   "v0_69_1": {
     "date": "2026-10-13",
     "fixed": {
@@ -10,12 +17,6 @@
     "date": "2026-10-13",
     "added": {
       "01": "Günlük ve İçgörüler artık vitamin ve mineralleri bir bakışta gösterir."
-    }
-  },
-  "v0_68_1": {
-    "date": "2026-10-12",
-    "fixed": {
-      "01": "Yönetici kişi listesinde, yeni bir hesabın fotoğrafı olmadığı ifadesi artık yer almıyor."
     }
   }
 }

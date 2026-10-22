@@ -1623,6 +1623,13 @@
     "at": "2026-09-14",
     "tr": "örn. 154"
   },
+  "1171cf0836b97524": {
+    "en": "The server runs on a Node.js release with a security fix.",
+    "path": "releases:v0_69_2.fixed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-22",
+    "tr": "Sunucu, güvenlik düzeltmesi içeren bir Node.js sürümünde çalışır."
+  },
   "118a0ffa6e660d89": {
     "en": "Create an account",
     "path": "common:welcome.managed.signUp",
@@ -16084,6 +16091,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Derleme tarihi"
+  },
+  "b25483318917ad42": {
+    "en": "The add screen no longer jumps when it learns about AI.",
+    "path": "releases:v0_69_2.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-22",
+    "tr": "Ekleme ekranı, yapay zekayı algıladığında artık kayma yapmıyor."
   },
   "b2588c48eefae561": {
     "en": "This instance is invite-only",

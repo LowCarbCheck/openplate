@@ -1,4 +1,11 @@
 {
+  "v0_69_2": {
+    "date": "2026-10-22",
+    "fixed": {
+      "01": "La pantalla de añadir ya no da saltos cuando detecta la IA.",
+      "02": "El servidor se ejecuta en una versión de Node.js con un parche de seguridad."
+    }
+  },
   "v0_69_1": {
     "date": "2026-10-13",
     "fixed": {
@@ -10,12 +17,6 @@
     "date": "2026-10-13",
     "added": {
       "01": "El diario y Análisis muestran ahora las vitaminas y los minerales de un vistazo."
-    }
-  },
-  "v0_68_1": {
-    "date": "2026-10-12",
-    "fixed": {
-      "01": "La lista de personas de administración ya no indica que una cuenta nueva no tiene fotos."
     }
   }
 }

@@ -1,4 +1,11 @@
 {
+  "v0_69_2": {
+    "date": "2026-10-22",
+    "fixed": {
+      "01": "Die Hinzufügen-Ansicht springt nicht mehr, wenn sie von der KI erfährt.",
+      "02": "Der Server läuft auf einem Node.js-Release mit einer Sicherheitskorrektur."
+    }
+  },
   "v0_69_1": {
     "date": "2026-10-13",
     "fixed": {
@@ -10,12 +17,6 @@
     "date": "2026-10-13",
     "added": {
       "01": "Das Tagebuch und Einblicke zeigen Vitamine und Mineralstoffe jetzt auf einen Blick."
-    }
-  },
-  "v0_68_1": {
-    "date": "2026-10-12",
-    "fixed": {
-      "01": "Die Personenliste im Adminbereich zeigt für neue Konten nicht mehr an, dass keine Fotos vorhanden sind."
     }
   }
 }

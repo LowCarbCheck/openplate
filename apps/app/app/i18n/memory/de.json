@@ -1623,6 +1623,13 @@
     "at": "2026-09-14",
     "de": "z. B. 154"
   },
+  "1171cf0836b97524": {
+    "en": "The server runs on a Node.js release with a security fix.",
+    "path": "releases:v0_69_2.fixed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-22",
+    "de": "Der Server läuft auf einem Node.js-Release mit einer Sicherheitskorrektur."
+  },
   "118a0ffa6e660d89": {
     "en": "Create an account",
     "path": "common:welcome.managed.signUp",
@@ -16084,6 +16091,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Erstellt"
+  },
+  "b25483318917ad42": {
+    "en": "The add screen no longer jumps when it learns about AI.",
+    "path": "releases:v0_69_2.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-22",
+    "de": "Die Hinzufügen-Ansicht springt nicht mehr, wenn sie von der KI erfährt."
   },
   "b2588c48eefae561": {
     "en": "This instance is invite-only",

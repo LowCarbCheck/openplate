@@ -1,4 +1,11 @@
 {
+  "v0_69_2": {
+    "date": "2026-10-22",
+    "fixed": {
+      "01": "The add screen no longer jumps when it learns about AI.",
+      "02": "The server runs on a Node.js release with a security fix."
+    }
+  },
   "v0_69_1": {
     "date": "2026-10-13",
     "fixed": {
@@ -10,12 +17,6 @@
     "date": "2026-10-13",
     "added": {
       "01": "The diary and Insights now show vitamins and minerals at a glance."
-    }
-  },
-  "v0_68_1": {
-    "date": "2026-10-12",
-    "fixed": {
-      "01": "The admin people list no longer says a new account has no photos."
     }
   }
 }

@@ -1,4 +1,11 @@
 {
+  "v0_69_2": {
+    "date": "2026-10-22",
+    "fixed": {
+      "01": "L'écran d'ajout ne saute plus lorsqu'il détecte la présence de l'IA.",
+      "02": "Le serveur fonctionne sur une version de Node.js qui intègre un correctif de sécurité."
+    }
+  },
   "v0_69_1": {
     "date": "2026-10-13",
     "fixed": {
@@ -10,12 +17,6 @@
     "date": "2026-10-13",
     "added": {
       "01": "Le journal et Analyses affichent désormais les vitamines et les minéraux d'un coup d'œil."
-    }
-  },
-  "v0_68_1": {
-    "date": "2026-10-12",
-    "fixed": {
-      "01": "La liste des personnes de l'administration n'indique plus qu'un nouveau compte n'a aucune photo."
     }
   }
 }

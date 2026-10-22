@@ -1,4 +1,11 @@
 {
+  "v0_69_2": {
+    "date": "2026-10-22",
+    "fixed": {
+      "01": "La schermata di aggiunta non salta più quando rileva la presenza dell'IA.",
+      "02": "Il server usa una versione di Node.js che include una correzione di sicurezza."
+    }
+  },
   "v0_69_1": {
     "date": "2026-10-13",
     "fixed": {
@@ -10,12 +17,6 @@
     "date": "2026-10-13",
     "added": {
       "01": "Il diario e Analisi ora mostrano vitamine e minerali a colpo d'occhio."
-    }
-  },
-  "v0_68_1": {
-    "date": "2026-10-12",
-    "fixed": {
-      "01": "L'elenco degli utenti nell'area di amministrazione non indica più che un nuovo account non ha foto."
     }
   }
 }
