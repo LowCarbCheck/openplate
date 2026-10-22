@@ -7,6 +7,12 @@ change moves the minor.
 
 ## [Unreleased]
 
+## [0.38.1] - 2026-10-22
+
+### Fixed
+
+- **The image runs on Node.js 24.22.1, which fixes CVE-2026-111497.** Older Node.js releases could be made to crash, leak memory or run code while they decompress Brotli data from an attacker (rated High). The core's requests to the AI provider and the mailer accept Brotli answers. Pull the new image and restart; no setting changes. ([Node.js advisory](https://nodejs.org/en/blog/vulnerability/october-2026-security-releases))
+
 ## [0.38.0] - 2026-10-12
 
 ### Added
