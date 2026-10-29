@@ -94,9 +94,9 @@ describe('derivePortionMultiplier', () => {
 
 describe('computeMacroPreview', () => {
   it('computes per-portion net carbs on the per-100g color basis', () => {
-    const preview = computeMacroPreview({ macrosPer100g: makeMacros(), grams: 200 });
+    const preview = computeMacroPreview({ macrosPer100g: makeMacros(), grams: 200, carbBasis: 'total' });
     assert.ok(preview);
-    // net carbs/100g = 10 - 2 - 0 = 8 (used for the color)
+    // net carbs/100g = 10 - 2 - 0 = 8 on the stated US basis (used for the color)
     assert.strictEqual(preview.netCarbsPer100g, 8);
     // per portion (200g) = 8 * 200 / 100 = 16
     assert.strictEqual(preview.netCarbsForPortion, 16);
@@ -109,6 +109,7 @@ describe('computeMacroPreview', () => {
     const preview = computeMacroPreview({
       macrosPer100g: makeMacros({ carbs: 3, fiber: 4, polyols: 2 }),
       grams: 100,
+      carbBasis: 'total',
     });
     assert.ok(preview);
     assert.strictEqual(preview.netCarbsPer100g, 0);
@@ -119,6 +120,7 @@ describe('computeMacroPreview', () => {
     const preview = computeMacroPreview({
       macrosPer100g: makeMacros({ protein: null, fat: null, kcal: null }),
       grams: 100,
+      carbBasis: 'total',
     });
     assert.ok(preview);
     assert.strictEqual(preview.proteinForPortion, null);
@@ -127,7 +129,11 @@ describe('computeMacroPreview', () => {
   });
 
   it('returns null when carbs are unknown (macros unknown — name only)', () => {
-    const preview = computeMacroPreview({ macrosPer100g: makeMacros({ carbs: null }), grams: 100 });
+    const preview = computeMacroPreview({
+      macrosPer100g: makeMacros({ carbs: null }),
+      grams: 100,
+      carbBasis: undefined,
+    });
     assert.strictEqual(preview, null);
   });
 
@@ -142,6 +148,7 @@ describe('computeMacroPreview', () => {
         macrosPer100g: makeMacros({ carbs: 6, fiber: 12 }),
         grams: 100,
         authoritativeNetCarbsPer100g: 5,
+        carbBasis: undefined,
       });
       assert.ok(preview);
       assert.strictEqual(preview.netCarbsPer100g, 5);
@@ -155,6 +162,7 @@ describe('computeMacroPreview', () => {
         macrosPer100g: makeMacros({ carbs: 6, fiber: 12 }),
         grams: 200,
         authoritativeNetCarbsPer100g: 5,
+        carbBasis: undefined,
       });
       assert.ok(preview);
       assert.strictEqual(preview.netCarbsForPortion, 10);
@@ -165,12 +173,13 @@ describe('computeMacroPreview', () => {
         macrosPer100g: makeMacros({ carbs: 6, fiber: 12 }),
         grams: 100,
         authoritativeNetCarbsPer100g: null,
+        carbBasis: undefined,
       });
       assert.strictEqual(preview, null);
     });
 
     it('omitting the argument entirely preserves the original self-computed formula (personal/recent foods, AI estimates — no upstream figure exists)', () => {
-      const preview = computeMacroPreview({ macrosPer100g: makeMacros(), grams: 100 });
+      const preview = computeMacroPreview({ macrosPer100g: makeMacros(), grams: 100, carbBasis: 'total' });
       assert.ok(preview);
       // Same result as the very first test in this describe block, with no override supplied.
       assert.strictEqual(preview.netCarbsPer100g, 8);

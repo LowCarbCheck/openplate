@@ -384,6 +384,13 @@
     "at": "2026-09-14",
     "it": "Applicato"
   },
+  "048449593f30cb95": {
+    "en": "Net carbs (above) = Carbs minus Fiber, minus any sugar alcohols.",
+    "path": "common:entry.netCarbsFormulaTotal",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-29",
+    "it": "Carboidrati netti (sopra) = carboidrati meno fibre, meno gli eventuali polioli."
+  },
   "048c83e1be822386": {
     "en": "{{value}} g net carbs / 100 g",
     "path": "common:entry.hero.per100gBadge",
@@ -6019,6 +6026,13 @@
     "at": "2026-10-07",
     "it": "Quante foto sono state analizzate per te questa settimana."
   },
+  "452cf4f910b4cc61": {
+    "en": "Automatic works out the label style from the numbers you enter. Pick US or EU only when you know your label: US labels count fiber inside \"Total Carbohydrate\", EU labels list it on its own row.",
+    "path": "common:add.custom.carbBasis.automaticHint",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-29",
+    "it": "La modalità automatica ricava lo stile dell'etichetta dai numeri che inserisci. Scegli US o EU solo quando conosci l'etichetta: quelle statunitensi conteggiano le fibre all'interno di \"Carboidrati totali\", mentre quelle europee le indicano in una riga a parte."
+  },
   "453ee374531ae42f": {
     "en": "Choose from library",
     "path": "common:scan.capture.chooseLibrary",
@@ -8972,6 +8986,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Hai chiuso la pagina di pagamento. Non è stato addebitato nulla."
+  },
+  "6560979331752c1a": {
+    "en": "Net carbs (above) = Carbs minus any sugar alcohols. Fiber is already left out of Carbs here, as on EU labels.",
+    "path": "common:entry.netCarbsFormulaAvailable",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-29",
+    "it": "Carboidrati netti (sopra) = carboidrati meno gli eventuali polioli. Qui le fibre sono già escluse dai carboidrati, come nelle etichette europee."
   },
   "65a5b1fe182a9ed2": {
     "en": "Near your calorie goal",
@@ -12311,6 +12332,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Connetti il tuo provider AI"
+  },
+  "89d4d004ac0a86bf": {
+    "en": "Automatic",
+    "path": "common:add.custom.carbBasis.automatic",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-29",
+    "it": "Automatico"
   },
   "89f4be500bc83669": {
     "en": "Ask the study to send the link again, or open it from the consent materials.",
@@ -21040,6 +21068,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "it": "Accodamento in corso…"
+  },
+  "ea3e755b9c021c46": {
+    "en": "Net carbs = carbs without fiber and sugar alcohols.",
+    "path": "common:diary.drilldown.netCarbsMeaning",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-29",
+    "it": "Carboidrati netti = carboidrati senza fibre e polioli."
   },
   "ea437a2b3de664f7": {
     "en": "No target set",

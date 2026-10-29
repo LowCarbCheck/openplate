@@ -206,7 +206,7 @@ describe('FINDING 1, end to end — logging a curated match then editing a macro
     assert.equal(edited.netCarbsPer100g, undefined, 'a real macro edit must clear the authoritative figure (existing, correct behaviour)');
     assert.equal(edited.carbBasis, 'available', 'the basis must survive the edit unchanged');
 
-    const netCarbs = computeNetCarbsFromParts(edited.macros, edited.carbBasis);
+    const netCarbs = computeNetCarbsFromParts({ explicit: edited.carbBasis, macros: edited.macros, grams: edited.quantityGrams });
     assert.equal(
       netCarbs,
       AVAILABLE_CARBS_PER_100G - 0,
@@ -221,21 +221,23 @@ describe('FINDING 1, end to end — logging a curated match then editing a macro
     assert.equal(logged.carbBasis, 'total');
 
     const edited = applyMacroEdit(logged, FIBER_PER_100G + 0.1);
-    const netCarbs = computeNetCarbsFromParts(edited.macros, edited.carbBasis);
+    const netCarbs = computeNetCarbsFromParts({ explicit: edited.carbBasis, macros: edited.macros, grams: edited.quantityGrams });
     assert.equal(netCarbs, AVAILABLE_CARBS_PER_100G - (FIBER_PER_100G + 0.1), 'a total-basis food must still subtract the (edited) fibre figure');
   });
 
-  it('an unrecognised-origin entry, macro-edited the same way, behaves exactly as before this fix (undefined basis == total formula)', () => {
+  it('an unrecognised-origin entry, macro-edited the same way, has its basis read from the numbers, not guessed from the origin', () => {
     const candidate = { ...localCuratedMatchToCandidate(curatedMatch({ origin: 'some-future-origin' })), matchTier: matchTier(0.95) };
     const logged = logCandidate(candidate);
     assert.equal(logged.carbBasis, undefined, 'an unrecognised origin must never guess a basis');
 
     const edited = applyMacroEdit(logged, FIBER_PER_100G + 0.1);
-    const netCarbs = computeNetCarbsFromParts(edited.macros, edited.carbBasis);
-    assert.equal(
-      netCarbs,
-      AVAILABLE_CARBS_PER_100G - (FIBER_PER_100G + 0.1),
-      'UNKNOWN basis must still behave exactly like "total" — no existing user history should move because of this fix',
-    );
+    assert.equal(edited.carbBasis, undefined, 'the edit must not store a guessed basis either');
+    // Since 2026-10-29 an unstated basis is resolved at read time: fibre far
+    // above carbs is an EU panel, so the printed carbs stand. Until then this
+    // test pinned the US formula, which floored this food to a false zero.
+    const netCarbs = computeNetCarbsFromParts({ explicit: edited.carbBasis, macros: edited.macros, grams: edited.quantityGrams });
+    assert.equal(netCarbs, AVAILABLE_CARBS_PER_100G, 'an unstated basis with fibre above carbs reads as EU');
+    // CONTROL: the FDC entry just above, stated `total`, does subtract the fibre.
+    assert.notEqual(netCarbs, AVAILABLE_CARBS_PER_100G - (FIBER_PER_100G + 0.1));
   });
 });

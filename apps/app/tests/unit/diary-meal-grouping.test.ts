@@ -28,6 +28,8 @@ function log(id: string, overrides: Partial<LocalFoodLog> = {}): LocalFoodLog {
     quantityGrams: 100,
     macros: { carbs: 0, fiber: 0, sugars: 0, polyols: null, protein: 0, fat: 0, kcal: 0 },
     mealType: 'lunch',
+    // A US row: net carbs are carbs minus fibre. An unstated basis is read from the numbers (2026-10-29).
+    carbBasis: 'total',
     source: 'manual',
     aiEstimated: false,
     curatedSource: null,

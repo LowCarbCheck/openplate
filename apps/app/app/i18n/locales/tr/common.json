@@ -36,10 +36,10 @@
       "caloriesSummary": "{{value}} kalori",
       "cancel": "İptal",
       "carbBasis": {
+        "automatic": "Otomatik",
+        "automaticHint": "Otomatik seçeneği, etiket biçimini girdiğin sayılardan çıkarır. Yalnızca etiketini bildiğinde ABD veya AB seçeneğini belirle: ABD etiketleri lifi \"Toplam Karbonhidrat\" içinde sayar, AB etiketleri ise lifi ayrı bir satırda listeler.",
         "available": "AB tarzı (karbonhidrat lifi zaten içermez)",
-        "hint": "ABD etiketleri lifi \"Toplam Karbonhidrat\" içinde sayar, AB etiketleri ise lifi ayrı bir satırda listeler ve lifi zaten hariç tutar. Bunu doğru ayarlamak lifin iki kez düşülmesini engeller.",
         "legend": "Bu yiyeceğin karbonhidratı nasıl sayılır",
-        "notSure": "Emin değilim",
         "total": "ABD tarzı (karbonhidrat lifi içerir)"
       },
       "carbsSummary": "{{value}} g karbonhidrat",
@@ -636,7 +636,7 @@
       "title": "Dünkü gibi"
     },
     "drilldown": {
-      "netCarbsDefinition": "Net karbonhidrat = karbonhidrat eksi lif, eksi şeker alkolleri.",
+      "netCarbsMeaning": "Net karbonhidrat = lif ve şeker alkolleri hariç karbonhidrat.",
       "fiberEnergyNote": "Kalori payı, lifi gram başına 2 kcal olarak hesaplar.",
       "noTarget": "Hedef belirlenmedi",
       "derivedTag": "hedeflerinden",
@@ -863,7 +863,8 @@
       "lunch": "Öğle yemeği",
       "snack": "Atıştırmalık"
     },
-    "netCarbsFormula": "Net karbonhidrat (yukarıda) = Karbonhidrat eksi Lif, eksi şeker alkolleri.",
+    "netCarbsFormulaAvailable": "Net karbonhidrat (yukarıda) = Karbonhidrattan şeker alkollerinin çıkarılmasıyla bulunur. AB etiketlerinde olduğu gibi, burada lif zaten Karbonhidrat değerine dahil edilmemiştir.",
+    "netCarbsFormulaTotal": "Net karbonhidrat (yukarıda) = Karbonhidrat eksi Lif, eksi şeker alkolleri.",
     "photo": {
       "alt": "{{name}} için tabağın",
       "caption": "Yalnızca bu cihazda saklanır"
@@ -1689,7 +1690,6 @@
         "label": "Yalnızca alışkanlık"
       },
       "netCarbs": {
-        "description": "Toplam karbonhidrattan lifin çıkarılmasıyla bulunur, karbonhidratı azaltıyorsan izlemen gereken değerdir.",
         "label": "Net karbonhidrat"
       },
       "recommended": "Önerilen"

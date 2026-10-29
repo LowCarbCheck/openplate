@@ -615,7 +615,7 @@ export function WhatYouAte({
       <MacroBreakdown grams={grams} basis={basis} />
       <div className="space-y-1">
         {kcalLine}
-        <p className="text-xs text-muted-foreground">{t('diary.drilldown.netCarbsDefinition')}</p>
+        <p className="text-xs text-muted-foreground">{t('diary.drilldown.netCarbsMeaning')}</p>
         <p className="text-xs text-muted-foreground">{t('diary.drilldown.fiberEnergyNote')}</p>
         {caveat && <p className="text-xs text-muted-foreground">{caveat}</p>}
       </div>

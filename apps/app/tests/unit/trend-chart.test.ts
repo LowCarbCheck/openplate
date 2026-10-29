@@ -24,6 +24,8 @@ function makeLog(overrides: Partial<FoodLogMacroSnapshot> = {}): FoodLogMacroSna
     fat: 5,
     kcal: 150,
     aiEstimated: false,
+    carbBasis: undefined,
+    quantityGrams: 100,
     ...overrides,
   };
 }

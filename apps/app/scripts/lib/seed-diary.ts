@@ -49,7 +49,7 @@ import type {
   PantryUnit,
 } from '../../app/lib/local-store/schema';
 import type { Macros } from '../../app/lib/macros';
-import { computeNetCarbsFromParts } from '../../app/lib/net-carbs';
+import { computeNetCarbsFromParts, type CarbBasis } from '../../app/lib/net-carbs';
 import { dayBoundsInTimezone, shiftDate, todayInTimezone } from '../../app/lib/user-days';
 import type { MealType } from '../../types/enums';
 
@@ -116,6 +116,14 @@ const SEED_CURATED_SOURCE = 'seed-catalog';
 
 /** A credit string on the curated half of the catalog, so the licence-attribution surfaces have something to draw. */
 const SEED_ATTRIBUTION = 'Seed catalogue (invented figures, not a real food database)';
+
+/**
+ * The convention every catalogue figure is written in, STATED on every seeded
+ * row. Left unstated, the app would resolve it from the numbers (2026-10-29),
+ * and a food like the 85 % chocolate has too little energy evidence to read as
+ * US, so its seeded net carbs would move.
+ */
+const SEED_CARB_BASIS = 'total' satisfies CarbBasis;
 
 /** One food in the seed catalogue. Macros are PER 100 G, total-carbohydrate convention (fibre included in `carbs`). */
 interface SeedFood {
@@ -405,7 +413,7 @@ function scaleToServing(per100g: Macros, grams: number): Macros {
 
 /** Net carbs per 100 g for a catalogue food. `computeNetCarbsFromParts` is the app's own formula, not a second copy of it. */
 function netCarbsPer100g(food: SeedFood): number {
-  const net = computeNetCarbsFromParts(food.macrosPer100g);
+  const net = computeNetCarbsFromParts({ explicit: SEED_CARB_BASIS, macros: food.macrosPer100g, grams: 100 });
   if (net === null) throw new Error(`Seed food ${food.id} has no carbohydrate figure`);
   return net;
 }
@@ -541,6 +549,7 @@ function toFoodLog({
     loggedAt,
     createdAt: loggedAt,
     logBatchId: null,
+    carbBasis: SEED_CARB_BASIS,
   };
   // WRITTEN ONLY WHEN THERE IS SOMETHING TO WRITE, and never as `null`.
   // `attribution` and `netCarbsPer100g` are THREE-state fields (`schema.ts`):
@@ -564,6 +573,7 @@ function buildPersonalFoods(createdAt: number): LocalPersonalFood[] {
       macrosPer100g: food.macrosPer100g,
       source: 'user',
       createdAt,
+      carbBasis: SEED_CARB_BASIS,
     };
     // Absent rather than `null` for the hand-typed half, for the reason spelled
     // out in {@link toFoodLog}.
@@ -638,6 +648,7 @@ function buildSavedMeals(originAt: number): LocalSavedMeal[] {
         aiEstimated: false,
         curatedSource: food.curated ? SEED_CURATED_SOURCE : null,
         foodId: `seed-food-${food.id}`,
+        carbBasis: SEED_CARB_BASIS,
       };
       // Same three-state convention `toFoodLog` follows: written only when
       // there is something to write, never as `null`.
@@ -870,7 +881,11 @@ export function summarizeSeedDiary(envelope: BackupEnvelope): SeedDiarySummary {
   const dayKeys = [...new Set(envelope.data.foodLogs.map((log) => log.dayKey))].toSorted();
   const netCarbsByDayKey = new Map<string, number>();
   for (const log of envelope.data.foodLogs) {
-    const perServing = computeNetCarbsFromParts(log.macros);
+    const perServing = computeNetCarbsFromParts({
+      explicit: log.carbBasis,
+      macros: log.macros,
+      grams: log.quantityGrams,
+    });
     netCarbsByDayKey.set(log.dayKey, (netCarbsByDayKey.get(log.dayKey) ?? 0) + (perServing ?? 0));
   }
 

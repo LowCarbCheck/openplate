@@ -36,10 +36,10 @@
       "caloriesSummary": "{{value}} calorie",
       "cancel": "Annulla",
       "carbBasis": {
+        "automatic": "Automatico",
+        "automaticHint": "La modalità automatica ricava lo stile dell'etichetta dai numeri che inserisci. Scegli US o EU solo quando conosci l'etichetta: quelle statunitensi conteggiano le fibre all'interno di \"Carboidrati totali\", mentre quelle europee le indicano in una riga a parte.",
         "available": "Stile UE (i carboidrati escludono già le fibre)",
-        "hint": "Le etichette USA includono le fibre in \"Carboidrati totali\"; le etichette UE riportano le fibre su una riga a parte e le escludono già. Impostare correttamente questo valore evita di sottrarre le fibre due volte.",
         "legend": "Come vengono conteggiati i carboidrati di questo alimento",
-        "notSure": "Non so",
         "total": "Stile USA (i carboidrati includono le fibre)"
       },
       "carbsSummary": "{{value}} g carboidrati",
@@ -636,7 +636,7 @@
       "title": "Come ieri"
     },
     "drilldown": {
-      "netCarbsDefinition": "Carboidrati netti = carboidrati meno fibre, meno eventuali polioli.",
+      "netCarbsMeaning": "Carboidrati netti = carboidrati senza fibre e polioli.",
       "fiberEnergyNote": "La ripartizione calorica calcola le fibre a 2 kcal per grammo.",
       "noTarget": "Nessun obiettivo impostato",
       "derivedTag": "dai tuoi obiettivi",
@@ -863,7 +863,8 @@
       "lunch": "Pranzo",
       "snack": "Spuntino"
     },
-    "netCarbsFormula": "Carboidrati netti (sopra) = Carboidrati meno Fibre, meno eventuali polioli.",
+    "netCarbsFormulaAvailable": "Carboidrati netti (sopra) = carboidrati meno gli eventuali polioli. Qui le fibre sono già escluse dai carboidrati, come nelle etichette europee.",
+    "netCarbsFormulaTotal": "Carboidrati netti (sopra) = carboidrati meno fibre, meno gli eventuali polioli.",
     "photo": {
       "alt": "Il tuo piatto per {{name}}",
       "caption": "Archiviato solo su questo dispositivo"
@@ -1689,7 +1690,6 @@
         "label": "Solo l'abitudine"
       },
       "netCarbs": {
-        "description": "Carboidrati totali meno le fibre, il valore da controllare se stai riducendo i carboidrati.",
         "label": "Carboidrati netti"
       },
       "recommended": "Consigliato"

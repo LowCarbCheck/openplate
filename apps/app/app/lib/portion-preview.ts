@@ -162,15 +162,14 @@ export function computeMacroPreview({
    */
   authoritativeNetCarbsPer100g?: number | null;
   /**
-   * Which printed-panel convention `macrosPer100g.carbs` was read from,
-   * governing the compute-from-parts fallback below when
-   * `authoritativeNetCarbsPer100g` is absent — see `#app/lib/net-carbs` and
-   * spec 13 (M123). `undefined` (the default) is treated as `total`, today's
-   * original formula.
+   * Which printed-panel convention `macrosPer100g.carbs` was read from, as
+   * stated, or `undefined` when nobody stated one, which `resolveCarbBasis`
+   * (`#app/lib/net-carbs`) then reads from the per-100 g macros. Required, so
+   * a caller cannot leave it out by accident.
    */
-  carbBasis?: CarbBasis;
+  carbBasis: CarbBasis | undefined;
 }): MacroPreview | null {
-  const fromParts = computeNetCarbsFromParts(macrosPer100g, carbBasis);
+  const fromParts = computeNetCarbsFromParts({ explicit: carbBasis, macros: macrosPer100g, grams: 100 });
   const netCarbsPer100g =
     authoritativeNetCarbsPer100g !== undefined ? authoritativeNetCarbsPer100g
     : fromParts === null ? null

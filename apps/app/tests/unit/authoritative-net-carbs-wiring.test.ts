@@ -76,17 +76,25 @@ import type { Macros } from '../../app/lib/macros';
 import type { FoodMatch } from '../../app/services/food-resolution/types';
 
 /**
- * Wheat bran, per 100 g, shaped exactly like a real bls-origin row: the
- * `carbs` field is the AVAILABLE-carbohydrate figure (fiber already removed),
- * and `fiber` is reported separately and is far LARGER than it. The naive
- * local formula therefore computes `max(0, 21.7 - 42.8) = 0`, a green,
- * confident, completely wrong badge, while the authoritative figure is 21.7,
- * which is `high` on the traffic light. The two answers disagree in the
- * number AND in the color, which is what makes this fixture discriminating.
+ * Wheat bran, per 100 g, shaped like a real bls-origin row: the `carbs` field
+ * is the AVAILABLE-carbohydrate figure (fiber already removed), and `fiber`
+ * is reported separately and is far LARGER than it. On a US basis the local
+ * formula computes `max(0, 21.7 - 42.8) = 0`, a green, confident, completely
+ * wrong badge.
+ *
+ * THE AUTHORITATIVE FIGURE IS 15.4, NOT THE 21.7 A REAL BLS ROW CARRIES. Since
+ * 2026-10-29 a row with no stated basis is resolved from its numbers, and these
+ * numbers (fibre far above carbs) resolve to the EU reading, 21.7. With the
+ * real figure a surface that dropped the stored figure and recomputed from the
+ * parts would render the same 21.7 and pass. 15.4 is a number the parts give
+ * on neither basis, so every "the stored figure wins" assertion below can
+ * still fail, and it is still `high`, as the real figure is.
  */
 const AVAILABLE_CARBS_PER_100G = 21.7;
 const FIBER_PER_100G = 42.8;
-const AUTHORITATIVE_NET_CARBS_PER_100G = 21.7;
+const AUTHORITATIVE_NET_CARBS_PER_100G = 15.4;
+/** What the parts give with no stated basis: the EU reading, the printed carbs. */
+const UNSTATED_PARTS_NET_CARBS_PER_100G = AVAILABLE_CARBS_PER_100G;
 
 /**
  * A 100 g serving size, so the portion step's default grams are 100 and both
@@ -144,8 +152,8 @@ function wheatBranCandidate(overrides: Partial<FoodMatch> = {}): AddSearchCandid
  * The SAME numbers, typed in by hand as a personal food instead of fetched
  * from a source. Nothing about it says "wheat bran from BLS", the person is
  * the source, so it must carry no authoritative figure at all, while still
- * displaying the local estimate those numbers produce (a green 0, which is
- * genuinely the best answer available from parts alone).
+ * displaying the local estimate those numbers produce (21.7, the EU reading an
+ * unstated basis gets from fibre this far above carbs).
  */
 function wheatBranPersonalFood(): LocalPersonalFood {
   return {
@@ -211,7 +219,7 @@ function findNetCarbBadge(html: string): NetCarbBadge {
 describe('authoritative net carbs reach every surface that displays them', () => {
   it('FIXTURE CHECK: the naive local formula really does floor this food to 0 (if this fails the other tests below prove nothing)', () => {
     const candidate = wheatBranCandidate();
-    const naive = computeMacroPreview({ macrosPer100g: candidate.macrosPer100g, grams: SERVING_GRAMS });
+    const naive = computeMacroPreview({ macrosPer100g: candidate.macrosPer100g, grams: SERVING_GRAMS, carbBasis: 'total' });
     assert.equal(naive?.netCarbsPer100g, 0);
     assert.notEqual(AUTHORITATIVE_NET_CARBS_PER_100G, 0);
   });
@@ -356,10 +364,11 @@ function diaryNetCarbsFor(logs: LocalFoodLog[]): number | null | undefined {
 }
 
 describe('authoritative net carbs survive being logged', () => {
-  it('FIXTURE CHECK: an entry WITHOUT the stored figure really does total 0 (if this fails the tests below prove nothing)', () => {
+  it('FIXTURE CHECK: an entry WITHOUT the stored figure totals the parts, not the figure (if this fails the tests below prove nothing)', () => {
     const entry = logEntryFromAddFlow(wheatBranCandidate(), { grams: 100 });
     const { netCarbsPer100g: _dropped, ...withoutFigure } = entry;
-    assertGrams(diaryNetCarbsFor([withoutFigure]), 0);
+    assertGrams(diaryNetCarbsFor([withoutFigure]), UNSTATED_PARTS_NET_CARBS_PER_100G);
+    assert.notEqual(UNSTATED_PARTS_NET_CARBS_PER_100G, AUTHORITATIVE_NET_CARBS_PER_100G);
   });
 
   it('the diary total for a logged curated food shows the authoritative figure, not the double-subtracted 0', () => {
@@ -411,8 +420,8 @@ describe('authoritative net carbs survive being logged', () => {
     // time rather than stored as a second, drift-prone copy on the candidate.
     const localCandidate: AddSearchCandidate = { ...localFoodToCandidate(wheatBranPersonalFood()), matchTier: null };
     assert.equal(localCandidate.authoritativeNetCarbsPer100g, undefined);
-    assert.equal(findNetCarbBadge(renderSearchResultRow(localCandidate)).figure, '0');
-    assert.equal(findNetCarbBadge(renderPortionStep(localCandidate)).figure, '0');
+    assert.equal(findNetCarbBadge(renderSearchResultRow(localCandidate)).figure, String(UNSTATED_PARTS_NET_CARBS_PER_100G));
+    assert.equal(findNetCarbBadge(renderPortionStep(localCandidate)).figure, String(UNSTATED_PARTS_NET_CARBS_PER_100G));
   });
 
   it('the diary ENTRY ROW renders the authoritative figure, this is the exact string that read "0g net carbs"', () => {
@@ -464,7 +473,7 @@ describe('authoritative net carbs survive being logged', () => {
     };
     assert.equal('netCarbsPer100g' in legacyEntry, false, 'the fixture must genuinely lack the key');
     assert.equal(localFoodLogToSnapshot(legacyEntry).netCarbs, undefined, 'absent must stay absent, not become null');
-    assertGrams(diaryNetCarbsFor([legacyEntry]), 0);
+    assertGrams(diaryNetCarbsFor([legacyEntry]), UNSTATED_PARTS_NET_CARBS_PER_100G);
   });
 });
 
@@ -675,9 +684,11 @@ describe('the scan confirm step carries an applied match’s authoritative net c
       renderConfirmStep(confirmFormData({ macros: matchMacrosToFormValues(wheatBranMatch().macrosPer100g) })),
     );
     assert.ok(aiOnly[0], 'expected an item badge');
-    // With the match's macros in the fields but NO match applied, the local
-    // formula floors this food to 0, the exact wrong answer the fix removes.
-    assert.equal(aiOnly[0].figure, '0');
+    // With the match's macros in the fields but NO match applied, the card
+    // computes from the parts (the EU reading of an unstated basis), never
+    // the match's stored figure.
+    assert.equal(aiOnly[0].figure, String(UNSTATED_PARTS_NET_CARBS_PER_100G));
+    assert.notEqual(aiOnly[0].figure, String(AUTHORITATIVE_NET_CARBS_PER_100G));
   });
 
   it('shows the authoritative figure on the item card once a match is applied, not the double-subtracted 0', () => {
@@ -813,7 +824,7 @@ describe('one scan confirm writes two rows, and both carry the same number', () 
 
   it('FIXTURE CHECK: the saved food’s own macros really would estimate 0 (else nothing below is discriminating)', () => {
     const food = confirmedFoodFromScanFlow(confirmFormData(APPLIED));
-    const naive = computeMacroPreview({ macrosPer100g: food.macrosPer100g, grams: SERVING_GRAMS });
+    const naive = computeMacroPreview({ macrosPer100g: food.macrosPer100g, grams: SERVING_GRAMS, carbBasis: 'total' });
     assert.equal(naive?.netCarbsPer100g, 0);
   });
 
@@ -882,7 +893,7 @@ describe('one scan confirm writes two rows, and both carry the same number', () 
     assert.equal(candidate.authoritativeNetCarbsPer100g, undefined);
     // And it still SHOWS the local estimate those parts produce, withholding
     // the figure from storage must never blank the screen.
-    assert.equal(findNetCarbBadge(renderSearchResultRow(candidate)).figure, '0');
+    assert.equal(findNetCarbBadge(renderSearchResultRow(candidate)).figure, String(UNSTATED_PARTS_NET_CARBS_PER_100G));
     assert.equal(logEntryFromAddFlow(candidate, { grams: SERVING_GRAMS }).netCarbsPer100g, undefined);
   });
 
@@ -1064,7 +1075,7 @@ describe('the entry receipt hero reads the entry’s figure, not the linked food
 
   it('FIXTURE CHECK: the basis the receipt is handed really would recompute to 0', () => {
     const { food } = scanned();
-    assert.equal(computeMacroPreview({ macrosPer100g: food.macrosPer100g, grams: 100 })?.netCarbsPer100g, 0);
+    assert.equal(computeMacroPreview({ macrosPer100g: food.macrosPer100g, grams: 100, carbBasis: 'total' })?.netCarbsPer100g, 0);
   });
 
   it('renders the authoritative figure in the hero, not the double-subtracted 0', () => {
@@ -1092,7 +1103,10 @@ describe('the entry receipt hero reads the entry’s figure, not the linked food
   it('falls back to the parts for an entry that never had a figure, unchanged behaviour', () => {
     const { log, food } = scanned();
     const manual: LocalFoodLog = { ...log, netCarbsPer100g: undefined };
-    assert.equal(RECEIPT_HERO_BADGE.exec(renderEntryReceipt({ log: manual, food }))?.[2], '0');
+    assert.equal(
+      RECEIPT_HERO_BADGE.exec(renderEntryReceipt({ log: manual, food }))?.[2],
+      String(UNSTATED_PARTS_NET_CARBS_PER_100G),
+    );
   });
 
   it('renders "Macros unknown" rather than a fabricated 0 when the upstream figure is null', () => {
@@ -1139,7 +1153,8 @@ describe('editing a saved personal food keeps its authoritative figure honest', 
       macrosPer100g: { ...food.macrosPer100g, carbs: 30 },
       netCarbsPer100g: cleared,
     };
-    assert.equal(findNetCarbBadge(renderSearchResultRow(customCandidateFor(edited))).figure, '0');
+    // 30 g carbs against 42.8 g fibre, no basis stated: the EU reading, 30.
+    assert.equal(findNetCarbBadge(renderSearchResultRow(customCandidateFor(edited))).figure, '30');
   });
 });
 
@@ -1261,7 +1276,7 @@ describe('the diary’s frequent/favourite chip re-logs the same food, not a str
 
   it('FIXTURE CHECK: without the authoritative figure that same dot really would be green', () => {
     // 21.7 − 42.8 = −21.1, which classifies `low`. This is what the dot showed.
-    assert.equal(chipCarbStatus({ ...wheatBranMatch().macrosPer100g }, SERVING_GRAMS), 'low');
+    assert.equal(chipCarbStatus({ ...wheatBranMatch().macrosPer100g }, SERVING_GRAMS, { carbBasis: 'total' }), 'low');
   });
 
   it('carries NO figure and NO credit for a chip built from a plain manual log, nothing to claim, nobody to credit', () => {
@@ -1281,7 +1296,11 @@ describe('the diary’s frequent/favourite chip re-logs the same food, not a str
     assert.equal(relogged.netCarbsPer100g, undefined, 'a manual food’s chip must not invent an authoritative figure');
     assert.equal(relogged.attribution, null);
     assert.equal(relogged.portion, null);
-    assertGrams(diaryNetCarbsFor([relogged]), 0, 'and it still computes from the parts, exactly as before');
+    assertGrams(
+      diaryNetCarbsFor([relogged]),
+      UNSTATED_PARTS_NET_CARBS_PER_100G,
+      'and it still computes from the parts, exactly as before',
+    );
   });
 
   it('keeps an upstream-unknown null distinct from "never captured" across the chip round trip', () => {
@@ -1332,7 +1351,7 @@ describe('one favourite food, two logging paths, one number', () => {
 
   it('FIXTURE CHECK: the Recent candidate’s own macros really would estimate 0 (else nothing below is discriminating)', () => {
     const candidate = recentCandidateFor(sourceLog());
-    const naive = computeMacroPreview({ macrosPer100g: candidate.macrosPer100g, grams: SERVING_GRAMS });
+    const naive = computeMacroPreview({ macrosPer100g: candidate.macrosPer100g, grams: SERVING_GRAMS, carbBasis: 'total' });
     assert.equal(naive?.netCarbsPer100g, 0);
   });
 
@@ -1376,7 +1395,11 @@ describe('one favourite food, two logging paths, one number', () => {
     assert.equal(candidate.authoritativeNetCarbsPer100g, undefined);
     const relogged = logEntryFromAddFlow(candidate, { grams: SERVING_GRAMS });
     assert.equal(relogged.netCarbsPer100g, undefined, 'a manual food’s Recent row must not invent an upstream figure');
-    assertGrams(diaryNetCarbsFor([relogged]), 0, 'and it still computes from the parts, exactly as before');
+    assertGrams(
+      diaryNetCarbsFor([relogged]),
+      UNSTATED_PARTS_NET_CARBS_PER_100G,
+      'and it still computes from the parts, exactly as before',
+    );
   });
 
   it('keeps an upstream-unknown null distinct from "never captured" across the Recent-row round trip', () => {
@@ -1433,8 +1456,9 @@ describe('editing an entry keeps the authoritative figure honest', () => {
 
     const logged = logEntryFromAddFlow(wheatBranCandidate(), { grams: 100 });
     const edited: LocalFoodLog = { ...logged, macros: patch.snapshot, netCarbsPer100g: patch.netCarbsPer100g };
-    // Now the readers follow the numbers the user actually typed: 30 − 42.8 → clamped to 0.
-    assertGrams(diaryNetCarbsFor([edited]), 0);
+    // Now the readers follow the numbers the user actually typed: 30 g carbs
+    // against 42.8 g fibre, no basis stated, the EU reading, 30.
+    assertGrams(diaryNetCarbsFor([edited]), 30);
   });
 
   it('leaves an entry that never had a figure without one (a macro edit cannot invent authority)', () => {
@@ -1557,14 +1581,12 @@ describe('authoritative net carbs survive serialization', () => {
 
   it('exports the authoritative figure to CSV/JSON rather than re-deriving a negative from the parts', () => {
     const entry = logEntryFromAddFlow(wheatBranCandidate(), { grams: 100 });
-    const row = {
-      carbs: entry.macros.carbs,
-      fiber: entry.macros.fiber,
-      polyols: entry.macros.polyols,
-      netCarbs: localFoodLogToSnapshot(entry).netCarbs,
-    };
-    assertGrams(computeExportNetCarbs(row), AUTHORITATIVE_NET_CARBS_PER_100G);
-    // Without the override the export would read 21.7 − 42.8 = −21.1.
-    assertGrams(computeExportNetCarbs({ ...row, netCarbs: undefined }), AVAILABLE_CARBS_PER_100G - FIBER_PER_100G);
+    const row = { ...entry.macros, carbBasis: 'total' as const, netCarbs: localFoodLogToSnapshot(entry).netCarbs };
+    assertGrams(computeExportNetCarbs({ row, grams: entry.quantityGrams }), AUTHORITATIVE_NET_CARBS_PER_100G);
+    // Without the override the export would read, on a US basis, 21.7 − 42.8 = −21.1.
+    assertGrams(
+      computeExportNetCarbs({ row: { ...row, netCarbs: undefined }, grams: entry.quantityGrams }),
+      AVAILABLE_CARBS_PER_100G - FIBER_PER_100G,
+    );
   });
 });

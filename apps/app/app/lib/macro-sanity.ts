@@ -11,7 +11,7 @@
  */
 import type { Macros } from './macros';
 import { formatMacroNumberIn } from './format-macro-number';
-import type { CarbBasis } from './net-carbs';
+import { resolveCarbBasis, type CarbBasis } from './net-carbs';
 
 /** A single macro (or their sum) above this many grams per 100 g is impossible. */
 const MAX_SINGLE_MACRO_PER_100G = 100;
@@ -121,19 +121,19 @@ function _collectKcalMismatchIssue(per100g: Macros, t: Translate, language: stri
  * — crispbread, bran, chia — and flagging it there is a false positive one
  * field away from the model correctly reporting `available` (M123/13 review
  * finding). Sugars and polyols stay "of which" rows UNDER carbohydrate on
- * BOTH conventions, so those two comparisons run regardless of basis. An
- * absent/unknown `basis` keeps today's behaviour (both fibre comparisons
- * run), same UNKNOWN-means-`total` rule as the rest of spec 13.
+ * BOTH conventions, so those two comparisons run regardless of basis. The
+ * basis here is already RESOLVED (`checkMacroSanity` asks `resolveCarbBasis`),
+ * so an unstated one is read from the same numbers the net carbs are.
  */
 function _collectComponentOverTotalIssues(
   per100g: Macros,
   t: Translate,
   language: string | null | undefined,
-  basis: CarbBasis | undefined,
+  basis: CarbBasis,
 ): MacroSanityIssue[] {
   const issues: MacroSanityIssue[] = [];
   const { carbs, sugars, fiber, polyols } = per100g;
-  const fibreComparisonsApply = basis !== 'available';
+  const fibreComparisonsApply = basis === 'total';
 
   if (carbs !== null && sugars !== null && sugars > carbs) {
     issues.push({
@@ -273,23 +273,25 @@ export function checkLabelColumnAgreement(
  * @param language - active UI language, so the figures inside the copy carry
  *   that language's decimal separator (passed in for the same reason `t` is).
  * @param carbBasis - which printed-panel convention `per100g.carbs` was read
- *   from (M123/13 review finding); governs ONLY the fibre-vs-carbs component
- *   checks — see `_collectComponentOverTotalIssues`'s doc. `undefined` (a
- *   plate-photo AI estimate, which has no printed panel at all; a legacy
- *   reading from before this parameter existed) keeps today's behaviour.
+ *   from (M123/13 review finding), or `undefined` when nobody stated one;
+ *   governs ONLY the fibre-vs-carbs component checks, see
+ *   `_collectComponentOverTotalIssues`'s doc. It is resolved the way net carbs
+ *   resolve it, so the warning and the figure beside it agree. Required, so a
+ *   call site cannot drop it the way M226 found one had.
  * @returns the list of issues found; an empty array means the numbers look sane.
  */
 export function checkMacroSanity(
   per100g: Macros,
   t: Translate,
   language: string | null | undefined,
-  carbBasis?: CarbBasis,
+  carbBasis: CarbBasis | undefined,
 ): MacroSanityIssue[] {
+  const basis = resolveCarbBasis({ explicit: carbBasis, macros: per100g, grams: 100 });
   const issues = _collectSingleMacroIssues(per100g, t, language);
   const sumIssue = _collectMacroSumIssue(per100g, t, language);
   if (sumIssue) issues.push(sumIssue);
   const kcalIssue = _collectKcalMismatchIssue(per100g, t, language);
   if (kcalIssue) issues.push(kcalIssue);
-  issues.push(..._collectComponentOverTotalIssues(per100g, t, language, carbBasis));
+  issues.push(..._collectComponentOverTotalIssues(per100g, t, language, basis));
   return issues;
 }

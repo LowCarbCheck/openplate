@@ -36,10 +36,10 @@
       "caloriesSummary": "{{value}} calories",
       "cancel": "Cancel",
       "carbBasis": {
+        "automatic": "Automatic",
+        "automaticHint": "Automatic works out the label style from the numbers you enter. Pick US or EU only when you know your label: US labels count fiber inside \"Total Carbohydrate\", EU labels list it on its own row.",
         "available": "EU style (carbs already exclude fibre)",
-        "hint": "US labels count fibre inside \"Total Carbohydrate\"; EU labels list fibre on its own row and already exclude it. Getting this right stops fibre being subtracted twice.",
         "legend": "How this food's carbs are counted",
-        "notSure": "Not sure",
         "total": "US style (carbs include fibre)"
       },
       "carbsSummary": "{{value}} g carbs",
@@ -636,7 +636,7 @@
       "title": "Like yesterday"
     },
     "drilldown": {
-      "netCarbsDefinition": "Net carbs = carbs minus fiber, minus any sugar alcohols.",
+      "netCarbsMeaning": "Net carbs = carbs without fiber and sugar alcohols.",
       "fiberEnergyNote": "The calorie share counts fiber at 2 kcal per gram.",
       "noTarget": "No target set",
       "derivedTag": "from your targets",
@@ -863,7 +863,8 @@
       "lunch": "Lunch",
       "snack": "Snack"
     },
-    "netCarbsFormula": "Net carbs (above) = Carbs minus Fiber, minus any sugar alcohols.",
+    "netCarbsFormulaAvailable": "Net carbs (above) = Carbs minus any sugar alcohols. Fiber is already left out of Carbs here, as on EU labels.",
+    "netCarbsFormulaTotal": "Net carbs (above) = Carbs minus Fiber, minus any sugar alcohols.",
     "photo": {
       "alt": "Your plate for {{name}}",
       "caption": "Stored only on this device"
@@ -1689,7 +1690,6 @@
         "label": "Just the habit"
       },
       "netCarbs": {
-        "description": "Total carbs minus fiber, the number to watch if you are cutting back on carbs.",
         "label": "Net carbs"
       },
       "recommended": "Recommended"

@@ -56,13 +56,13 @@ export function chipCarbStatus(
      */
     authoritativeNetCarbsPer100g?: number | null;
     /**
-     * Which printed-panel convention `macros.carbs` was read from, governing
-     * the compute-from-parts fallback below when `authoritativeNetCarbsPer100g`
-     * is absent — see `#app/lib/net-carbs` and spec 13 (M123). `undefined`
-     * (the default) is treated as `total`, today's original formula.
+     * Which printed-panel convention `macros.carbs` was read from, as stated,
+     * or `undefined` when nobody stated one, which `resolveCarbBasis`
+     * (`#app/lib/net-carbs`) then reads from the macros. Required, so a caller
+     * cannot leave it out by accident.
      */
-    carbBasis?: CarbBasis;
-  } = {},
+    carbBasis: CarbBasis | undefined;
+  },
 ): CarbStatus | null {
   // Checked before the macro/grams guard on purpose: an authoritative figure is
   // already per 100 g, so it needs neither the recorded carbs nor the serving
@@ -71,7 +71,7 @@ export function chipCarbStatus(
     return authoritativeNetCarbsPer100g === null ? null : getCarbStatus(authoritativeNetCarbsPer100g);
   }
   if (grams <= 0) return null;
-  const netCarbsPerServing = computeNetCarbsFromParts(macros, carbBasis);
+  const netCarbsPerServing = computeNetCarbsFromParts({ explicit: carbBasis, macros, grams });
   if (netCarbsPerServing === null) return null;
   const netCarbsPer100g = (netCarbsPerServing * 100) / grams;
   return getCarbStatus(netCarbsPer100g);

@@ -25,6 +25,11 @@
  * catch, and exactly what the M123/10 checkpoint that opened spec 13
  * described as "the dangerous direction" for a low-carb tracker.
  *
+ * Since 2026-10-29 an UNSTATED basis is resolved from the numbers, and this EU
+ * fixture resolves to `available` on its own, so dropping its basis no longer
+ * changes a pixel. The block "a stated US basis reaches every surface" below
+ * carries the drop check now, on figures whose unstated reading differs.
+ *
  * The plate-scan review card (`ConfirmDraftForm` in `app/routes/add.photo.tsx`)
  * used to be listed here as deliberately NOT tested, on the reasoning that a
  * plate item is an AI estimate off a photo of food and so never carries a
@@ -217,10 +222,11 @@ function findNetCarbBadge(html: string): NetCarbBadge {
 }
 
 describe('carbBasis reaches every surface that displays a compute-from-parts net-carb figure', () => {
-  it('FIXTURE CHECK: the naive (basis-blind) formula really does double-subtract fibre on this food', () => {
+  it('FIXTURE CHECK: the US formula really does double-subtract fibre on this food', () => {
     const naive = computeMacroPreview({
       macrosPer100g: euBasisPersonalFood().macrosPer100g,
       grams: SERVING_GRAMS,
+      carbBasis: 'total',
     });
     // 21.7 - 42.8 = -21.1, clamped at 0 by `computeMacroPreview`, a
     // confident, wrong "0 g net carbs" for a food whose real figure is 21.7.
@@ -294,10 +300,62 @@ describe('carbBasis reaches every surface that displays a compute-from-parts net
     assert.ok(classes.includes(carbStatusBadgeClass.low), `expected the low-carb palette, got: ${classes}`);
   });
 
-  it('an UNKNOWN basis (absent, every pre-spec-13 row) is unaffected, still today\'s formula, unchanged', () => {
+  it('an UNSTATED basis is read from the numbers: fibre far above carbs is an EU panel, 21.7 and not 0', () => {
+    // Until 2026-10-29 an unstated basis meant the US formula and this read 0.
+    // CONTROL: the stated `total` case just above still reads 0.
     const candidate = euBasisCandidate({ carbBasis: undefined });
     const { figure } = findNetCarbBadge(renderSearchResultRow(candidate));
-    assert.equal(figure, '0');
+    assert.equal(figure, String(AVAILABLE_CARBS_PER_100G));
+  });
+});
+
+////////////////////////////////////////////////////////////////////////////////
+// A stated US basis, the case a dropped basis now changes
+////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Since 2026-10-29 an UNSTATED basis is resolved from the numbers, and the EU
+ * fixture above resolves to `available` on its own (fibre far above carbs). So
+ * a surface that dropped its `carbBasis` would still render 21.7 there, and the
+ * EU block can no longer catch the drop. A stated `total` can: these US figures
+ * carry no energy, so unstated they fall to the EU default, 21.7, while the US
+ * label they are says 21.7 - 12 = 9.7.
+ */
+const US_FIBER_PER_100G = 12;
+const US_NET_CARBS_PER_100G = 9.7;
+const US_MACROS_PER_100G: Macros = {
+  carbs: AVAILABLE_CARBS_PER_100G,
+  fiber: US_FIBER_PER_100G,
+  sugars: null,
+  polyols: null,
+  protein: 8,
+  fat: 2,
+  kcal: null,
+};
+
+describe('a stated US basis reaches every surface, where dropping it would change the figure', () => {
+  const usFood = { carbBasis: 'total', macrosPer100g: US_MACROS_PER_100G } as const;
+  const usLog = { carbBasis: 'total', macros: US_MACROS_PER_100G } as const;
+
+  it('FIXTURE CHECK: unstated, these figures read 21.7, so a surface that drops the basis is visible', () => {
+    const unstated = computeMacroPreview({ macrosPer100g: US_MACROS_PER_100G, grams: SERVING_GRAMS, carbBasis: undefined });
+    assert.equal(unstated?.netCarbsPer100g, AVAILABLE_CARBS_PER_100G);
+    assert.notEqual(US_NET_CARBS_PER_100G, AVAILABLE_CARBS_PER_100G);
+  });
+
+  it('the search-result row and the portion step show the US figure', () => {
+    assert.equal(findNetCarbBadge(renderSearchResultRow(euBasisCandidate(usFood))).figure, String(US_NET_CARBS_PER_100G));
+    assert.equal(findNetCarbBadge(renderPortionStep(euBasisCandidate(usFood))).figure, String(US_NET_CARBS_PER_100G));
+  });
+
+  it('the entry receipt hero and the live edit preview show the US figure', () => {
+    assert.equal(findNetCarbBadge(renderEntryReceipt(euBasisLog(usLog))).figure, String(US_NET_CARBS_PER_100G));
+    assert.equal(findNetCarbBadge(renderEditEntry(euBasisLog(usLog))).figure, String(US_NET_CARBS_PER_100G));
+  });
+
+  it('the diary row agrees with the receipt hero', () => {
+    const log = euBasisLog(usLog);
+    assert.equal(formatEntryNetCarbs(log, i18next.t, 'en'), `${US_NET_CARBS_PER_100G} g net carbs`);
   });
 });
 
@@ -344,11 +402,11 @@ describe('the plate-scan review card honours a label item\'s own panel conventio
     assert.equal(preview?.netCarbsPer100g, SCAN_CARBS_PER_100G);
   });
 
-  it('CONTROL: the same macros with no basis (a plain plate estimate) still floor to 0, so the basis is what changes the number', () => {
+  it('CONTROL: the same macros on a US panel floor to 0, so the basis is what changes the number', () => {
     const preview = computeReviewItemPreview({
       macrosPer100g: SCAN_MACROS_PER_100G,
       grams: 100,
-      identifiedCarbBasis: undefined,
+      identifiedCarbBasis: 'total',
       appliedSnapshot: NO_APPLIED_MATCH,
     });
     // 5.5 - 8 = -2.5, floored at 0 by `computeMacroPreview`. Correct for a
@@ -357,14 +415,27 @@ describe('the plate-scan review card honours a label item\'s own panel conventio
     assert.notEqual(SCAN_CARBS_PER_100G, 0);
   });
 
-  it('falls back to the applied match\'s basis when the item carries none, exactly as the hidden `carbBasis` field does', () => {
+  it('with no basis at all (a plain plate estimate) fibre above carbs reads as an EU panel, not the confident zero', () => {
+    // Until 2026-10-29 an unstated basis meant the US formula and this read 0.
     const preview = computeReviewItemPreview({
       macrosPer100g: SCAN_MACROS_PER_100G,
       grams: 100,
       identifiedCarbBasis: undefined,
-      appliedSnapshot: { ...NO_APPLIED_MATCH, carbBasis: 'available' },
+      appliedSnapshot: NO_APPLIED_MATCH,
     });
     assert.equal(preview?.netCarbsPer100g, SCAN_CARBS_PER_100G);
+  });
+
+  it('falls back to the applied match\'s basis when the item carries none, exactly as the hidden `carbBasis` field does', () => {
+    // A `total` match, because an unstated basis already reads these figures
+    // as EU (the case above), so only a US fallback shows it was taken.
+    const preview = computeReviewItemPreview({
+      macrosPer100g: SCAN_MACROS_PER_100G,
+      grams: 100,
+      identifiedCarbBasis: undefined,
+      appliedSnapshot: { ...NO_APPLIED_MATCH, carbBasis: 'total' },
+    });
+    assert.equal(preview?.netCarbsPer100g, 0);
   });
 
   it('the item\'s own panel wins over the applied match\'s basis, again exactly as the hidden field resolves it', () => {
@@ -423,8 +494,8 @@ const SCAN_MACRO_FIELD_VALUES = {
   kcal: '300',
 } satisfies Record<string, string>;
 
-/** The wheat-bran match the card may have applied: `origin: 'bls'`, which derives an `available` basis. */
-function euBasisMatch(): FoodMatch {
+/** The match the card may have applied: `origin: 'bls'` derives an `available` basis, `'fdc'` a `total` one. */
+function euBasisMatch(origin: 'bls' | 'fdc'): FoodMatch {
   return {
     slug: 'eu-panel-seed-cracker',
     locale: 'en',
@@ -444,7 +515,7 @@ function euBasisMatch(): FoodMatch {
     netCarbsPer100g: SCAN_CARBS_PER_100G,
     attribution: null,
     score: 0.95,
-    origin: 'bls',
+    origin,
     portionSize: 100,
   };
 }
@@ -492,12 +563,18 @@ function sanityFormData(appliedCuratedSource: string): FormData {
  * Renders the REAL review card, through the real re-validation path.
  *
  * @param options.carbBasis - the model's answer for this item, `undefined` for a plain estimate.
- * @param options.applyMatch - whether a curated `bls` match is applied to the item.
+ * @param options.applyMatch - the origin of the curated match applied to the item, or `false` for none.
  * @returns the rendered markup.
  */
-function renderReviewCard({ carbBasis, applyMatch }: { carbBasis: CarbBasis | undefined; applyMatch: boolean }): string {
-  const match = euBasisMatch();
-  const formData = sanityFormData(applyMatch ? toCuratedSource(match.slug) : '');
+function renderReviewCard({
+  carbBasis,
+  applyMatch,
+}: {
+  carbBasis: CarbBasis | undefined;
+  applyMatch: 'bls' | 'fdc' | false;
+}): string {
+  const match = euBasisMatch(applyMatch === false ? 'bls' : applyMatch);
+  const formData = sanityFormData(applyMatch === false ? '' : toCuratedSource(match.slug));
   const submission = parseWithZod(formData, { schema: ConfirmDraftSchema });
   const element = createElement(ConfirmDraftForm, {
     // No person to decide for: the review's caution chips are another file's subject (M219/03).
@@ -530,12 +607,18 @@ const FIBRE_OVER_CARBS_ISSUE = i18next.t('scan.review.sanity.componentOverTotal'
 });
 
 describe('the plate-scan review card checks plausibility against the same panel convention it displays', () => {
-  it('CONTROL: with no basis at all (a plain plate estimate) the same macros DO raise the fibre-vs-carbs warning', () => {
-    const html = renderReviewCard({ carbBasis: undefined, applyMatch: false });
+  it('CONTROL: on a stated US panel the same macros DO raise the fibre-vs-carbs warning', () => {
+    const html = renderReviewCard({ carbBasis: 'total', applyMatch: false });
     assert.ok(
       html.includes(FIBRE_OVER_CARBS_ISSUE),
-      `a basis-blind reading must still warn, so the assertions below can fail:\n${FIBRE_OVER_CARBS_ISSUE}`,
+      `a US reading must still warn, so the assertions below can fail:\n${FIBRE_OVER_CARBS_ISSUE}`,
     );
+  });
+
+  it('with no basis at all the card reads fibre above carbs as an EU panel and does not warn', () => {
+    // The same resolution the figure beside it makes (`resolveCarbBasis`).
+    const html = renderReviewCard({ carbBasis: undefined, applyMatch: false });
+    assert.equal(html.includes(FIBRE_OVER_CARBS_ISSUE), false);
   });
 
   it('an EU-panel item raises no fibre-vs-carbs warning, its printed carbs figure already excludes the fibre', () => {
@@ -548,11 +631,17 @@ describe('the plate-scan review card checks plausibility against the same panel 
   });
 
   it('takes the applied match\'s basis when the item carries none, the same fallback the figure uses', () => {
-    const html = renderReviewCard({ carbBasis: undefined, applyMatch: true });
+    const html = renderReviewCard({ carbBasis: undefined, applyMatch: 'bls' });
     assert.equal(
       html.includes(FIBRE_OVER_CARBS_ISSUE),
       false,
       'an applied `bls` match means an `available` basis, and the warning must follow it',
+    );
+    // CONTROL: an unstated basis already reads these figures as EU, so only an
+    // applied `fdc` match, a `total` basis, shows the fallback was taken.
+    assert.ok(
+      renderReviewCard({ carbBasis: undefined, applyMatch: 'fdc' }).includes(FIBRE_OVER_CARBS_ISSUE),
+      'an applied `fdc` match means a `total` basis, and the warning must follow it too',
     );
   });
 

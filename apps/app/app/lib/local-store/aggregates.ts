@@ -81,10 +81,12 @@ export function localFoodLogToSnapshot(log: LocalFoodLog): FoodLogMacroSnapshot 
     fat: log.macros.fat,
     kcal: log.macros.kcal,
     netCarbs: scaledNetCarbs(log),
-    // Threaded through so `_entryNetCarbs`'s compute-from-parts fallback (used
-    // when `netCarbs` above is absent) picks the right formula — see spec 13
-    // and `LocalFoodLog.carbBasis`'s doc comment.
+    // The STATED basis, threaded through so `_entryNetCarbs`'s compute-from-
+    // parts fallback (used when `netCarbs` above is absent) resolves the right
+    // formula. A missing basis is resolved there from the numbers and the
+    // weight below, on every read, so nothing about it is stored.
     carbBasis: log.carbBasis,
+    quantityGrams: log.quantityGrams,
     aiEstimated: log.aiEstimated,
   };
 }

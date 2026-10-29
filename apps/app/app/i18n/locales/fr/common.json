@@ -36,10 +36,10 @@
       "caloriesSummary": "{{value}} calories",
       "cancel": "Annuler",
       "carbBasis": {
+        "automatic": "Automatique",
+        "automaticHint": "Le mode automatique déduit le style d'étiquette à partir des chiffres saisis. Ne choisis US ou EU que si tu connais ton étiquette : les étiquettes américaines incluent les fibres dans les « Glucides totaux », tandis que les étiquettes européennes les affichent sur une ligne distincte.",
         "available": "Format UE (les glucides excluent déjà les fibres)",
-        "hint": "Les étiquettes américaines comptent les fibres dans le total des glucides, alors que les étiquettes européennes indiquent les fibres sur une ligne dédiée et les excluent déjà. Bien choisir évite de soustraire les fibres deux fois.",
         "legend": "Méthode de calcul des glucides de cet aliment",
-        "notSure": "Pas certain",
         "total": "Format US (les glucides incluent les fibres)"
       },
       "carbsSummary": "{{value}} g de glucides",
@@ -636,7 +636,7 @@
       "title": "Comme hier"
     },
     "drilldown": {
-      "netCarbsDefinition": "Glucides nets = glucides moins fibres, moins les polyols éventuels.",
+      "netCarbsMeaning": "Glucides nets = glucides sans les fibres ni les polyols.",
       "fiberEnergyNote": "La part de calories compte les fibres à 2 kcal par gramme.",
       "noTarget": "Aucune cible définie",
       "derivedTag": "selon tes cibles",
@@ -863,7 +863,8 @@
       "lunch": "Déjeuner",
       "snack": "Collation"
     },
-    "netCarbsFormula": "Glucides nets (ci-dessus) = Glucides moins Fibres, moins les éventuels polyols.",
+    "netCarbsFormulaAvailable": "Glucides nets (ci-dessus) = Glucides moins les éventuels polyols. Ici, les fibres sont déjà exclues des glucides, comme sur les étiquettes européennes.",
+    "netCarbsFormulaTotal": "Glucides nets (ci-dessus) = Glucides moins les fibres, moins les éventuels polyols.",
     "photo": {
       "alt": "Ton assiette pour {{name}}",
       "caption": "Stocké uniquement sur cet appareil"
@@ -1689,7 +1690,6 @@
         "label": "Juste l'habitude"
       },
       "netCarbs": {
-        "description": "Glucides totaux moins les fibres, la valeur à surveiller si tu réduis les glucides.",
         "label": "Glucides nets"
       },
       "recommended": "Recommandé"

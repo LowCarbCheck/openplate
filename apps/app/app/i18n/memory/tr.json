@@ -384,6 +384,13 @@
     "at": "2026-09-14",
     "tr": "Uygulandı"
   },
+  "048449593f30cb95": {
+    "en": "Net carbs (above) = Carbs minus Fiber, minus any sugar alcohols.",
+    "path": "common:entry.netCarbsFormulaTotal",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-29",
+    "tr": "Net karbonhidrat (yukarıda) = Karbonhidrat eksi Lif, eksi şeker alkolleri."
+  },
   "048c83e1be822386": {
     "en": "{{value}} g net carbs / 100 g",
     "path": "common:entry.hero.per100gBadge",
@@ -6019,6 +6026,13 @@
     "at": "2026-10-07",
     "tr": "Bu hafta senin için kaç fotoğrafın okunduğu."
   },
+  "452cf4f910b4cc61": {
+    "en": "Automatic works out the label style from the numbers you enter. Pick US or EU only when you know your label: US labels count fiber inside \"Total Carbohydrate\", EU labels list it on its own row.",
+    "path": "common:add.custom.carbBasis.automaticHint",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-29",
+    "tr": "Otomatik seçeneği, etiket biçimini girdiğin sayılardan çıkarır. Yalnızca etiketini bildiğinde ABD veya AB seçeneğini belirle: ABD etiketleri lifi \"Toplam Karbonhidrat\" içinde sayar, AB etiketleri ise lifi ayrı bir satırda listeler."
+  },
   "453ee374531ae42f": {
     "en": "Choose from library",
     "path": "common:scan.capture.chooseLibrary",
@@ -8972,6 +8986,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Ödeme sayfasını kapattın. Hiçbir ücret alınmadı."
+  },
+  "6560979331752c1a": {
+    "en": "Net carbs (above) = Carbs minus any sugar alcohols. Fiber is already left out of Carbs here, as on EU labels.",
+    "path": "common:entry.netCarbsFormulaAvailable",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-29",
+    "tr": "Net karbonhidrat (yukarıda) = Karbonhidrattan şeker alkollerinin çıkarılmasıyla bulunur. AB etiketlerinde olduğu gibi, burada lif zaten Karbonhidrat değerine dahil edilmemiştir."
   },
   "65a5b1fe182a9ed2": {
     "en": "Near your calorie goal",
@@ -12311,6 +12332,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Yapay zeka sağlayıcını bağla"
+  },
+  "89d4d004ac0a86bf": {
+    "en": "Automatic",
+    "path": "common:add.custom.carbBasis.automatic",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-29",
+    "tr": "Otomatik"
   },
   "89f4be500bc83669": {
     "en": "Ask the study to send the link again, or open it from the consent materials.",
@@ -21040,6 +21068,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Sıraya alınıyor…"
+  },
+  "ea3e755b9c021c46": {
+    "en": "Net carbs = carbs without fiber and sugar alcohols.",
+    "path": "common:diary.drilldown.netCarbsMeaning",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-29",
+    "tr": "Net karbonhidrat = lif ve şeker alkolleri hariç karbonhidrat."
   },
   "ea437a2b3de664f7": {
     "en": "No target set",

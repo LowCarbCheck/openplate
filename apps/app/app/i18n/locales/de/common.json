@@ -36,10 +36,10 @@
       "caloriesSummary": "{{value}} Kalorien",
       "cancel": "Abbrechen",
       "carbBasis": {
+        "automatic": "Automatisch",
+        "automaticHint": "Automatisch ermittelt den Etikettenstil aus den Zahlen, die du eingibst. Wähle US oder EU nur dann aus, wenn du dein Etikett kennst: US-Etiketten zählen Ballaststoffe zu \"Total Carbohydrate\", EU-Etiketten führen sie in einer eigenen Zeile auf.",
         "available": "EU-Stil (Kohlenhydrate ohne Ballaststoffe)",
-        "hint": "US-Etiketten zählen Ballaststoffe zu den „Total Carbohydrate“ dazu; EU-Etiketten weisen Ballaststoffe in einer eigenen Zeile aus und rechnen sie schon heraus. Die richtige Angabe verhindert, dass Ballaststoffe doppelt abgezogen werden.",
         "legend": "Wie dieses Lebensmittel Kohlenhydrate zählt",
-        "notSure": "Nicht sicher",
         "total": "US-Stil (Kohlenhydrate inkl. Ballaststoffe)"
       },
       "carbsSummary": "{{value}} g Kohlenhydrate",
@@ -636,7 +636,7 @@
       "title": "Wie gestern"
     },
     "drilldown": {
-      "netCarbsDefinition": "Netto-Kohlenhydrate = Kohlenhydrate minus Ballaststoffe, minus Zuckeralkohole.",
+      "netCarbsMeaning": "Netto-Kohlenhydrate = Kohlenhydrate ohne Ballaststoffe und Zuckeralkohole.",
       "fiberEnergyNote": "Der Kalorienanteil berechnet Ballaststoffe mit 2 kcal pro Gramm.",
       "noTarget": "Kein Ziel gesetzt",
       "derivedTag": "aus deinen Zielen",
@@ -863,7 +863,8 @@
       "lunch": "Mittagessen",
       "snack": "Snack"
     },
-    "netCarbsFormula": "Netto-Kohlenhydrate (oben) = Kohlenhydrate minus Ballaststoffe, minus Zuckeralkohole.",
+    "netCarbsFormulaAvailable": "Netto-Kohlenhydrate (oben) = Kohlenhydrate minus eventuelle Zuckeralkohole. Ballaststoffe sind hier bereits aus den Kohlenhydraten herausgerechnet, wie auf EU-Etiketten.",
+    "netCarbsFormulaTotal": "Netto-Kohlenhydrate (oben) = Kohlenhydrate minus Ballaststoffe, minus eventuelle Zuckeralkohole.",
     "photo": {
       "alt": "Dein Teller: {{name}}",
       "caption": "Liegt nur auf diesem Gerät"
@@ -1689,7 +1690,6 @@
         "label": "Nur die Gewohnheit"
       },
       "netCarbs": {
-        "description": "Gesamtkohlenhydrate abzüglich Ballaststoffe: der entscheidende Wert, wenn du Kohlenhydrate reduzierst.",
         "label": "Netto-KH"
       },
       "recommended": "Empfohlen"

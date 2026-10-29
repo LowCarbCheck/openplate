@@ -240,6 +240,7 @@ describe('defect A — the edit form and the receipt agree on protein', () => {
     const preview = computeMacroPreview({
       macrosPer100g: resolveEditedBasis({ originalBasis: applePer100g, editedPer100g: submitted }),
       grams: APPLE_GRAMS,
+      carbBasis: undefined,
     });
     assert.ok(preview);
     const value =

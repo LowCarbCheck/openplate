@@ -49,6 +49,8 @@ function loggedDay(
     fat: 0,
     kcal,
     aiEstimated: false,
+    carbBasis: undefined,
+    quantityGrams: 100,
   };
   return { date, entryCount, ...computeDailyEntry([snapshot]) };
 }
@@ -62,7 +64,18 @@ function uncomputableKcalDay(date: string): LocalDailyTotals {
     date,
     entryCount: 1,
     ...computeDailyEntry([
-      { carbs: null, fiber: null, sugars: null, polyols: null, protein: 10, fat: null, kcal: null, aiEstimated: false },
+      {
+        carbs: null,
+        fiber: null,
+        sugars: null,
+        polyols: null,
+        protein: 10,
+        fat: null,
+        kcal: null,
+        aiEstimated: false,
+        carbBasis: undefined,
+        quantityGrams: 100,
+      },
     ]),
   };
 }

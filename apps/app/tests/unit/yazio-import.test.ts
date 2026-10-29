@@ -247,9 +247,12 @@ describe('parseYazioExport: carb basis', () => {
     assert.ok(entries.length > 0);
     assert.ok(entries.every((entry) => entry.carbBasis === 'available'));
     const oats = fixtureEntry(OATS_40G);
-    assertClose(computeNetCarbsFromParts(oats.macros, oats.carbBasis), 26.52); // carbs only
-    // Control: with no basis the same parts read 26.52 minus 4.08, 22.44.
-    assertClose(computeNetCarbsFromParts(oats.macros), 22.44);
+    assertClose(
+      computeNetCarbsFromParts({ explicit: oats.carbBasis, macros: oats.macros, grams: oats.quantityGrams }),
+      26.52,
+    ); // carbs only
+    // Control: on a US basis the same parts read 26.52 minus 4.08, 22.44.
+    assertClose(computeNetCarbsFromParts({ explicit: 'total', macros: oats.macros, grams: oats.quantityGrams }), 22.44);
   });
 });
 

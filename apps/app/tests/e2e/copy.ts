@@ -434,6 +434,18 @@ const englishCatalogSchema = catalogSchema
       about: z.object({ whatsNew: z.string(), whatsNewValue: z.string() }),
     }),
   )
+  // The two net carbs formula lines of an entry's page, one per carb basis
+  // (2026-10-29). English only until the translation run has bought them for
+  // the other five catalogs.
+  .and(
+    z.object({
+      entry: z.object({
+        hero: z.object({ per100gBadge: z.string() }),
+        netCarbsFormulaAvailable: z.string(),
+        netCarbsFormulaTotal: z.string(),
+      }),
+    }),
+  )
   // The vitamins and minerals block on the diary and Insights, and the words of
   // `/nutrients` its links open. English only until the translation run has
   // bought `nutrients.snapshot` for the other five catalogs.

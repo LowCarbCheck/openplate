@@ -36,10 +36,10 @@
       "caloriesSummary": "{{value}} calorías",
       "cancel": "Cancelar",
       "carbBasis": {
+        "automatic": "Automático",
+        "automaticHint": "El modo automático deduce el estilo de la etiqueta a partir de los números que introduces. Elige EE. UU. o UE solo cuando conozcas tu etiqueta: las etiquetas de EE. UU. incluyen la fibra dentro de «Carbohidratos totales», mientras que las de la UE la muestran en su propia fila.",
         "available": "Estilo de la UE (los carbohidratos ya excluyen la fibra)",
-        "hint": "Las etiquetas de EE. UU. incluyen la fibra dentro de \"Total Carbohydrate\"; las de la UE indican la fibra en su propia fila y ya la excluyen. Ajustar esto bien evita restar la fibra dos veces.",
         "legend": "Cómo se cuentan los carbohidratos de este alimento",
-        "notSure": "No lo sé",
         "total": "Estilo de EE. UU. (los carbohidratos incluyen la fibra)"
       },
       "carbsSummary": "{{value}} g de carbohidratos",
@@ -636,7 +636,7 @@
       "title": "Como ayer"
     },
     "drilldown": {
-      "netCarbsDefinition": "Carbohidratos netos = carbohidratos menos fibra, menos los polialcoholes.",
+      "netCarbsMeaning": "Carbohidratos netos = carbohidratos sin fibra ni polialcoholes.",
       "fiberEnergyNote": "La proporción de calorías calcula la fibra a 2 kcal por gramo.",
       "noTarget": "Sin objetivo establecido",
       "derivedTag": "de tus objetivos",
@@ -863,7 +863,8 @@
       "lunch": "Comida",
       "snack": "Tentempié"
     },
-    "netCarbsFormula": "Carbohidratos netos (arriba) = Carbohidratos menos Fibra, menos los polialcoholes.",
+    "netCarbsFormulaAvailable": "Carbohidratos netos (arriba) = carbohidratos menos los polialcoholes. En este caso, la fibra ya está excluida de los carbohidratos, como en las etiquetas de la UE.",
+    "netCarbsFormulaTotal": "Carbohidratos netos (arriba) = carbohidratos menos fibra, menos los polialcoholes.",
     "photo": {
       "alt": "Tu plato para {{name}}",
       "caption": "Guardado solo en este dispositivo"
@@ -1689,7 +1690,6 @@
         "label": "Solo el hábito"
       },
       "netCarbs": {
-        "description": "Carbohidratos totales menos fibra, la cifra a vigilar si estás reduciendo carbohidratos.",
         "label": "Carbohidratos netos"
       },
       "recommended": "Recomendado"

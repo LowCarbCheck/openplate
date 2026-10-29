@@ -170,6 +170,13 @@ export interface ManualFood {
    * pass this. With fibre and polyols absent, net carbs come out equal to it.
    */
   carbs?: string;
+  /** Grams of fibre PER 100 g, typed beside `carbs`. Needs `carbs`, because only that opens the panel. */
+  fiber?: string;
+  /**
+   * The carb basis chip to press: `total` (US style) or `available` (EU style).
+   * Left out, the form keeps its default, Automatic, which is what most people do.
+   */
+  carbBasis?: 'total' | 'available';
   /** The meal slot to pick, or left out for "no meal". */
   mealType?: 'breakfast' | 'lunch' | 'dinner' | 'snack';
   /** A back-dated `YYYY-MM-DD` day to log onto, or left out for today. */
@@ -202,6 +209,13 @@ export async function logFoodManually(page: Page, food: ManualFood): Promise<voi
   if (food.carbs !== undefined) {
     await manual.getByRole('button', { name: EN.add.manual.nutritionToggle }).click();
     await manual.locator('input[name="carbs"]').fill(food.carbs);
+    if (food.fiber !== undefined) await manual.locator('input[name="fiber"]').fill(food.fiber);
+    // The chip wraps an sr-only radio, a 1 px box Playwright calls not
+    // visible, so the radio is checked with `force`. Its click still reaches
+    // React's onChange, which is all a tap on the chip does.
+    if (food.carbBasis !== undefined) {
+      await manual.locator(`input[name="carbBasis"][value="${food.carbBasis}"]`).check({ force: true });
+    }
   }
   if (food.mealType !== undefined) {
     await manual.getByRole('combobox').click();

@@ -5,21 +5,23 @@
  * way. Plain radios, no client JS required to submit — the same chip
  * affordance `onboarding.tsx`'s `ChipRadioGroup` uses for its one-of-N
  * answers, duplicated rather than imported because that component is local
- * to the onboarding route and this control's three fixed options (with a
- * "not sure" third state, not just the two `CarbBasis` values) don't share
+ * to the onboarding route and this control's three fixed options (with an
+ * "Automatic" third state, not just the two `CarbBasis` values) don't share
  * its generic `options` shape.
  *
- * "Not sure" is a real, first-class answer, not a missing one: it submits as
+ * "Automatic" is the default and a real, first-class answer: it submits as
  * the empty string, which `parseCarbBasis` (`#app/lib/net-carbs`) resolves to
- * `null`, which persists as an ABSENT `carbBasis` — the same UNKNOWN state
- * every pre-spec-13 row already carries (see `LocalFoodLog.carbBasis`'s doc
- * comment in `#app/lib/local-store/schema`).
+ * `null`, which persists as an ABSENT `carbBasis`. Nothing is guessed at
+ * write time; every reader resolves the absent basis from the food's numbers
+ * through `resolveCarbBasis`, so a better rule there reaches old rows too.
+ * It was called "Not sure" until 2026-10-29, when an unstated basis still
+ * meant a US label and took the fibre out of an EU pack's carbs a second time.
  */
 import type { CarbBasis } from '#app/lib/net-carbs';
 import { cn } from '#app/lib/utils';
 
-/** "Not sure" submits as this value; `parseCarbBasis` treats it (and any other unrecognised text) as unknown. */
-export const CARB_BASIS_NOT_SURE_VALUE = '';
+/** "Automatic" submits as this value; `parseCarbBasis` treats it (and any other unrecognised text) as unstated. */
+export const CARB_BASIS_AUTOMATIC_VALUE = '';
 
 /** Border/fill for a chip by selection state — the same convention `onboarding.tsx`'s `chipClass` uses. */
 function chipClass(isSelected: boolean): string {
@@ -31,11 +33,11 @@ function chipClass(isSelected: boolean): string {
  * @param options.name - the form field name the radios submit under.
  * @param options.legend - the fieldset's accessible label.
  * @param options.hint - one line explaining what the answer changes.
- * @param options.selected - the current value: a `CarbBasis`, or `''` for "not sure".
+ * @param options.selected - the current value: a `CarbBasis`, or `''` for "Automatic".
  * @param options.onSelect - called with the radio's value on change.
  * @param options.totalLabel - copy for the US/total option.
  * @param options.availableLabel - copy for the EU/available option.
- * @param options.notSureLabel - copy for the not-sure option.
+ * @param options.automaticLabel - copy for the Automatic option, the default.
  */
 export function CarbBasisField({
   name,
@@ -45,21 +47,21 @@ export function CarbBasisField({
   onSelect,
   totalLabel,
   availableLabel,
-  notSureLabel,
+  automaticLabel,
 }: {
   name: string;
   legend: string;
   hint: string;
-  selected: CarbBasis | typeof CARB_BASIS_NOT_SURE_VALUE;
-  onSelect: (value: CarbBasis | typeof CARB_BASIS_NOT_SURE_VALUE) => void;
+  selected: CarbBasis | typeof CARB_BASIS_AUTOMATIC_VALUE;
+  onSelect: (value: CarbBasis | typeof CARB_BASIS_AUTOMATIC_VALUE) => void;
   totalLabel: string;
   availableLabel: string;
-  notSureLabel: string;
+  automaticLabel: string;
 }) {
-  const options: { value: CarbBasis | typeof CARB_BASIS_NOT_SURE_VALUE; label: string }[] = [
+  const options: { value: CarbBasis | typeof CARB_BASIS_AUTOMATIC_VALUE; label: string }[] = [
     { value: 'total', label: totalLabel },
     { value: 'available', label: availableLabel },
-    { value: CARB_BASIS_NOT_SURE_VALUE, label: notSureLabel },
+    { value: CARB_BASIS_AUTOMATIC_VALUE, label: automaticLabel },
   ];
 
   return (

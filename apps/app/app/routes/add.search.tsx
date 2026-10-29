@@ -35,7 +35,7 @@ import { encodeMicronutrients, micronutrientsField } from '#app/lib/micronutrien
 import { macrosDiffer, resolveEditedNetCarbsPer100g } from '#app/lib/log-edit';
 import { parseCarbBasis } from '#app/lib/net-carbs';
 import type { CarbBasis } from '#app/lib/net-carbs';
-import { CARB_BASIS_NOT_SURE_VALUE, CarbBasisField } from '#app/components/carb-basis-field';
+import { CARB_BASIS_AUTOMATIC_VALUE, CarbBasisField } from '#app/components/carb-basis-field';
 import { toStoredAttribution } from '#app/lib/attribution';
 import {
   applyFoodNameEdit,
@@ -387,9 +387,9 @@ export function createManualSchema(t: Translate) {
     protein: createOptionalNonNegativeNumberSchema(),
     fat: createOptionalNonNegativeNumberSchema(),
     kcal: createOptionalNonNegativeNumberSchema(),
-    // The three-state control's "not sure" chip submits '' — unrecognised, so
+    // The three-state control's "Automatic" chip submits '' — unrecognised, so
     // it can't fail this schema; `parseCarbBasis` (applied in the handler, not
-    // here) turns it into the persisted absent state. Default "not sure".
+    // here) turns it into the persisted absent state. Default "Automatic".
     carbBasis: z.string().optional(),
   });
 }
@@ -893,7 +893,7 @@ export function buildManualFood({
 }: {
   name: string;
   macrosPer100g: Macros & { carbs: number };
-  /** The confirmed panel convention, or null for "not sure" — persists as absent. */
+  /** The confirmed panel convention, or null for "Automatic" — persists as absent. */
   carbBasis: CarbBasis | null;
   id: string;
   createdAtMs: number;
@@ -1511,9 +1511,9 @@ function ManualAddForm({
   const isSubmitting = navigation.state === 'submitting' && navigation.formData?.get('_intent') === 'manual';
   const [mealType, setMealType] = useState<string>('');
   const [macroBasis, setMacroBasis] = useState<MacroEntryBasis>('per100g');
-  // Default "not sure" (spec 13, M123) — this is a FRESH food, there is no
-  // existing basis to pre-fill from.
-  const [carbBasis, setCarbBasis] = useState<CarbBasis | typeof CARB_BASIS_NOT_SURE_VALUE>(CARB_BASIS_NOT_SURE_VALUE);
+  // Default "Automatic" — this is a FRESH food, there is no existing basis to
+  // pre-fill from, and an unstated basis is resolved from the numbers.
+  const [carbBasis, setCarbBasis] = useState<CarbBasis | typeof CARB_BASIS_AUTOMATIC_VALUE>(CARB_BASIS_AUTOMATIC_VALUE);
 
   const [form, fields] = useForm({
     id: 'quick-add-manual',
@@ -1616,12 +1616,12 @@ function ManualAddForm({
               <CarbBasisField
                 name={fields.carbBasis.name}
                 legend={t('add.custom.carbBasis.legend')}
-                hint={t('add.custom.carbBasis.hint')}
+                hint={t('add.custom.carbBasis.automaticHint')}
                 selected={carbBasis}
                 onSelect={setCarbBasis}
                 totalLabel={t('add.custom.carbBasis.total')}
                 availableLabel={t('add.custom.carbBasis.available')}
-                notSureLabel={t('add.custom.carbBasis.notSure')}
+                automaticLabel={t('add.custom.carbBasis.automatic')}
               />
             </CollapsibleContent>
           </Collapsible>

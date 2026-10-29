@@ -48,6 +48,8 @@ function dailyTotal(netCarbs: number): LocalDailyTotals {
     fat: 0,
     kcal: null,
     aiEstimated: false,
+    carbBasis: undefined,
+    quantityGrams: 100,
   };
   return { date: TODAY, entryCount: 1, ...computeDailyEntry([snapshot]) };
 }
@@ -147,6 +149,8 @@ function ridgeRow(figures: Figures): LocalDailyTotals {
     fat: 0,
     kcal: figures.kcal,
     aiEstimated: false,
+    carbBasis: undefined,
+    quantityGrams: 100,
   };
   return { date: figures.date, entryCount: 1, ...computeDay([snapshot]) };
 }

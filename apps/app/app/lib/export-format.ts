@@ -15,6 +15,7 @@ import { encodeCsv } from './csv';
 import type { CsvRow } from './csv';
 import { computeNetCarbsFromParts } from './net-carbs';
 import type { CarbBasis } from './net-carbs';
+import type { Macros } from './macros';
 
 ////////////////////////////////////////////////////////////////////////////////
 // Request shape (format + selection) with runtime guards
@@ -72,12 +73,12 @@ export interface ExportFoodInput {
   source: string;
   createdAt: Date;
   /**
-   * Which printed-panel convention `carbs` was read from, governing
-   * `computeExportNetCarbs`'s fallback below. `undefined` (absent, the state
-   * of every food logged before spec 13) is treated as `total`, today's
-   * original formula — see `#app/lib/net-carbs`.
+   * Which printed-panel convention `carbs` was read from, as stated, or
+   * `undefined` when nobody stated one, which `computeExportNetCarbs` then
+   * resolves from the macros (`resolveCarbBasis` in `#app/lib/net-carbs`).
+   * Required, so a caller cannot leave it out by accident.
    */
-  carbBasis?: CarbBasis;
+  carbBasis: CarbBasis | undefined;
 }
 
 /** A single food-log entry (per-serving macro snapshot; every macro nullable). */
@@ -109,12 +110,12 @@ export interface ExportLogInput {
    */
   netCarbs?: number | null;
   /**
-   * Which printed-panel convention `carbs` was read from, governing
-   * `computeExportNetCarbs`'s fallback below when `netCarbs` is absent.
-   * `undefined` (absent, the state of every entry logged before spec 13) is
-   * treated as `total`, today's original formula — see `#app/lib/net-carbs`.
+   * Which printed-panel convention `carbs` was read from, as stated, or
+   * `undefined` when nobody stated one, which `computeExportNetCarbs` then
+   * resolves from the macros and `quantityGrams` when `netCarbs` is absent.
+   * Required, so a caller cannot leave it out by accident.
    */
-  carbBasis?: CarbBasis;
+  carbBasis: CarbBasis | undefined;
 }
 
 /** A single weigh-in (one per calendar day). */
@@ -140,18 +141,19 @@ export interface ExportWeightInput {
  * fibre, so an export of a wheat-bran entry would read `-21.1` (or a floored
  * 0 elsewhere) instead of its true 21.7.
  *
- * @param row - the carb/fiber/polyols figures, plus any authoritative `netCarbs`.
+ * @param options.row - the row's macros and stated basis, plus any authoritative `netCarbs`.
+ * @param options.grams - the grams the macros describe: `100` for a food, the serving for a log.
  * @returns the row's net carbs, or `null` when unknown.
  */
-export function computeExportNetCarbs(row: {
-  carbs: number | null;
-  fiber: number | null;
-  polyols: number | null;
-  netCarbs?: number | null;
-  carbBasis?: CarbBasis;
+export function computeExportNetCarbs({
+  row,
+  grams,
+}: {
+  row: Macros & { netCarbs?: number | null; carbBasis: CarbBasis | undefined };
+  grams: number;
 }): number | null {
   if (row.netCarbs !== undefined && row.netCarbs !== null) return row.netCarbs;
-  return computeNetCarbsFromParts(row, row.carbBasis);
+  return computeNetCarbsFromParts({ explicit: row.carbBasis, macros: row, grams });
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -189,7 +191,7 @@ export function buildLogsCsv(rows: readonly ExportLogInput[]): string {
     row.protein,
     row.fat,
     row.kcal,
-    computeExportNetCarbs(row),
+    computeExportNetCarbs({ row, grams: row.quantityGrams }),
     row.mealType,
     row.source,
     row.aiEstimated,
@@ -225,7 +227,7 @@ export function buildFoodsCsv(rows: readonly ExportFoodInput[]): string {
     row.protein,
     row.fat,
     row.kcal,
-    computeExportNetCarbs(row),
+    computeExportNetCarbs({ row, grams: 100 }),
     row.source,
     row.createdAt.toISOString(),
   ]);
@@ -325,7 +327,7 @@ function _toFoodJson(food: ExportFoodInput): ExportFoodJson {
     protein: food.protein,
     fat: food.fat,
     kcal: food.kcal,
-    netCarbs: computeExportNetCarbs(food),
+    netCarbs: computeExportNetCarbs({ row: food, grams: 100 }),
     carbBasis: food.carbBasis,
     source: food.source,
     createdAt: food.createdAt.toISOString(),
@@ -346,7 +348,7 @@ function _toLogJson(log: ExportLogInput): ExportLogJson {
     protein: log.protein,
     fat: log.fat,
     kcal: log.kcal,
-    netCarbs: computeExportNetCarbs(log),
+    netCarbs: computeExportNetCarbs({ row: log, grams: log.quantityGrams }),
     carbBasis: log.carbBasis,
     mealType: log.mealType,
     source: log.source,

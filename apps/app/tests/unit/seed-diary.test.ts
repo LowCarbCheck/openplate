@@ -235,7 +235,12 @@ test('the summary counts rows rather than trusting the options it was built from
 
   const recomputed = envelope.data.foodLogs
     .filter((log) => log.dayKey === END_DAY)
-    .reduce((total, log) => total + (computeNetCarbsFromParts(log.macros) ?? 0), 0);
+    .reduce(
+      (total, log) =>
+        total +
+        (computeNetCarbsFromParts({ explicit: log.carbBasis, macros: log.macros, grams: log.quantityGrams }) ?? 0),
+      0,
+    );
   const lastTotal = summary.netCarbsByDay[summary.netCarbsByDay.length - 1];
   assert.ok(lastTotal !== undefined);
   assert.ok(Math.abs(lastTotal - recomputed) < 0.11, 'the summary total is the sum of the day it names');

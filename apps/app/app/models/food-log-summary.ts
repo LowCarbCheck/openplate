@@ -4,7 +4,7 @@
  */
 import { computeMacroEnergyTotalKcal } from '#app/lib/macro-energy';
 import { computeNetCarbsFromParts, computeTotalCarbsFromParts } from '#app/lib/net-carbs';
-import type { CarbBasis } from '#app/lib/net-carbs';
+import type { CarbBasis, CarbBasisInput } from '#app/lib/net-carbs';
 
 export interface FoodLogMacroSnapshot {
   carbs: number | null;
@@ -25,12 +25,18 @@ export interface FoodLogMacroSnapshot {
    */
   netCarbs?: number | null;
   /**
-   * Which printed-panel convention `carbs` was read from, governing the
-   * compute-from-parts fallback below when `netCarbs` is absent — see
-   * `#app/lib/net-carbs` and `LocalFoodLog.carbBasis`'s doc comment for the
-   * UNKNOWN-means-`total` rule (spec 13, M123).
+   * Which printed-panel convention `carbs` was read from, as STATED on the
+   * entry, or `undefined` when nobody stated one. The compute-from-parts
+   * fallback below resolves it (`resolveCarbBasis` in `#app/lib/net-carbs`).
+   * A required key on purpose: a projection that forgets it does not compile.
    */
-  carbBasis?: CarbBasis;
+  carbBasis: CarbBasis | undefined;
+  /**
+   * The grams the macros above describe. The basis resolver weighs its
+   * evidence per 100 g, so it needs the weight to read a serving the same way
+   * it reads the food.
+   */
+  quantityGrams: number;
   /** True when these macros were AI-estimated (not manual and not curated). */
   aiEstimated: boolean;
 }
@@ -39,8 +45,9 @@ export interface DaySummary {
   /**
    * TOTAL carbs in grams, fibre included, whichever panel convention each entry
    * was read from: per entry an `available` (EU) basis adds its fibre back
-   * (`carbs + fiber`) and a `total` or unknown basis is taken as printed, and
-   * the entries are then summed (`computeTotalCarbsFromParts`). It is NOT the
+   * (`carbs + fiber`) and a `total` basis is taken as printed, and
+   * the entries are then summed (`computeTotalCarbsFromParts`, on the basis
+   * `resolveCarbBasis` gives, so a row with no stated basis is read from its numbers). It is NOT the
    * sum of the printed figures, which mixed the two conventions and left the
    * fibre of every EU-panel food out. Every reader treats it as total carbs:
    * the ratio bar's gram basis, the trend chart's total-carbs outline, the
@@ -103,8 +110,13 @@ export const EMPTY_DAY_SUMMARY: DaySummary = {
  */
 function _entryNetCarbs(log: FoodLogMacroSnapshot): number {
   if (log.netCarbs !== undefined && log.netCarbs !== null) return Math.max(0, log.netCarbs);
-  const fromParts = computeNetCarbsFromParts(log, log.carbBasis);
+  const fromParts = computeNetCarbsFromParts(basisInputOf(log));
   return fromParts === null ? 0 : Math.max(0, fromParts);
+}
+
+/** The resolver's input for one entry: its stated basis, its macros and the grams they describe. */
+function basisInputOf(log: FoodLogMacroSnapshot): CarbBasisInput {
+  return { explicit: log.carbBasis, macros: log, grams: log.quantityGrams };
 }
 
 /**
@@ -112,7 +124,7 @@ function _entryNetCarbs(log: FoodLogMacroSnapshot): number {
  * An unknown `carbs` contributes nothing, as it always did in the day's sum.
  */
 function _entryTotalCarbs(log: FoodLogMacroSnapshot): number {
-  return computeTotalCarbsFromParts(log, log.carbBasis) ?? 0;
+  return computeTotalCarbsFromParts(basisInputOf(log)) ?? 0;
 }
 
 /**

@@ -305,7 +305,7 @@ export const RestoreLogSchema = z.object({
    * without it, an Undo of an `available`-basis entry came back UNKNOWN and
    * silently reverted to the `total` fallback formula, double-subtracting
    * fibre — the exact bug spec 13 fixes, reintroduced by delete-then-undo.
-   * Blank (the "not sure"/legacy wire value) decodes to absent, never a guess.
+   * Blank (the "Automatic"/legacy wire value) decodes to absent, never a guess.
    */
   carbBasis: z.preprocess((value) => (value === '' ? undefined : value), z.string().optional()),
   /**

@@ -23,6 +23,7 @@ import { dayBoundsInTimezone, todayInTimezone } from '#app/lib/user-days';
 import { buildIntakeHref } from '#app/lib/intake-hrefs';
 import { randomUuid } from '#app/lib/uuid';
 import type { Macros } from '#app/lib/macros';
+import { resolveCarbBasis, type CarbBasis } from '#app/lib/net-carbs';
 import { reconstructPer100g } from '#app/lib/per-hundred';
 import { computeEditPatch, macrosDiffer, resolveEditedBasis, resolveEditedNetCarbsPer100g } from '#app/lib/log-edit';
 import { encodeAuthoritativeNetCarbs } from '#app/lib/authoritative-net-carbs';
@@ -229,6 +230,38 @@ function derivePer100gBasis(log: LocalFoodLog, food: LocalPersonalFood | null): 
   const foodMacros = food !== null && provenanceIntact ? food.macrosPer100g : null;
   if (foodMacros !== null) return foodMacros;
   return reconstructPer100g(log.macros, log.quantityGrams);
+}
+
+/** The formula line for each basis: an EU panel's carbs already leave the fibre out, a US panel's hold it. */
+const NET_CARBS_FORMULA_KEY = {
+  available: 'entry.netCarbsFormulaAvailable',
+  total: 'entry.netCarbsFormulaTotal',
+} as const satisfies Record<CarbBasis, string>;
+
+/**
+ * The i18n key of the formula line under an entry's macro rows: the formula
+ * the entry's own net carbs were computed with, never a fixed US sentence.
+ *
+ * The basis is resolved from the same input the receipt hero computes from
+ * (`basisPer100g`, else the entry's own snapshot), so the line and the number
+ * above it cannot disagree.
+ *
+ * @param options.log - the entry, for its stated basis and its snapshot.
+ * @param options.basisPer100g - the hero's per-100 g basis, or `null` when it has none.
+ * @returns the key of the formula sentence to render.
+ */
+export function netCarbsFormulaKey({
+  log,
+  basisPer100g,
+}: {
+  log: Pick<LocalFoodLog, 'carbBasis' | 'macros' | 'quantityGrams'>;
+  basisPer100g: Macros | null;
+}): (typeof NET_CARBS_FORMULA_KEY)[CarbBasis] {
+  const input =
+    basisPer100g === null ?
+      { explicit: log.carbBasis, macros: log.macros, grams: log.quantityGrams }
+    : { explicit: log.carbBasis, macros: basisPer100g, grams: 100 };
+  return NET_CARBS_FORMULA_KEY[resolveCarbBasis(input)];
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1089,8 +1122,10 @@ export function EntryReceipt({ loaderData }: { loaderData: Route.ComponentProps[
           {/* The net-carbs headline above and this Carbs/Fiber pair are two
               different numbers with no stated relationship between them
               (defect) — this ties them together instead of leaving a reader
-              to work out carbs minus fiber themselves. */}
-          <p className="mt-2 text-xs text-muted-foreground">{t('entry.netCarbsFormula')}</p>
+              to work out carbs minus fiber themselves. It names the formula
+              THIS entry used: an EU-basis entry subtracts no fibre, and the
+              fixed US sentence beside it said the opposite (2026-10-29). */}
+          <p className="mt-2 text-xs text-muted-foreground">{t(netCarbsFormulaKey({ log, basisPer100g }))}</p>
         </CardContent>
       </Card>
 

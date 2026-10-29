@@ -31,7 +31,7 @@ import type { Macros } from '#app/lib/macros';
 import type { LocalPersonalFood } from '#app/lib/local-store';
 import type { MacroEntryBasis } from '#app/lib/portions';
 import type { CarbBasis } from '#app/lib/net-carbs';
-import { CARB_BASIS_NOT_SURE_VALUE, CarbBasisField } from '#app/components/carb-basis-field';
+import { CARB_BASIS_AUTOMATIC_VALUE, CarbBasisField } from '#app/components/carb-basis-field';
 import { CHIP_NEUTRAL, LIST_ROW_CLASS, LIST_STACK_CLASS } from '#app/components/list-row';
 import { formatMacroNumberIn } from '#app/lib/format-macro-number';
 import { cn } from '#app/lib/utils';
@@ -151,9 +151,9 @@ function EditFoodForm({
   const [basis, setBasis] = useState<MacroEntryBasis>('per100g');
   const [servingGrams, setServingGrams] = useState('');
   // Pre-filled from the food's own stored basis (spec 13, M123) — absent
-  // (UNKNOWN) starts the control on "not sure", never a guess.
-  const [carbBasis, setCarbBasis] = useState<CarbBasis | typeof CARB_BASIS_NOT_SURE_VALUE>(
-    food.carbBasis ?? CARB_BASIS_NOT_SURE_VALUE,
+  // (UNKNOWN) starts the control on "Automatic", never a guess.
+  const [carbBasis, setCarbBasis] = useState<CarbBasis | typeof CARB_BASIS_AUTOMATIC_VALUE>(
+    food.carbBasis ?? CARB_BASIS_AUTOMATIC_VALUE,
   );
   const isSaving = fetcher.state !== 'idle';
   const shownResult = useRef<unknown>(null);
@@ -235,12 +235,12 @@ function EditFoodForm({
       <CarbBasisField
         name="carbBasis"
         legend={t('add.custom.carbBasis.legend')}
-        hint={t('add.custom.carbBasis.hint')}
+        hint={t('add.custom.carbBasis.automaticHint')}
         selected={carbBasis}
         onSelect={setCarbBasis}
         totalLabel={t('add.custom.carbBasis.total')}
         availableLabel={t('add.custom.carbBasis.available')}
-        notSureLabel={t('add.custom.carbBasis.notSure')}
+        automaticLabel={t('add.custom.carbBasis.automatic')}
       />
       <div className="flex justify-end gap-2">
         <Button

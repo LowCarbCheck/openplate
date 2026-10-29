@@ -23,6 +23,8 @@ import type {
   ExportProfileInput,
   ExportWeightInput,
 } from '../../app/lib/export-format';
+import type { Macros } from '../../app/lib/macros';
+import type { CarbBasis } from '../../app/lib/net-carbs';
 
 const CRLF = '\r\n';
 
@@ -55,6 +57,9 @@ function makeLog(overrides: Partial<ExportLogInput> = {}): ExportLogInput {
     curatedSource: null,
     foodId: null,
     logBatchId: null,
+    // Stated, because this oatmeal's figures are a US total: unstated, its
+    // energy is too close to call and the resolver would read it as EU.
+    carbBasis: 'total',
     ...overrides,
   };
 }
@@ -73,6 +78,7 @@ function makeFood(overrides: Partial<ExportFoodInput> = {}): ExportFoodInput {
     kcal: 402,
     source: 'user',
     createdAt: new Date('2026-07-01T00:00:00.000Z'),
+    carbBasis: undefined,
     ...overrides,
   };
 }
@@ -93,21 +99,53 @@ function makeProfile(overrides: Partial<ExportProfileInput> = {}): ExportProfile
   };
 }
 
+/** An export row with every macro unknown unless given, and the basis it states. */
+function exportRow(
+  figures: Partial<Macros>,
+  carbBasis: CarbBasis | undefined,
+): Macros & { carbBasis: CarbBasis | undefined } {
+  return {
+    carbs: null,
+    fiber: null,
+    sugars: null,
+    polyols: null,
+    protein: null,
+    fat: null,
+    kcal: null,
+    ...figures,
+    carbBasis,
+  };
+}
+
 describe('computeExportNetCarbs', () => {
-  it('subtracts fiber and polyols from carbs', () => {
-    assert.strictEqual(computeExportNetCarbs({ carbs: 30, fiber: 6, polyols: 4 }), 20);
+  it('subtracts fiber and polyols from carbs on a US panel', () => {
+    assert.strictEqual(
+      computeExportNetCarbs({ row: exportRow({ carbs: 30, fiber: 6, polyols: 4 }, 'total'), grams: 100 }),
+      20,
+    );
   });
 
   it('treats unknown fiber/polyols as 0 (matching the daily-totals convention)', () => {
-    assert.strictEqual(computeExportNetCarbs({ carbs: 10, fiber: null, polyols: null }), 10);
+    assert.strictEqual(computeExportNetCarbs({ row: exportRow({ carbs: 10 }, 'total'), grams: 100 }), 10);
   });
 
   it('returns null when carbs is unknown (never fabricates 0)', () => {
-    assert.strictEqual(computeExportNetCarbs({ carbs: null, fiber: 2, polyols: 1 }), null);
+    assert.strictEqual(computeExportNetCarbs({ row: exportRow({ fiber: 2, polyols: 1 }, 'total'), grams: 100 }), null);
   });
 
-  it('is not clamped — a fiber-heavy entry can go negative', () => {
-    assert.strictEqual(computeExportNetCarbs({ carbs: 2, fiber: 5, polyols: 0 }), -3);
+  it('is not clamped — a fiber-heavy entry on a stated US panel can go negative', () => {
+    assert.strictEqual(
+      computeExportNetCarbs({ row: exportRow({ carbs: 2, fiber: 5, polyols: 0 }, 'total'), grams: 100 }),
+      -3,
+    );
+  });
+
+  it('resolves an unstated basis the way the diary does: fibre above carbs keeps the carbs', () => {
+    // CONTROL: the stated US case just above reads -3.
+    assert.strictEqual(
+      computeExportNetCarbs({ row: exportRow({ carbs: 2, fiber: 5, polyols: 0 }, undefined), grams: 100 }),
+      2,
+    );
   });
 });
 
@@ -310,7 +348,7 @@ describe('buildExportDocument', () => {
           fat: 3,
           kcal: 150,
           netCarbs: 23,
-          carbBasis: undefined,
+          carbBasis: 'total',
           mealType: 'breakfast',
           source: 'manual',
           aiEstimated: false,

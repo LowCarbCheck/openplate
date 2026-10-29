@@ -54,6 +54,8 @@ function dailyTotal(date: string, netCarbs: number | null): LocalDailyTotals {
     fat: 0,
     kcal: null,
     aiEstimated: false,
+    carbBasis: undefined,
+    quantityGrams: 100,
   };
   return { date, entryCount: 1, ...computeDailyEntry([snapshot]) };
 }

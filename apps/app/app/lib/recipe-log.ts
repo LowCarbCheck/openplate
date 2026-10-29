@@ -37,11 +37,12 @@
  *
  * ── Net carbs, told the way the store tells them ─────────────────────────
  *
- * The model answers in NET carbs (`perServing.carbsG`), while `Macros.carbs`
- * is the printed-panel TOTAL with an absent `carbBasis` meaning "total". So
- * the total is reconstructed as net plus fibre, and every reader's
- * compute-from-parts fallback (`carbs - fiber - polyols`) lands back on the
- * model's own net figure. Nothing is stored in `netCarbsPer100g`: that field
+ * The model answers in NET carbs (`perServing.carbsG`). So `Macros.carbs` is
+ * rebuilt as a US-style total, net plus fibre, and the food and the log both
+ * STATE `carbBasis: 'total'`, so every reader's compute-from-parts fallback
+ * (`carbs - fiber - polyols`) lands back on the model's own net figure. An
+ * unstated basis is resolved from the numbers since 2026-10-29 and defaults
+ * to the EU reading, which would count that fibre twice. Nothing is stored in `netCarbsPer100g`: that field
  * is for a figure an upstream SOURCE committed to, and a plain estimate has
  * none, exactly as a scanned plate has none.
  */
@@ -128,6 +129,9 @@ export function buildRecipeLogEntry({
       // model's estimate, not a panel the person read off a package.
       source: 'plate_ai',
       createdAt: now,
+      // Stated, never left to the resolver: the carbs above are rebuilt as
+      // net plus fibre, a US-style total (see the header).
+      carbBasis: 'total',
     },
     log: {
       id: ids.logId,
@@ -154,6 +158,8 @@ export function buildRecipeLogEntry({
       portion: { unit: 'serving', quantity: servingsEaten, gramsPerUnit: recipe.servingGrams },
       // No source to credit: nothing here came out of a licensed database.
       attribution: null,
+      // The same stated basis as the food's, for the same reason.
+      carbBasis: 'total',
     },
   };
 }

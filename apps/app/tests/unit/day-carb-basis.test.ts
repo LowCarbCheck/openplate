@@ -30,6 +30,8 @@ function makeLog(overrides: Partial<FoodLogMacroSnapshot>): FoodLogMacroSnapshot
     fat: 0,
     kcal: null,
     aiEstimated: false,
+    carbBasis: undefined,
+    quantityGrams: 100,
     ...overrides,
   };
 }
@@ -78,8 +80,16 @@ describe('DaySummary.carbs is total carbs on one basis', () => {
     assert.strictEqual(summary.netCarbs, 6);
   });
 
-  it('takes an entry with no basis as printed, unknown meaning total', () => {
+  it('reads an entry with no basis from its numbers, EU when nothing says US', () => {
+    // Until 2026-10-29 an unstated basis meant total and this read 26 and 6.
     const summary = summarizeDay([makeLog({ carbs: 26, fiber: 20 })]);
+
+    assert.strictEqual(summary.carbs, 46);
+    assert.strictEqual(summary.netCarbs, 26);
+  });
+
+  it('control: the same entry with a US energy (6 g net at 4 kcal, 20 g fibre at 2) reads as total', () => {
+    const summary = summarizeDay([makeLog({ carbs: 26, fiber: 20, kcal: 4 * 6 + 2 * 20 })]);
 
     assert.strictEqual(summary.carbs, 26);
     assert.strictEqual(summary.netCarbs, 6);
