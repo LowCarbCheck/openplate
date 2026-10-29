@@ -52,8 +52,8 @@ const FOOD = { carbs: 20, fiber: 5, protein: 30, fat: 15 };
 
 /**
  * The calorie share of {@link FOOD}, in the order the cells are drawn (carbs, protein, fat): net carbs and
- * protein at 4 kcal per gram, fibre at 2, fat at 9. The food has no carb basis, so its carbs are total carbs
- * and its net carbs are the carbs less the fibre. It was 24, 36, 40 while the whole 20 g counted at 4.
+ * protein at 4 kcal per gram, fibre at 2, fat at 9. The food STATES the total carb basis, so its carbs are
+ * total carbs and its net carbs are the carbs less the fibre. It was 24, 36, 40 while the whole 20 g counted at 4.
  */
 function expectedKcalPercents(): number[] {
   const energy = [(FOOD.carbs - FOOD.fiber) * 4 + FOOD.fiber * 2, FOOD.protein * 4, FOOD.fat * 9];
@@ -84,6 +84,8 @@ async function logTheFood(page: Page): Promise<void> {
             id,
             name: 'Macro basis test food',
             quantityGrams: 100,
+            // A US label: it states its style, because a food with no stated style now resolves to the EU reading.
+            carbBasis: 'total',
             macros: {
               carbs: food.carbs,
               fiber: food.fiber,
