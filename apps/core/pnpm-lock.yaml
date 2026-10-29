@@ -27,8 +27,8 @@ importers:
         specifier: ^8.16.3
         version: 8.22.0
       undici:
-        specifier: 8.10.2
-        version: 8.10.2
+        specifier: 8.12.2
+        version: 8.12.2
       web-push:
         specifier: ^3.6.7
         version: 3.6.7
@@ -1169,8 +1169,8 @@ packages:
   setprototypeof@1.2.0:
     resolution: {integrity: sha512-E5LDX7Wrp85Kil5bhZv46j8jOeboKq5JMmYM3gVGdGH8xFpPWXUMsNrlODCrkoxMEeNi/XZIwuRvY4XNwYMJpw==}
 
-  shell-quote@1.11.0:
-    resolution: {integrity: sha512-JdxDPD0DBTyu08pq0kPC0xSNet/qsU07qT6IsX1AS8oO2ICNRY4ldNa8OAI6PuwAH8tG3lxEhbqmyp4Dw4036g==}
+  shell-quote@1.12.0:
+    resolution: {integrity: sha512-PcByqNyT/38F2kDNi006HAMRJaULuBzq/FOsw3qdZvX/GA9W/jamDaRskgHjubHiftXK5sIFxLNkvrXUwcof6Q==}
     engines: {node: '>= 0.4'}
 
   side-channel-list@1.0.1:
@@ -1225,8 +1225,8 @@ packages:
   undici-types@6.21.0:
     resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
 
-  undici@8.10.2:
-    resolution: {integrity: sha512-/y4/bH9YNU5hi9NIrpOuvGXFcxrj3CMrV+/AYpowAYTpHn8gX/XPFjNy766FPoYY0miQhdW977JFWKGNhBdwyQ==}
+  undici@8.12.2:
+    resolution: {integrity: sha512-XtuDWVdqTLr3NAxm2ly9/hU6kUsJOgGh1RASzMBbsw6aWCOaQzHdW+QQDfdERjfJ2V5vL5pRPa4RetO9UfivDg==}
     engines: {node: '>=22.19.0'}
 
   unpipe@1.0.0:
@@ -1845,7 +1845,7 @@ snapshots:
       debug: 4.4.3
       env-paths: 3.0.0
       semver: 7.8.5
-      shell-quote: 1.11.0
+      shell-quote: 1.12.0
       which: 4.0.0
     transitivePeerDependencies:
       - supports-color
@@ -2084,7 +2084,7 @@ snapshots:
 
   setprototypeof@1.2.0: {}
 
-  shell-quote@1.11.0:
+  shell-quote@1.12.0:
     optional: true
 
   side-channel-list@1.0.1:
@@ -2164,7 +2164,7 @@ snapshots:
 
   undici-types@6.21.0: {}
 
-  undici@8.10.2: {}
+  undici@8.12.2: {}
 
   unpipe@1.0.0: {}
 
