@@ -1,4 +1,10 @@
 {
+  "v0_70_0": {
+    "date": "2026-10-29",
+    "fixed": {
+      "01": "I carboidrati netti non sottraggono più due volte le fibre da un'etichetta europea."
+    }
+  },
   "v0_69_2": {
     "date": "2026-10-22",
     "fixed": {
@@ -11,12 +17,6 @@
     "fixed": {
       "01": "La ripartizione delle calorie non sottostima più i carboidrati nei giorni ad alto contenuto di fibre.",
       "02": "I giorni passati del diario ora mostrano le relative vitamine e minerali."
-    }
-  },
-  "v0_69_0": {
-    "date": "2026-10-13",
-    "added": {
-      "01": "Il diario e Analisi ora mostrano vitamine e minerali a colpo d'occhio."
     }
   }
 }

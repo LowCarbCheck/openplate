@@ -19620,6 +19620,13 @@
     "at": "2026-09-14",
     "it": "Peso attuale"
   },
+  "daf5a49f668aec24": {
+    "en": "Net carbs no longer take the fiber out of an EU label twice.",
+    "path": "releases:v0_70_0.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-10-29",
+    "it": "I carboidrati netti non sottraggono più due volte le fibre da un'etichetta europea."
+  },
   "db1929f477af67a2": {
     "en": "skyr",
     "path": "common:catchUp.foods.skyr",

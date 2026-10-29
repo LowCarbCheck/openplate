@@ -1,4 +1,10 @@
 {
+  "v0_70_0": {
+    "date": "2026-10-29",
+    "fixed": {
+      "01": "Los carbohidratos netos ya no restan la fibra dos veces de una etiqueta de la UE."
+    }
+  },
   "v0_69_2": {
     "date": "2026-10-22",
     "fixed": {
@@ -11,12 +17,6 @@
     "fixed": {
       "01": "La proporción de calorías ya no subestima los carbohidratos en días con mucha fibra.",
       "02": "Los días antiguos del diario ahora muestran sus vitaminas y minerales."
-    }
-  },
-  "v0_69_0": {
-    "date": "2026-10-13",
-    "added": {
-      "01": "El diario y Análisis muestran ahora las vitaminas y los minerales de un vistazo."
     }
   }
 }

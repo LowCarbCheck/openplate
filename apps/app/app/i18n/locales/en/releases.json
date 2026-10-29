@@ -1,4 +1,10 @@
 {
+  "v0_70_0": {
+    "date": "2026-10-29",
+    "fixed": {
+      "01": "Net carbs no longer take the fiber out of an EU label twice."
+    }
+  },
   "v0_69_2": {
     "date": "2026-10-22",
     "fixed": {
@@ -11,12 +17,6 @@
     "fixed": {
       "01": "The calorie share no longer undercounts carbs on a high fiber day.",
       "02": "Old diary days now show their vitamins and minerals."
-    }
-  },
-  "v0_69_0": {
-    "date": "2026-10-13",
-    "added": {
-      "01": "The diary and Insights now show vitamins and minerals at a glance."
     }
   }
 }

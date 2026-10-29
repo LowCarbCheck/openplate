@@ -1,4 +1,10 @@
 {
+  "v0_70_0": {
+    "date": "2026-10-29",
+    "fixed": {
+      "01": "Netto-Kohlenhydrate ziehen die Ballaststoffe bei EU-Kennzeichnungen nicht mehr doppelt ab."
+    }
+  },
   "v0_69_2": {
     "date": "2026-10-22",
     "fixed": {
@@ -11,12 +17,6 @@
     "fixed": {
       "01": "Der Kalorienanteil unterschätzt Kohlenhydrate an Tagen mit vielen Ballaststoffen nicht mehr.",
       "02": "Ältere Tagebuch-Tage zeigen jetzt ihre Vitamine und Mineralstoffe an."
-    }
-  },
-  "v0_69_0": {
-    "date": "2026-10-13",
-    "added": {
-      "01": "Das Tagebuch und Einblicke zeigen Vitamine und Mineralstoffe jetzt auf einen Blick."
     }
   }
 }

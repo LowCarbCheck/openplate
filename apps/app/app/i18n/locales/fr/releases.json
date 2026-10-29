@@ -1,4 +1,10 @@
 {
+  "v0_70_0": {
+    "date": "2026-10-29",
+    "fixed": {
+      "01": "Les glucides nets ne déduisent plus les fibres deux fois pour les étiquettes de l'UE."
+    }
+  },
   "v0_69_2": {
     "date": "2026-10-22",
     "fixed": {
@@ -11,12 +17,6 @@
     "fixed": {
       "01": "La part de calories ne sous-estime plus les glucides lors d'une journée riche en fibres.",
       "02": "Les anciennes journées du journal affichent désormais leurs vitamines et minéraux."
-    }
-  },
-  "v0_69_0": {
-    "date": "2026-10-13",
-    "added": {
-      "01": "Le journal et Analyses affichent désormais les vitamines et les minéraux d'un coup d'œil."
     }
   }
 }

@@ -11,9 +11,11 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+## [0.70.0] - 2026-10-29
+
 ### Fixed
 
-- **Net carbs no longer take the fiber out of an EU label twice.** A food typed in by hand on the default answer, a custom food, a scan with no label style and an AI estimate stored no label style, and the app then read the carbs as a US label and subtracted the fiber. An EU label prints carbs without fiber, so a pack with 10 g carbs and 6 g fiber read 4 g net carbs where 10 g is right. With no label style stated, the app now works it out from the numbers: fiber above carbs, or sugars and fiber above carbs, mean an EU label, and so does an energy figure that only fits one. A US label is read only when the calories prove it, so an unclear food can overstate net carbs by its fiber but never understate them. This also changes how older entries without a label style are counted. The label question on the manual and custom food forms now says "Automatic" in place of "not sure", and an entry's page states the formula its own label style uses.
+- **Net carbs no longer take the fiber out of an EU label twice.** A food typed in by hand on the default answer, a custom food, a scan with no label style and an AI estimate stored no label style, and the app then read the carbs as a US label and subtracted the fiber. An EU label prints carbs without fiber, so a pack with 10 g carbs and 6 g fiber read 4 g net carbs where 10 g is right. With no label style stated, the app now works it out from the numbers: fiber above carbs, or sugars and fiber above carbs, mean an EU label, and so does an energy figure that only fits one. A US label is read only when the calories prove it, so an unclear food can overstate net carbs by its fiber but never understate them. This also changes how older entries without a label style are counted. The label question on the manual and custom food forms now says "Automatic" in place of "not sure", and an entry's page states the formula its own label style uses. ([e07844d2](https://github.com/LowCarbCheck/openplate/commit/e07844d2))
 
 ## [0.69.2] - 2026-10-22
 

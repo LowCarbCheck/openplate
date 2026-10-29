@@ -1,4 +1,10 @@
 {
+  "v0_70_0": {
+    "date": "2026-10-29",
+    "fixed": {
+      "01": "Net karbonhidrat, AB etiketindeki lifi artık iki kez düşmüyor."
+    }
+  },
   "v0_69_2": {
     "date": "2026-10-22",
     "fixed": {
@@ -11,12 +17,6 @@
     "fixed": {
       "01": "Kalori payı, yüksek lifli bir günde karbonhidratları artık eksik saymaz.",
       "02": "Eski günlük günleri artık vitamin ve minerallerini gösteriyor."
-    }
-  },
-  "v0_69_0": {
-    "date": "2026-10-13",
-    "added": {
-      "01": "Günlük ve İçgörüler artık vitamin ve mineralleri bir bakışta gösterir."
     }
   }
 }
