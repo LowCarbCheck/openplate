@@ -15014,6 +15014,13 @@
     "at": "2026-09-14",
     "es": "Esto lo elimina de tus alimentos. Todo lo que ya hayas registrado con él se mantendrá en tu diario."
   },
+  "a5cf26073bbf732b": {
+    "en": "This month's security fixes are in the app's libraries.",
+    "path": "releases:v0_70_1.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-02",
+    "es": "Las correcciones de seguridad de este mes están en las bibliotecas de la aplicación."
+  },
   "a5dd910f397d27fc": {
     "en": "Cancel after a failed erase now takes you out of the diary.",
     "path": "releases:v0_63_0.fixed.11",

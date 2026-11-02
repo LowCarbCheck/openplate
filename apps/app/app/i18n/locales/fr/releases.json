@@ -1,4 +1,10 @@
 {
+  "v0_70_1": {
+    "date": "2026-11-02",
+    "fixed": {
+      "01": "Les correctifs de sécurité de ce mois-ci se trouvent dans les bibliothèques de l'application."
+    }
+  },
   "v0_70_0": {
     "date": "2026-10-29",
     "fixed": {
@@ -10,13 +16,6 @@
     "fixed": {
       "01": "L'écran d'ajout ne saute plus lorsqu'il détecte la présence de l'IA.",
       "02": "Le serveur fonctionne sur une version de Node.js qui intègre un correctif de sécurité."
-    }
-  },
-  "v0_69_1": {
-    "date": "2026-10-13",
-    "fixed": {
-      "01": "La part de calories ne sous-estime plus les glucides lors d'une journée riche en fibres.",
-      "02": "Les anciennes journées du journal affichent désormais leurs vitamines et minéraux."
     }
   }
 }

@@ -1,4 +1,10 @@
 {
+  "v0_70_1": {
+    "date": "2026-11-02",
+    "fixed": {
+      "01": "Bu ayın güvenlik düzeltmeleri uygulamanın kütüphanelerinde yer alıyor."
+    }
+  },
   "v0_70_0": {
     "date": "2026-10-29",
     "fixed": {
@@ -10,13 +16,6 @@
     "fixed": {
       "01": "Ekleme ekranı, yapay zekayı algıladığında artık kayma yapmıyor.",
       "02": "Sunucu, güvenlik düzeltmesi içeren bir Node.js sürümünde çalışır."
-    }
-  },
-  "v0_69_1": {
-    "date": "2026-10-13",
-    "fixed": {
-      "01": "Kalori payı, yüksek lifli bir günde karbonhidratları artık eksik saymaz.",
-      "02": "Eski günlük günleri artık vitamin ve minerallerini gösteriyor."
     }
   }
 }

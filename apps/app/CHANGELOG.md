@@ -11,9 +11,11 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+## [0.70.1] - 2026-11-02
+
 ### Fixed
 
-- **This month's security fixes are in the app's libraries.** The update takes vite 8.3.5 and zod 4.6.7, the last of which fixes a way to exhaust memory with an oversized array (GHSA-mrhx-c7xc-m3w5), and the other minor and patch releases of the app's dependencies. The structured-output schema sent to the model is unchanged, byte for byte.
+- **This month's security fixes are in the app's libraries.** The update takes vite 8.3.5 and zod 4.6.7, the last of which fixes a way to exhaust memory with an oversized array (GHSA-mrhx-c7xc-m3w5), and the other minor and patch releases of the app's dependencies. The structured-output schema sent to the model is unchanged, byte for byte. ([3917a9a](https://github.com/LowCarbCheck/openplate/commit/3917a9a))
 
 ## [0.70.0] - 2026-10-29
 

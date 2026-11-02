@@ -1,4 +1,10 @@
 {
+  "v0_70_1": {
+    "date": "2026-11-02",
+    "fixed": {
+      "01": "Las correcciones de seguridad de este mes están en las bibliotecas de la aplicación."
+    }
+  },
   "v0_70_0": {
     "date": "2026-10-29",
     "fixed": {
@@ -10,13 +16,6 @@
     "fixed": {
       "01": "La pantalla de añadir ya no da saltos cuando detecta la IA.",
       "02": "El servidor se ejecuta en una versión de Node.js con un parche de seguridad."
-    }
-  },
-  "v0_69_1": {
-    "date": "2026-10-13",
-    "fixed": {
-      "01": "La proporción de calorías ya no subestima los carbohidratos en días con mucha fibra.",
-      "02": "Los días antiguos del diario ahora muestran sus vitaminas y minerales."
     }
   }
 }

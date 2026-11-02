@@ -1,4 +1,10 @@
 {
+  "v0_70_1": {
+    "date": "2026-11-02",
+    "fixed": {
+      "01": "This month's security fixes are in the app's libraries."
+    }
+  },
   "v0_70_0": {
     "date": "2026-10-29",
     "fixed": {
@@ -10,13 +16,6 @@
     "fixed": {
       "01": "The add screen no longer jumps when it learns about AI.",
       "02": "The server runs on a Node.js release with a security fix."
-    }
-  },
-  "v0_69_1": {
-    "date": "2026-10-13",
-    "fixed": {
-      "01": "The calorie share no longer undercounts carbs on a high fiber day.",
-      "02": "Old diary days now show their vitamins and minerals."
     }
   }
 }
