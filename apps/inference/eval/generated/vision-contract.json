@@ -14,7 +14,7 @@
       "apps/app/app/services/vision/prompt.ts": "cd6145b02dcd433943a7936383ece876b8bf7850",
       "apps/app/app/services/vision/recipe-prompt.ts": "0762142895ce107bded7c74d5332c43a72b803f6",
       "apps/app/app/services/vision/recipe-schema.ts": "21da44eb8b5157ec14ba045dbd82f9489ed6bef2",
-      "apps/app/app/services/vision/schema.ts": "d2c3d07be3ea22eb4a59237d9f94517dd5942604",
+      "apps/app/app/services/vision/schema.ts": "8230820d14a55bd4cb89780dc3a05255af8ae4dd",
       "apps/app/app/services/vision/task.ts": "8156a343e662122c6426d733c280c5fd58dd3cd7",
       "apps/app/app/services/vision/translations.ts": "4eb6486149f062b3658b7eededfd1a6e174a9c55"
     }

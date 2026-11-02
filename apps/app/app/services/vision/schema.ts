@@ -19,6 +19,7 @@
  * objects below rather than one.
  */
 import { z } from 'zod';
+import { restoreAnyOfTypeUnions, type JsonSchemaObject } from './json-schema-any-of';
 import type { IdentifiedFood, IdentifiedFoodMacros, PlateIdentification, PrintedServingSize } from './types';
 import { FLAGS_COVERAGE_VALUES, MACRO_PROVENANCE_VALUES, MACRO_SOURCE_VALUES, VisionProviderError } from './types';
 import { CARB_BASES } from '#app/lib/net-carbs';
@@ -529,11 +530,15 @@ function applyStrictModeRules(node: JsonSchemaNode): void {
  * have two places to drift.
  */
 export function toStrictJsonSchema(schema: z.ZodType): JsonSchemaNode {
-  // SAFETY: `z.toJSONSchema` emits a plain JSON-Schema object tree and
-  // `structuredClone` deep-copies it, so `cloned` is a fresh, own-property-only
-  // schema node; `JsonSchemaNode` models exactly the keywords the plate schema
+  // `restoreAnyOfTypeUnions` keeps the nullable spelling the providers have always been sent: zod 4.6.7
+  // folds `anyOf: [{type}, {type: "null"}]` into `type: [..., "null"]`. See that file before changing this.
+  // SAFETY: `z.toJSONSchema` returns a JSON document (strings, numbers, booleans, null, arrays, plain
+  // objects), which is exactly what `JsonSchemaObject` names; zod types its leaves as `unknown`.
+  const restored = restoreAnyOfTypeUnions(z.toJSONSchema(schema) as JsonSchemaObject);
+  // SAFETY: `structuredClone` deep-copies the plain JSON-Schema object tree, so `cloned` is a fresh,
+  // own-property-only schema node; `JsonSchemaNode` models exactly the keywords the plate schema
   // emits and leaves every unmodeled leaf untouched.
-  const cloned = structuredClone(z.toJSONSchema(schema)) as JsonSchemaNode;
+  const cloned = structuredClone(restored) as JsonSchemaNode;
   delete cloned.$schema;
   applyStrictModeRules(cloned);
   return cloned;
