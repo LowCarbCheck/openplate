@@ -7,6 +7,10 @@ change moves the minor.
 
 ## [Unreleased]
 
+### Fixed
+
+- **The mail and network libraries carry their security fixes.** nodemailer moves to 10.2.1, whose address parser no longer accepts crafted recipients, and undici moves to 8.12.3, with the other minor and patch releases. No configuration change and no migration.
+
 ## [0.38.1] - 2026-10-22
 
 ### Fixed
