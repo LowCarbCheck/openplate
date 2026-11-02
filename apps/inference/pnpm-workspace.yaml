@@ -24,3 +24,9 @@ minimumReleaseAge: 10080
 minimumReleaseAgeExclude:
   - esbuild
   - '@esbuild/*'
+
+# Security override (Dependabot alerts 65 to 67, 71 and 72: vite <= 7.3.6, 2026-11-02).
+# vitest pulls vite as a transitive and `pnpm update` kept the locked 7.3.6.
+# Same major only. Remove once the lockfile resolves vite 7.3.7 or newer without it.
+overrides:
+  vite: ^7.3.7

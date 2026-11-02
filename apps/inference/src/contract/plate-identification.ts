@@ -26,6 +26,7 @@
  *    mismatch. A near-miss shape is a hard client failure, not a degradation.
  */
 import { z } from 'zod';
+import { restoreAnyOfTypeUnions, type JsonSchemaObject } from './json-schema-any-of.js';
 
 export const MacrosSchema = z.object({
   carbs: z.number().nullable(),
@@ -284,11 +285,16 @@ function applyStrictModeRules(node: JsonSchemaNode): void {
 
 /** Drops the draft `$schema` keyword and applies the strict-mode rules. */
 export function toStrictJsonSchema(raw: z.core.JSONSchema.BaseSchema): JsonSchemaNode {
-  // SAFETY: `raw` is a draft-2020-12 schema document and `JsonSchemaNode` models
+  // `restoreAnyOfTypeUnions` keeps the nullable spelling the providers have always been sent: zod 4.6.7
+  // folds `anyOf: [{type}, {type: "null"}]` into `type: [..., "null"]`. See that file before changing this.
+  // SAFETY: `raw` is zod's JSON document (strings, numbers, booleans, null, arrays, plain objects), which
+  // is exactly what `JsonSchemaObject` names; zod types its leaves as `unknown`.
+  const restored = restoreAnyOfTypeUnions(raw as JsonSchemaObject);
+  // SAFETY: `restored` is a draft-2020-12 schema document and `JsonSchemaNode` models
   // a subset of its keywords — every field is optional there, so the assertion
   // cannot claim a property is present. `structuredClone` runs first, so the
   // mutation below cannot reach zod's own object.
-  const cloned = structuredClone(raw) as JsonSchemaNode;
+  const cloned = structuredClone(restored) as JsonSchemaNode;
   delete cloned.$schema;
   applyStrictModeRules(cloned);
   return cloned;

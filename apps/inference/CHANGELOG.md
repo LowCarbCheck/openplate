@@ -7,6 +7,10 @@ change moves the minor.
 
 ## [Unreleased]
 
+### Fixed
+
+- **The network and validation libraries carry their security fixes.** undici moves to 8.12.3 and zod to 4.6.7, which fixes a way to exhaust memory with an oversized array (GHSA-mrhx-c7xc-m3w5), with the other minor and patch releases. The schema sent to the model is unchanged, byte for byte.
+
 ## [0.3.2] - 2026-10-22
 
 ### Fixed
