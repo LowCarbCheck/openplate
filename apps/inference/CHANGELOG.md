@@ -7,9 +7,11 @@ change moves the minor.
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-11-02
+
 ### Fixed
 
-- **The network and validation libraries carry their security fixes.** undici moves to 8.12.3 and zod to 4.6.7, which fixes a way to exhaust memory with an oversized array (GHSA-mrhx-c7xc-m3w5), with the other minor and patch releases. The schema sent to the model is unchanged, byte for byte.
+- **The network and validation libraries carry their security fixes.** undici moves to 8.12.3 and zod to 4.6.7, which fixes a way to exhaust memory with an oversized array (GHSA-mrhx-c7xc-m3w5), with the other minor and patch releases. The schema sent to the model is unchanged, byte for byte. ([df07af6](https://github.com/LowCarbCheck/openplate/commit/df07af6))
 
 ## [0.3.2] - 2026-10-22
 
