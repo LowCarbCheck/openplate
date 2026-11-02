@@ -99,6 +99,59 @@ export function decodeAiQuota(wire: AiQuotaInput | null | undefined): AiQuota | 
   return parsed.success ? parsed.data : null;
 }
 
+/** The two count headers on every answer of the managed proxy. Transcribed from `PROTOCOL.md` §5.19. */
+export const QUOTA_USED_HEADER = 'X-Quota-Used';
+export const QUOTA_LIMIT_HEADER = 'X-Quota-Limit';
+
+/** The account's position in its limit, as the proxy just stated it. */
+export interface QuotaCount {
+  used: number;
+  limit: number;
+}
+
+/** A whole number from a header, or `null` for an absent or malformed one. */
+function readCountHeader({ headers, name }: { headers: Headers; name: string }): number | null {
+  const raw = headers.get(name);
+  if (raw === null || !/^\d+$/.test(raw)) return null;
+  return Number(raw);
+}
+
+/**
+ * The count the proxy stated on this answer, or `null` when it stated none: a
+ * provider the person configured, or a core older than the headers.
+ */
+export function readQuotaCount(headers: Headers): QuotaCount | null {
+  const used = readCountHeader({ headers, name: QUOTA_USED_HEADER });
+  const limit = readCountHeader({ headers, name: QUOTA_LIMIT_HEADER });
+  if (used === null || limit === null) return null;
+  return { used, limit };
+}
+
+/**
+ * The quota with the count the proxy just stated, or the same quota object when
+ * the count does not belong to it.
+ *
+ * THE COUNT MOVES, THE GRANT DOES NOT. A different limit means the proxy held
+ * this request to another grant, and a window that has already ended has its own
+ * count, so both wait for the next account read rather than mixing two facts.
+ *
+ * @param input.quota - the quota the session holds.
+ * @param input.count - what the proxy stated.
+ * @param input.now - the instant to judge the window against.
+ */
+export function withQuotaCount({
+  quota,
+  count,
+  now,
+}: {
+  quota: AiQuota;
+  count: QuotaCount;
+  now: Date;
+}): AiQuota {
+  if (count.limit !== quota.limit || Date.parse(quota.resetsAt) <= now.getTime()) return quota;
+  return { ...quota, used: count.used };
+}
+
 /** The weekday and the clock time an instant falls on, in the reader's language and zone. */
 export interface QuotaResetMoment {
   /** The long weekday name: "Monday", "Montag". */

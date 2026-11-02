@@ -36,6 +36,8 @@ import enCommon from '../../app/i18n/locales/en/common.json';
 import { NO_CONSENTS, type OrderMode } from '../../app/components/plans/plan-order';
 import {
   NO_OWN_PLAN,
+  drawnFeaturesOf,
+  knownFeaturesOf,
   defaultTierIdOf,
   linkedTierIdOf,
   moveEffectOf,
@@ -199,8 +201,16 @@ describe('the tiers view model', () => {
     assert.equal(viewOf(WITH_TIERS, onTier('fixture-beta')).hasOrderableRow, true);
   });
 
-  it('keeps the feature words this build knows, in the page order, and drops the rest', () => {
-    assert.deepEqual(rowOf(viewOf(WITH_TIERS), 'fixture-gamma').features, ['fasting', 'pantry', 'voice', 'chat']);
+  it('lists only the features with a screen, in the page order: no voice, no chat, no unknown word', () => {
+    assert.deepEqual(rowOf(viewOf(WITH_TIERS), 'fixture-gamma').features, ['fasting', 'pantry']);
+    // THE CONTROL: the biller did send them, and the gate's own list still knows them.
+    assert.deepEqual(knownFeaturesOf(['voice', 'chat', 'pantry', 'fasting', 'future-word']), [
+      'fasting',
+      'pantry',
+      'voice',
+      'chat',
+    ]);
+    assert.deepEqual(drawnFeaturesOf(['voice', 'chat']), []);
   });
 
   it('offers the picked tier its own plans, and nothing for a row that cannot be ordered', () => {
@@ -644,12 +654,12 @@ describe('the booked downgrade in the status card', () => {
     assert.equal(fine.includes('role="alert"'), false);
   });
 
-  it('sits inside the status card, above the manage button', () => {
+  it('sits inside the status card', () => {
     const markup = render({ offer: WITH_TIERS, planView: SUBSCRIBED, pendingChange: BOOKED });
     const card = markup.indexOf('data-slot="plan-status-card"');
     const slot = markup.indexOf('data-slot="plan-pending-change"');
     assert.ok(card >= 0 && slot > card);
-    assert.ok(slot < markup.indexOf(enCommon.plan.manage), 'above Manage');
+    assert.ok(slot < markup.indexOf('data-slot="plan-tiers"'), 'above the list');
   });
 });
 

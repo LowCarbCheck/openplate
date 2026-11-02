@@ -902,6 +902,13 @@
     "at": "2026-09-14",
     "es": "Preparando…"
   },
+  "0a2ceb083b3b3c71": {
+    "en": "Log more of your meals with AI",
+    "path": "common:plan.hero.heading.free",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-02",
+    "es": "Registra más comidas con IA"
+  },
   "0a3fe4bf22df7c36": {
     "en": "Your pantry now follows you too.",
     "path": "releases:v0_36_0.changed.02",
@@ -1615,6 +1622,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Seis afirmaciones que puedes verificar en el código fuente"
+  },
+  "1158f28a2d7c3a8e": {
+    "en": "Choose the plan that fits you",
+    "path": "common:plan.hero.heading.choose",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-02",
+    "es": "Elige el plan que mejor se adapte a ti"
   },
   "115e312db3e02036": {
     "en": "The AI provider rejected the request",
@@ -2729,6 +2743,13 @@
     "at": "2026-09-14",
     "es": "{{used}} de {{limit}} usadas hoy."
   },
+  "1c1ef4305ed099c8": {
+    "en": "AI scan a week",
+    "path": "common:plan.tiers.scanFigure.week_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-02",
+    "es": "escaneo con IA a la semana"
+  },
   "1c2f4c4ebbf4bcdb": {
     "en": "The check could not load. Reload the page, or turn off a blocker for this page.",
     "path": "common:signUp.captchaUnavailable",
@@ -3407,6 +3428,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-23",
     "es": "Mensual"
+  },
+  "2318955247f46a23": {
+    "en": "{{name}} chosen",
+    "path": "common:plan.tiers.chosen",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-02",
+    "es": "{{name}} seleccionado"
   },
   "2321102d9a4d8375": {
     "en": "Numbers look wrong? Report this entry",
@@ -4304,6 +4332,13 @@
     "at": "2026-09-19",
     "es": "Racha más larga: {{count}} día."
   },
+  "2f0977406eed42d9": {
+    "en": "Your free AI scans are still here. Choose a plan now, or use them first and decide later.",
+    "path": "common:plan.hero.body.trial",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-02",
+    "es": "Tus escaneos gratuitos con IA siguen disponibles. Elige un plan ahora, o úsalos primero y decide después."
+  },
   "2f383103dd95cce3": {
     "en": "You had a plate identified from a photo.",
     "path": "common:awards.explorer.log.scan.note",
@@ -4996,6 +5031,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Cada día incluye energía, proteínas, carbohidratos, grasas, fibra y el número de entradas que contenía ese día."
+  },
+  "38c433a31b1f67c8": {
+    "en": "{{used}} of {{count}} free AI scan used",
+    "path": "common:plan.meter.scans_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-02",
+    "es": "{{used}} de {{count}} escaneo gratuito con IA utilizado"
   },
   "38cc1e9e78801902": {
     "en": "Privacy",
@@ -5983,6 +6025,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Otro de tus dispositivos envió datos a este estudio primero. Elige los días de nuevo y envíalos."
+  },
+  "44c651b9993e5488": {
+    "en": "{{used}} of {{count}} AI scans used today",
+    "path": "common:plan.meter.day_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-02",
+    "es": "{{used}} de {{count}} escaneos con IA utilizados hoy"
   },
   "44c87b5b4080a167": {
     "en": "That account number does not look right.",
@@ -7678,6 +7727,13 @@
     "at": "2026-09-14",
     "es": "Foto del plato seleccionada"
   },
+  "56cbaac39e56911b": {
+    "en": "{{used}} of {{count}} AI scan used this week",
+    "path": "common:plan.meter.week_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-02",
+    "es": "{{used}} de {{count}} escaneo con IA utilizado esta semana"
+  },
   "56e1a1304488727e": {
     "en": "You are not sharing your diary with anyone.",
     "path": "common:sharing.grants.empty",
@@ -7698,6 +7754,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-23",
     "es": "La página de planes muestra ambos planes con sus precios antes de empezar."
+  },
+  "5735ed778ec2e9e7": {
+    "en": "You have used all {{count}} AI scans this week.",
+    "path": "common:plan.limitRibbon.usedWeek_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-02",
+    "es": "Has utilizado los {{count}} escaneos con IA de esta semana."
   },
   "5741dc924900cac1": {
     "en": "Before a long fast",
@@ -8503,6 +8566,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "{{delta}} en los últimos 7 días"
+  },
+  "60441521a2514f79": {
+    "en": "Each plan gives you more AI scans.",
+    "path": "common:plan.hero.body.choose",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-02",
+    "es": "Cada plan te ofrece más escaneos con IA."
   },
   "604955edc8abd4de": {
     "en": "Send a reset link",
@@ -11325,6 +11395,13 @@
     "at": "2026-09-14",
     "es": "proteínas"
   },
+  "7ea94be6c5830ef2": {
+    "en": "Recommended",
+    "path": "common:plan.tiers.recommended",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-02",
+    "es": "Recomendado"
+  },
   "7ec82d7251c64924": {
     "en": "Some saved meals have not reached the server yet. If you erase, you may lose them.",
     "path": "common:signOut.unsent.savedMealsUnsent",
@@ -13292,6 +13369,13 @@
     "at": "2026-09-14",
     "es": "Las entradas con IA para esta cuenta terminaron el {{date}}. Las búsquedas en la base de datos de alimentos siguen funcionando."
   },
+  "9364aa1f6dea9b7d": {
+    "en": "Each plan gives you more AI scans.",
+    "path": "common:plan.hero.body.free",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-02",
+    "es": "Cada plan te ofrece más escaneos con IA."
+  },
   "9372d5810045f95c": {
     "en": "Remove the YAZIO entries",
     "path": "common:settings.data.yazio.remove.confirm",
@@ -13410,6 +13494,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Configurando tu conexión con la IA."
+  },
+  "95150f707e946e50": {
+    "en": "Choose {{name}}",
+    "path": "common:plan.tiers.choose",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-02",
+    "es": "Elegir {{name}}"
   },
   "955718f01d1279ec": {
     "en": "The Settings sign-out button no longer claims it signs you out everywhere.",
@@ -14979,6 +15070,13 @@
     "at": "2026-09-14",
     "es": "De nuestra base de datos de alimentos"
   },
+  "a558a4cd756e2b26": {
+    "en": "AI scans a day",
+    "path": "common:plan.tiers.scanFigure.day_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-02",
+    "es": "escaneos con IA al día"
+  },
   "a570e4ace8693df6": {
     "en": "Save",
     "path": "common:account.name.save",
@@ -15595,6 +15693,13 @@
     "at": "2026-09-14",
     "es": "Este dispositivo aún no tiene ningún diario. Empieza uno nuevo o inicia sesión en tu cuenta."
   },
+  "accb2b175e632c53": {
+    "en": "You have used your {{count}} AI scan today.",
+    "path": "common:plan.limitRibbon.usedDay_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-02",
+    "es": "Has utilizado tu {{count}} escaneo con IA hoy."
+  },
   "acd50eb1e0ab19d0": {
     "en": "Copy the link",
     "path": "common:admin.invite.linkCopy",
@@ -15966,6 +16071,13 @@
     "at": "2026-09-14",
     "es": "Conectar con OpenRouter"
   },
+  "b0f70a15f0db431d": {
+    "en": "{{used}} of {{count}} AI scan used today",
+    "path": "common:plan.meter.day_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-02",
+    "es": "{{used}} de {{count}} escaneo con IA utilizado hoy"
+  },
   "b1101419be197642": {
     "en": "Password changed.",
     "path": "common:account.password.done",
@@ -16147,6 +16259,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-24",
     "es": "Pulsar la primera tecla en el cuadro de descripción ya no lo desplaza."
+  },
+  "b26c0a19d1365e10": {
+    "en": "You have used all {{count}} AI scans today.",
+    "path": "common:plan.limitRibbon.usedDay_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-02",
+    "es": "Has utilizado los {{count}} escaneos con IA de hoy."
   },
   "b27d5844b630f524": {
     "en": "This invitation is for the server at {{linkOrigin}}. This openplate uses {{appServerOrigin}}. Open the invitation in the openplate that uses that server, or ask for an invitation to this one.",
@@ -17058,6 +17177,13 @@
     "at": "2026-09-14",
     "es": "Lo que este estudio puede abrir, habiendo purgado ya cada revocación."
   },
+  "bdcf1fd0f4bdc0ba": {
+    "en": "You have used your {{count}} AI scan this week.",
+    "path": "common:plan.limitRibbon.usedWeek_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-02",
+    "es": "Has utilizado tu {{count}} escaneo con IA esta semana."
+  },
   "be00640e8fbf5b39": {
     "en": "Prices include German VAT.",
     "path": "common:plan.vatNote",
@@ -17968,6 +18094,13 @@
     "at": "2026-09-28",
     "es": "Elige qué valores de referencia muestra esta instancia para las vitaminas, los minerales y la referencia de proteínas. Esta elección se aplica a todos los usuarios de esta instancia, en todos los idiomas."
   },
+  "c9357e5eba5c6616": {
+    "en": "{{used}} of {{count}} free AI scans used",
+    "path": "common:plan.meter.scans_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-02",
+    "es": "{{used}} de {{count}} escaneos gratuitos con IA utilizados"
+  },
   "c956306539139331": {
     "en": "Paid",
     "path": "common:admin.aiBudget.paid",
@@ -18107,6 +18240,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Tu proveedor interpreta la foto y propone los alimentos. Compruebas las cifras, guardas y el total del día se actualiza."
+  },
+  "cae61c6eebb04248": {
+    "en": "{{multiple}}x the free scans",
+    "path": "common:plan.tiers.multiple",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-02",
+    "es": "{{multiple}} veces los escaneos gratuitos"
   },
   "caf0b8723fef4050": {
     "en": "{{achieved}} of {{target}}",
@@ -19340,6 +19480,13 @@
     "at": "2026-09-14",
     "es": "Este enlace está incompleto"
   },
+  "d75402bc72c16cfe": {
+    "en": "AI scan a day",
+    "path": "common:plan.tiers.scanFigure.day_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-02",
+    "es": "escaneo con IA al día"
+  },
   "d76235f635b9bcb5": {
     "en": "Imported {{count}} weigh-in from YAZIO.",
     "path": "common:settings.data.yazio.successWeighIns_one",
@@ -19626,6 +19773,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Peso actual"
+  },
+  "daef07be6ea4c1bd": {
+    "en": "{{used}} of {{count}} AI scans used this week",
+    "path": "common:plan.meter.week_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-02",
+    "es": "{{used}} de {{count}} escaneos con IA utilizados esta semana"
   },
   "daf5a49f668aec24": {
     "en": "Net carbs no longer take the fiber out of an EU label twice.",
@@ -19934,6 +20088,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Carbohidratos netos"
+  },
+  "ddfc84e0a4b845f8": {
+    "en": "Keep logging your meals with AI",
+    "path": "common:plan.hero.heading.trial",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-02",
+    "es": "Sigue registrando tus comidas con IA"
   },
   "de3609fb2554d840": {
     "en": "Sign in to see your account.",
@@ -20712,6 +20873,13 @@
     "at": "2026-09-17",
     "es": "Registrar {{count}} de {{servings}} raciones"
   },
+  "e6869905f81996ff": {
+    "en": "AI scans a week",
+    "path": "common:plan.tiers.scanFigure.week_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-02",
+    "es": "escaneos con IA a la semana"
+  },
   "e688a7296b8fd3c8": {
     "en": "You have used today's AI estimates. Try again tomorrow.",
     "path": "common:scan.errors.provider.allowanceSpent",
@@ -21033,6 +21201,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-18",
     "es": "La base de datos de alimentos no está disponible, por lo que la IA estimó estas cifras y podrían ser menos precisas."
+  },
+  "e994ec2588306298": {
+    "en": "Save {{percent}}% over 12 monthly payments",
+    "path": "common:plan.tiers.saving",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-02",
+    "es": "Ahorra un {{percent}}% frente a 12 pagos mensuales"
   },
   "e996760989fdf478": {
     "en": "End this fast",

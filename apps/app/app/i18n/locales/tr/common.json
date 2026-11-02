@@ -3804,12 +3804,48 @@
       "weeklyLimit_one": "Haftada {{count}} yapay zeka taraması",
       "weeklyLimit_other": "Haftada {{count}} yapay zeka taraması",
       "noScans": "Yapay zeka taraması yok",
-      "includes": "Şunları içerir: {{features}}.",
       "pricePerMonth": "Ayda {{price}}",
       "pricePerYear": "Yılda {{price}}",
       "current": "Senin planın",
       "switchTo": "{{name}} planına geç",
-      "switchYearly": "Bunun yerine yıllık öde"
+      "switchYearly": "Bunun yerine yıllık öde",
+      "recommended": "Önerilen",
+      "multiple": "Ücretsiz taramaların {{multiple}} katı",
+      "saving": "12 aylık ödemeye kıyasla %{{percent}} tasarruf et",
+      "choose": "{{name}} seç",
+      "chosen": "{{name}} seçildi",
+      "scanFigure": {
+        "week_one": "Haftada yapay zeka taraması",
+        "week_other": "Haftada yapay zeka taraması",
+        "day_one": "Günde yapay zeka taraması",
+        "day_other": "Günde yapay zeka taraması"
+      }
+    },
+    "hero": {
+      "heading": {
+        "trial": "Öğünlerini yapay zeka ile kaydetmeye devam et",
+        "free": "Daha fazla öğününü yapay zeka ile kaydet",
+        "choose": "Sana uygun planı seç"
+      },
+      "body": {
+        "trial": "Ücretsiz yapay zeka taramaların hâlâ duruyor. Şimdi bir plan seç veya önce onları kullanıp sonra karar ver.",
+        "free": "Her plan sana daha fazla yapay zeka taraması sağlar.",
+        "choose": "Her plan sana daha fazla yapay zeka taraması sağlar."
+      }
+    },
+    "meter": {
+      "scans_one": "{{count}} ücretsiz yapay zeka taramasından {{used}} tanesi kullanıldı",
+      "scans_other": "{{count}} ücretsiz yapay zeka taramasından {{used}} tanesi kullanıldı",
+      "week_one": "Bu hafta {{count}} yapay zeka taramasından {{used}} tanesi kullanıldı",
+      "week_other": "Bu hafta {{count}} yapay zeka taramasından {{used}} tanesi kullanıldı",
+      "day_one": "Bugün {{count}} yapay zeka taramasından {{used}} tanesi kullanıldı",
+      "day_other": "Bugün {{count}} yapay zeka taramasından {{used}} tanesi kullanıldı"
+    },
+    "limitRibbon": {
+      "usedWeek_one": "Bu haftaki {{count}} yapay zeka taramanı kullandın.",
+      "usedWeek_other": "Bu haftaki {{count}} yapay zeka taramasının tümünü kullandın.",
+      "usedDay_one": "Bugünkü {{count}} yapay zeka taramanı kullandın.",
+      "usedDay_other": "Bugünkü {{count}} yapay zeka taramasının tümünü kullandın."
     },
     "move": {
       "effectNow": "Bu değişiklik hemen yürürlüğe girer. Ücret, önceden ödediğin tutara göre orantılı olarak mahsup edilir.",

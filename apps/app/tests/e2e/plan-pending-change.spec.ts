@@ -140,17 +140,16 @@ test('a booked downgrade shows the tier it moves to, the day, and a button that 
   await expect(statusCard(page).locator('[data-slot="plan-pending-change"]')).toHaveCount(1);
 });
 
-test('the control: nothing booked leaves the slot empty with its box, and no line names a tier', async ({ page }) => {
+test('the control: nothing booked draws no slot at all, so no empty box stands under the renewal date', async ({ page }) => {
   await openWith(page, { planView: PLAIN_VIEW, offerBody: FIXTURE_TIERS_OFFER_BODY });
   await openPlanPageSignedIn(page);
   await expect(page.locator('[data-slot="plan-tiers"]')).toBeVisible();
   await settleFrames(page);
 
-  await expect(slotOf(page)).toHaveAttribute('data-state', 'empty');
-  await expect(keepButton(page)).toBeHidden();
-  await expect(pendingLine(page)).toHaveText(/^\s*$/u);
-  // THE BOX IS THERE: an empty slot is as tall as the button that will fill it, and then some.
-  expect((await rectOf(slotOf(page))).height).toBeGreaterThan(44);
+  // The owner reported this box on 2026-11-02: 92 px of nothing, reserved for every subscriber.
+  await expect(slotOf(page)).toHaveCount(0);
+  await expect(keepButton(page)).toHaveCount(0);
+  await expect(pendingLine(page)).toHaveCount(0);
 });
 
 test('the control: a subscriber the biller puts on no tier gets the status card it always had, with no slot', async ({
@@ -310,7 +309,10 @@ test('a downgrade booked on this page shows its line at once, from the order ans
   ]);
   await routePendingCancel(page, [{ status: 200, json: { kept: { plan: 'monthly', tier: MIDDLE.id } } }]);
   await openPlanPageSignedIn(page);
-  await expect(slotOf(page)).toHaveAttribute('data-state', 'empty');
+  await expect(page.locator('[data-slot="plan-tiers"]')).toBeVisible();
+  // NOTHING BOOKED, NO SLOT: the line arrives below the list, above nothing the person reads.
+  await expect(slotOf(page)).toHaveCount(0);
+  const listBottom = await page.locator('[data-slot="plan-tiers"]').evaluate((node) => node.getBoundingClientRect().bottom + window.scrollY);
 
   await page.locator(`[data-slot="plan-tier"][data-tier-id="${LOW.id}"] [data-slot="tier-switch"]`).click();
   await page.locator('[data-slot="plan-card"][data-plan-key="monthly"]').click();
@@ -321,6 +323,9 @@ test('a downgrade booked on this page shows its line at once, from the order ans
   // THE PLAN READ STILL SAYS NOTHING BOOKED (the stub is not updated), yet the card has the line.
   await expect(slotOf(page)).toHaveAttribute('data-state', 'booked');
   await expect(pendingLine(page)).toContainText(LOW.name);
+  await expect(statusCard(page).locator('[data-slot="plan-pending-change"]')).toHaveCount(0);
+  const slotTop = await slotOf(page).evaluate((node) => node.getBoundingClientRect().top + window.scrollY);
+  expect(slotTop, 'the line sits below the list').toBeGreaterThanOrEqual(listBottom);
 
   await keepButton(page).click();
   await expect(slotOf(page)).toHaveAttribute('data-state', 'empty');
@@ -361,7 +366,7 @@ test('a declined card on an upgrade says so above the button, and the plan, the 
   await expect(page.locator(`[data-slot="plan-tier"][data-tier-id="${MIDDLE.id}"] [data-slot="tier-current"]`)).toHaveText(
     EN.plan.tiers.current,
   );
-  await expect(slotOf(page)).toHaveAttribute('data-state', 'empty');
+  await expect(slotOf(page)).toHaveCount(0);
   // NOTHING MOVED: the status card, the button under the line, everything above the order.
   await settleFrames(page);
   expect(await rectOf(statusCard(page))).toEqual(cardBefore);

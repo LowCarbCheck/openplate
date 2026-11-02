@@ -592,17 +592,19 @@ function renderTiers(offer: PlanOffer): string {
 describe('the tier list', () => {
   it('draws a weekly tier as scans a week, and a daily one as scans a day', () => {
     const weekly = renderTiers(offerWithTier({ dailyAiLimit: null, aiLimit: 20, aiLimitPeriod: 'week' }));
-    assert.ok(weekly.includes(t('plan.tiers.weeklyLimit_other', { count: 20 })), weekly);
-    assert.ok(!weekly.includes(t('plan.tiers.dailyLimit_other', { count: 20 })));
+    assert.ok(weekly.includes('>20</span>'), weekly);
+    assert.ok(weekly.includes(t('plan.tiers.scanFigure.week_other', { count: 20 })), weekly);
+    assert.ok(!weekly.includes(t('plan.tiers.scanFigure.day_other', { count: 20 })));
     // THE CONTROL: the same count as a day, from a biller older than the pair.
     const daily = renderTiers(offerWithTier({ dailyAiLimit: 20 }));
-    assert.ok(daily.includes(t('plan.tiers.dailyLimit_other', { count: 20 })), daily);
-    assert.ok(!daily.includes(t('plan.tiers.weeklyLimit_other', { count: 20 })));
+    assert.ok(daily.includes('>20</span>'), daily);
+    assert.ok(daily.includes(t('plan.tiers.scanFigure.day_other', { count: 20 })), daily);
+    assert.ok(!daily.includes(t('plan.tiers.scanFigure.week_other', { count: 20 })));
   });
 
   it('reads an unknown window from a newer biller as a day, never as a blank line', () => {
     const odd = renderTiers(offerWithTier({ dailyAiLimit: 20, aiLimit: 20, aiLimitPeriod: 'month' }));
-    assert.ok(odd.includes(t('plan.tiers.dailyLimit_other', { count: 20 })), odd);
+    assert.ok(odd.includes(t('plan.tiers.scanFigure.day_other', { count: 20 })), odd);
   });
 });
 

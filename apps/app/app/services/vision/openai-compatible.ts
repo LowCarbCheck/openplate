@@ -37,6 +37,7 @@ import { VisionProviderFailure, classifyVisionHttpFailure } from './failure-caus
 import type { IntakeTaskDescriptor } from './task';
 import { attachScanUsage } from './task';
 import type { JsonSchemaNode } from './schema';
+import { readQuotaCount, type QuotaCount } from '#app/lib/plans/ai-quota';
 import { readTrialScansLeft } from '#app/lib/plans/trial-scans';
 import { FEATURE_HEADER } from '#app/lib/plans/capabilities';
 
@@ -79,6 +80,8 @@ export type OpenAiCompatibleCredential =
       intakeId: string;
       /** Called with `X-Trial-Scans-Left` whenever a response carries it, success or refusal. */
       onTrialScansLeft?: (left: number) => void;
+      /** Called with `X-Quota-Used` and `X-Quota-Limit` whenever a response carries them, success or refusal. */
+      onQuotaCount?: (count: QuotaCount) => void;
     };
 
 /** The request header that names one person action to the managed proxy. Transcribed from `PROTOCOL.md` §5.19. */
@@ -365,6 +368,8 @@ export function createOpenAiCompatibleProvider(options: OpenAiCompatibleProvider
     if (isBearerProvider(credential)) {
       const left = readTrialScansLeft(response.headers);
       if (left !== null) credential.onTrialScansLeft?.(left);
+      const count = readQuotaCount(response.headers);
+      if (count !== null) credential.onQuotaCount?.(count);
     }
 
     if (!response.ok) {

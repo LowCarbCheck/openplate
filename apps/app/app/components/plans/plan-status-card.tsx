@@ -86,6 +86,12 @@ const EMPTY_LINE = '\u00a0';
 /**
  * The booked downgrade: one sentence, and under it the button that takes it back.
  *
+ * THIS BOX IS WHY THE CARD ONCE STOOD SO TALL. It used to be drawn empty for every
+ * tier subscriber, so 92 px of nothing sat under "It renews on...". Now the page
+ * draws it here only when the first plan read of the visit names a booked change,
+ * and a change booked during the visit is said below the tier list, where it pushes
+ * nothing the person is reading (`settings.plan.tsx`).
+ *
  * THE BOX IS THE SAME EMPTY AS FULL. The sentence has two lines of room
  * (`min-h-10`) and the button is 44 px (`h-11`), stacked, so the slot is 92 px
  * whatever it says and the line arriving, leaving or being replaced by a failure
@@ -100,7 +106,7 @@ const EMPTY_LINE = '\u00a0';
  * A FAILED CANCEL IS SAID IN THE SENTENCE'S OWN PLACE, never in a new line, for
  * the same reason; the button stays so the person can press again.
  */
-function PendingChangeSlot({
+export function PendingChangeSlot({
   change,
   isKeeping,
   keepFailed,
@@ -218,7 +224,22 @@ export function PlanStatusCard({
   return (
     <div data-slot="plan-status-card" data-plan-key={standing.planKey ?? 'unnamed'}>
       <SettingsSection label={heading} description={status} contentClassName="space-y-3">
-        <PeriodLine standing={standing} />
+        {/* ONE ROW FROM A SMALL SCREEN UP: the date on the left, Manage on the
+            right. On a phone it wraps, and the button keeps its 44 px. */}
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+          <PeriodLine standing={standing} />
+          {/* MANAGE IS DRAWN ONLY WHERE THERE IS SOMETHING TO MANAGE. The
+              biller answers a 404 for an account with no customer, and a
+              button whose only outcome is that 404 is a button that lies. */}
+          {portalAvailable && (
+            <Button type="button" variant="secondary" onClick={onManage} disabled={isBusy}>
+              {isOpeningPortal ?
+                <Loader2 className="h-4 w-4 animate-spin" />
+              : <ExternalLink className="h-4 w-4" />}
+              {t('plan.manage')}
+            </Button>
+          )}
+        </div>
         {switchStartsAt !== null && (
           <p data-slot="plan-switch-booked" className="text-sm">
             {t('plan.card.switchBooked', { date: longDate(switchStartsAt) })}
@@ -242,19 +263,6 @@ export function PlanStatusCard({
               {t('plan.card.orderYearly')}
             </Link>
           </p>
-        )}
-        {/* MANAGE IS DRAWN ONLY WHERE THERE IS SOMETHING TO MANAGE. The
-            biller answers a 404 for an account with no customer, and a
-            button whose only outcome is that 404 is a button that lies. */}
-        {portalAvailable && (
-          <div className="flex flex-wrap gap-2">
-            <Button type="button" variant="secondary" onClick={onManage} disabled={isBusy}>
-              {isOpeningPortal ?
-                <Loader2 className="h-4 w-4 animate-spin" />
-              : <ExternalLink className="h-4 w-4" />}
-              {t('plan.manage')}
-            </Button>
-          </div>
         )}
       </SettingsSection>
     </div>

@@ -65,6 +65,12 @@ export interface ManagedCoreStub {
     used: number;
     resetsAt: string;
   } | null;
+  /** `AccountView.freeDailyAiLimit`: a standing free grant, which makes the standing `free`. Absent leaves the key out. */
+  freeDailyAiLimit?: number;
+  /** The `GET /plans/offer` body, read per request, or absent for the one-plan fixture. */
+  offerBody?: string;
+  /** Counted per `GET /plans/offer`, so a spec can prove a placement did not ask. */
+  offerReads?: { count: number };
   /** `AccountView.invitesLeft`. */
   invitesLeft: number | null;
   /** `AccountView.invitesNeedAPlan` (M253/11), or `undefined` to leave the key out, as an older core does. */
@@ -158,7 +164,9 @@ function accountPatch(stub: ManagedCoreStub) {
     stub.aiLimitPeriod === undefined ? withCapabilities : { ...withCapabilities, aiLimitPeriod: stub.aiLimitPeriod };
   const withUsed =
     stub.aiUsedToday === undefined ? withPeriod : { ...withPeriod, aiUsedToday: stub.aiUsedToday };
-  return stub.aiQuota === undefined ? withUsed : { ...withUsed, aiQuota: stub.aiQuota };
+  const withGrant =
+    stub.freeDailyAiLimit === undefined ? withUsed : { ...withUsed, freeDailyAiLimit: stub.freeDailyAiLimit };
+  return stub.aiQuota === undefined ? withGrant : { ...withGrant, aiQuota: stub.aiQuota };
 }
 
 /** The handshake's instance block, with `healthConsent` only when the stub names one. */
@@ -198,7 +206,10 @@ export async function routeManagedCore(page: Page, stub: ManagedCoreStub): Promi
   await page.route(`${E2E_CORE_URL}/v1/plans/me`, (route) => route.fulfill({ json: stub.planView }));
   await page.route(
     (url) => url.href.startsWith(`${E2E_CORE_URL}/v1/plans/offer`),
-    (route) => route.fulfill({ status: 200, contentType: 'application/json', body: FIXTURE_OFFER_BODY }),
+    (route) => {
+      if (stub.offerReads !== undefined) stub.offerReads.count += 1;
+      return route.fulfill({ status: 200, contentType: 'application/json', body: stub.offerBody ?? FIXTURE_OFFER_BODY });
+    },
   );
   await page.route(
     (url) => url.href.startsWith(`${E2E_CORE_URL}/v1/auth/`),

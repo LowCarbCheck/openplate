@@ -3804,12 +3804,48 @@
       "weeklyLimit_one": "{{count}} KI-Scan pro Woche",
       "weeklyLimit_other": "{{count}} KI-Scans pro Woche",
       "noScans": "Keine KI-Scans",
-      "includes": "Enthält: {{features}}.",
       "pricePerMonth": "{{price}} pro Monat",
       "pricePerYear": "{{price}} pro Jahr",
       "current": "Dein Tarif",
       "switchTo": "Zu {{name}} wechseln",
-      "switchYearly": "Stattdessen jährlich zahlen"
+      "switchYearly": "Stattdessen jährlich zahlen",
+      "recommended": "Empfohlen",
+      "multiple": "{{multiple}}-mal so viele Scans wie kostenlos",
+      "saving": "Spare {{percent}} % gegenüber 12 monatlichen Zahlungen",
+      "choose": "Wähle {{name}}",
+      "chosen": "{{name}} ausgewählt",
+      "scanFigure": {
+        "week_one": "KI-Scan pro Woche",
+        "week_other": "KI-Scans pro Woche",
+        "day_one": "KI-Scan pro Tag",
+        "day_other": "KI-Scans pro Tag"
+      }
+    },
+    "hero": {
+      "heading": {
+        "trial": "Erfasse deine Mahlzeiten weiterhin mit KI",
+        "free": "Erfasse mehr deiner Mahlzeiten mit KI",
+        "choose": "Wähle den Tarif, der zu dir passt"
+      },
+      "body": {
+        "trial": "Deine kostenlosen KI-Scans sind noch da. Wähle jetzt einen Tarif oder nutze sie zuerst und entscheide später.",
+        "free": "Jeder Tarif bietet dir mehr KI-Scans.",
+        "choose": "Jeder Tarif bietet dir mehr KI-Scans."
+      }
+    },
+    "meter": {
+      "scans_one": "{{used}} von {{count}} kostenlosem KI-Scan genutzt",
+      "scans_other": "{{used}} von {{count}} kostenlosen KI-Scans genutzt",
+      "week_one": "{{used}} von {{count}} KI-Scan diese Woche genutzt",
+      "week_other": "{{used}} von {{count}} KI-Scans diese Woche genutzt",
+      "day_one": "{{used}} von {{count}} KI-Scan heute genutzt",
+      "day_other": "{{used}} von {{count}} KI-Scans heute genutzt"
+    },
+    "limitRibbon": {
+      "usedWeek_one": "Du hast deinen {{count}} KI-Scan diese Woche aufgebraucht.",
+      "usedWeek_other": "Du hast alle {{count}} KI-Scans diese Woche aufgebraucht.",
+      "usedDay_one": "Du hast deinen {{count}} KI-Scan heute aufgebraucht.",
+      "usedDay_other": "Du hast alle {{count}} KI-Scans heute aufgebraucht."
     },
     "move": {
       "effectNow": "Diese Änderung wird sofort wirksam. Der Preis wird anteilig mit deinen bisherigen Zahlungen verrechnet.",

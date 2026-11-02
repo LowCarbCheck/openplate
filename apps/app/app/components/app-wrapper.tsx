@@ -9,6 +9,7 @@ import { FastChipSlot } from './fast-chip';
 import { CatchUpWriter } from './catch-up-writer';
 import { PulseHeartbeat } from './pulse-heartbeat';
 import { TrialCountdown } from './plans/trial-countdown';
+import { LimitRibbon } from '#app/components/plans/limit-ribbon';
 import { HeaderStatus } from './header-status';
 import { ProgressBar } from './progress-bar';
 import { UpdateRibbon } from './update-ribbon';
@@ -363,6 +364,8 @@ function InnerContent({
                   (M250/03). Mounted in the personal shell only, once, so the
                   line is published once per page load. */}
               <TrialCountdown />
+              {/* The line at the AI limit, the same channel and the same rules. */}
+              <LimitRibbon />
               {/* The device menu, at both breakpoints: identity, the theme
                   inline, and Settings, with Plan and Administration where
                   they apply. On a phone it is the only door to Plan and

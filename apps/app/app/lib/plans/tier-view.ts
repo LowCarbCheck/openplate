@@ -26,6 +26,12 @@
  * sold. An id this offer does not list marks no row and offers no move: the
  * page says nothing rather than guessing a rank.
  *
+ * ── THE FIGURES ARE COMPUTED, NEVER TYPED ────────────────────────────────
+ *
+ * The multiple against the free entry and the yearly saving come from the
+ * offer's own numbers, in pure functions, and each answers `null` when it cannot
+ * be said truly. The page draws nothing then.
+ *
  * ── WHO MAY ORDER WHAT ───────────────────────────────────────────────────
  *
  * A person with no subscription orders any sold tier, by any of its plans.
@@ -40,7 +46,8 @@
  * the yearly plan already continues monthly after its year.
  */
 import type { AiLimitPeriod } from '#app/lib/plans/ai-quota';
-import { FEATURE_LABELS, isFeatureLabel, type FeatureLabel } from '#app/lib/plans/capabilities';
+import { FEATURE_LABELS, FEATURES_WITH_SCREEN, isFeatureLabel, type FeatureLabel } from '#app/lib/plans/capabilities';
+import { yearlySavingPercent } from '#app/lib/plans/plan-prices';
 import {
   PLAN_KEYS,
   type MoveEffect,
@@ -60,7 +67,7 @@ export interface TierRowView {
   aiLimit: number | null;
   /** The window {@link aiLimit} counts over (2026-10-07). A biller older than the field counts per day. */
   aiLimitPeriod: AiLimitPeriod;
-  /** The features this tier includes that this build knows, in the order the plan page lists them. */
+  /** The features this tier includes that a person can open today, in the order the plan page lists them. */
   features: FeatureLabel[];
   /** `true` for the tier the account is on. */
   isCurrent: boolean;
@@ -70,6 +77,22 @@ export interface TierRowView {
   isOrderable: boolean;
   /** The plans this row can be ordered by for this reader, monthly first. Empty when {@link isOrderable} is not. */
   plans: OfferPlan[];
+  /**
+   * What the tier costs, monthly first, whatever this reader may order: a
+   * subscriber's own row can order nothing and still names its prices, so the
+   * cards compare like with like. Empty for the free entry.
+   */
+  prices: OfferPlan[];
+  /** How many times the free entry's scans this tier gives, or `null` when that cannot be said truly. See {@link scanMultipleOf}. */
+  scanMultiple: number | null;
+  /** What the yearly plan saves against twelve monthly payments, in whole percent, or `null` for nothing true to say. */
+  yearlySaving: number | null;
+  /**
+   * `true` for the card the page highlights: the biller recommends it and the
+   * reader can still move UP to it. A person on that tier or above it is not
+   * pushed towards it: their own card is the one that is marked.
+   */
+  isRecommended: boolean;
   /**
    * When a move to this row takes effect, for a SUBSCRIBER. `null` for a first
    * order, which is a payment and not a move.
@@ -123,6 +146,41 @@ export function knownFeaturesOf(capabilities: readonly string[]): FeatureLabel[]
   return FEATURE_LABELS.filter((label) => named.has(label));
 }
 
+/** The features a tier card lists: the known ones that have a screen, in the page's order. */
+export function drawnFeaturesOf(capabilities: readonly string[]): FeatureLabel[] {
+  const known = knownFeaturesOf(capabilities);
+  return known.filter((label) => FEATURES_WITH_SCREEN.some((withScreen) => withScreen === label));
+}
+
+/**
+ * How many times the free entry's scans a tier gives, rounded DOWN to one
+ * decimal, so the sentence can undersell and never flatter.
+ *
+ * `null` when there is nothing true to say: a limit either side does not state,
+ * a free entry with no scans, two windows that cannot be compared (a week is not
+ * seven days here, the core counts them separately) or no gain at all.
+ *
+ * Integer arithmetic before the division, so 40 against 10 is exactly 4.
+ */
+export function scanMultipleOf({ tier, free }: { tier: TierAiLimit; free: TierAiLimit | null }): number | null {
+  if (free === null || free.limit === null || free.limit <= 0) return null;
+  if (tier.limit === null || tier.period !== free.period || tier.limit <= free.limit) return null;
+  return Math.floor((tier.limit * 10) / free.limit) / 10;
+}
+
+/** What a tier's yearly plan saves against its monthly one, or `null`. */
+function savingOf(plans: readonly OfferPlan[]): number | null {
+  const yearly = plans.find((plan) => plan.interval === 'year');
+  if (yearly === undefined) return null;
+  const monthly = plans.find((plan) => plan.interval === 'month') ?? null;
+  return yearlySavingPercent({ yearly, monthly });
+}
+
+/** A tier's plans in the order the page draws them: monthly first. */
+function plansInOrder(plans: readonly OfferPlan[]): OfferPlan[] {
+  return [...plans].toSorted((a, b) => PLAN_KEYS.indexOf(a.key) - PLAN_KEYS.indexOf(b.key));
+}
+
 /**
  * When a move from one rank to another takes effect (M2/04).
  *
@@ -157,7 +215,7 @@ function orderingOf({
   ownRank: number;
 }): RowOrdering {
   if (!tier.isSold || tier.plans.length === 0) return { plans: [], effect: null };
-  const plans = [...tier.plans].toSorted((a, b) => PLAN_KEYS.indexOf(a.key) - PLAN_KEYS.indexOf(b.key));
+  const plans = plansInOrder(tier.plans);
   if (own.tierId === null) return { plans, effect: null };
   // A SUBSCRIBER: no move while payment is overdue or when the own tier is not in the list.
   if (own.isPastDue || ownRank < 0) return { plans: [], effect: null };
@@ -178,6 +236,8 @@ export function tiersViewOf({ offer, own }: { offer: PlanOffer; own: OwnPlan }):
   const tiers = offer.tiers;
   if (tiers === undefined || tiers.length === 0) return null;
   const ownRank = own.tierId === null ? -1 : tiers.findIndex((tier) => tier.id === own.tierId);
+  const freeEntry = tiers.find((tier) => !tier.isSold);
+  const freeLimit = freeEntry === undefined ? null : tierAiLimitOf(freeEntry);
   const rows = tiers.map((tier, index): TierRowView => {
     const ordering = orderingOf({ tier, index, own, ownRank });
     // THE FREE ENTRY IS CURRENT FOR A PERSON WITH NO TIER: the first entry, when it is not sold.
@@ -189,15 +249,33 @@ export function tiersViewOf({ offer, own }: { offer: PlanOffer; own: OwnPlan }):
       description: tier.description,
       aiLimit: aiLimit.limit,
       aiLimitPeriod: aiLimit.period,
-      features: knownFeaturesOf(tier.capabilities),
+      features: drawnFeaturesOf(tier.capabilities),
       isCurrent: own.tierId === null ? isFreeEntry && index === 0 : index === ownRank,
       isFree: isFreeEntry,
       isOrderable: ordering.plans.length > 0,
       plans: ordering.plans,
+      prices: tier.isSold ? plansInOrder(tier.plans) : [],
+      scanMultiple: tier.isSold ? scanMultipleOf({ tier: aiLimit, free: freeLimit }) : null,
+      yearlySaving: tier.isSold ? savingOf(tier.plans) : null,
+      isRecommended: tier.recommended === true && (own.tierId === null || index > ownRank),
       effect: ordering.effect,
     };
   });
   return { rows, hasOrderableRow: rows.some((row) => row.isOrderable) };
+}
+
+/**
+ * Whether this offer sells a SUBSCRIBER a tier above their own right now.
+ *
+ * `false` for the top tier, for a payment that is overdue and for a tier the
+ * offer does not list, because `tiersViewOf` offers none of them a move, and for
+ * an offer with no tiers. Unknown never sells.
+ */
+export function canMoveUp({ offer, own }: { offer: PlanOffer; own: OwnPlan }): boolean {
+  if (own.tierId === null) return false;
+  const view = tiersViewOf({ offer, own });
+  if (view === null) return false;
+  return view.rows.some((row) => row.isOrderable && row.effect === 'now');
 }
 
 /**

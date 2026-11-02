@@ -3804,12 +3804,48 @@
       "weeklyLimit_one": "{{count}} AI scan a week",
       "weeklyLimit_other": "{{count}} AI scans a week",
       "noScans": "No AI scans",
-      "includes": "Includes: {{features}}.",
       "pricePerMonth": "{{price}} a month",
       "pricePerYear": "{{price}} a year",
       "current": "Your plan",
       "switchTo": "Switch to {{name}}",
-      "switchYearly": "Pay yearly instead"
+      "switchYearly": "Pay yearly instead",
+      "recommended": "Recommended",
+      "multiple": "{{multiple}}x the free scans",
+      "saving": "Save {{percent}}% over 12 monthly payments",
+      "choose": "Choose {{name}}",
+      "chosen": "{{name}} chosen",
+      "scanFigure": {
+        "week_one": "AI scan a week",
+        "week_other": "AI scans a week",
+        "day_one": "AI scan a day",
+        "day_other": "AI scans a day"
+      }
+    },
+    "hero": {
+      "heading": {
+        "trial": "Keep logging your meals with AI",
+        "free": "Log more of your meals with AI",
+        "choose": "Choose the plan that fits you"
+      },
+      "body": {
+        "trial": "Your free AI scans are still here. Choose a plan now, or use them first and decide later.",
+        "free": "Each plan gives you more AI scans.",
+        "choose": "Each plan gives you more AI scans."
+      }
+    },
+    "meter": {
+      "scans_one": "{{used}} of {{count}} free AI scan used",
+      "scans_other": "{{used}} of {{count}} free AI scans used",
+      "week_one": "{{used}} of {{count}} AI scan used this week",
+      "week_other": "{{used}} of {{count}} AI scans used this week",
+      "day_one": "{{used}} of {{count}} AI scan used today",
+      "day_other": "{{used}} of {{count}} AI scans used today"
+    },
+    "limitRibbon": {
+      "usedWeek_one": "You have used your {{count}} AI scan this week.",
+      "usedWeek_other": "You have used all {{count}} AI scans this week.",
+      "usedDay_one": "You have used your {{count}} AI scan today.",
+      "usedDay_other": "You have used all {{count}} AI scans today."
     },
     "move": {
       "effectNow": "This change takes effect now. The price is settled pro rata against what you already paid.",

@@ -38,6 +38,15 @@ export const FEATURE_LABELS = ['fasting', 'pantry', 'voice', 'chat'] as const;
 
 export type FeatureLabel = (typeof FEATURE_LABELS)[number];
 
+/**
+ * THE FEATURES THAT HAVE A SCREEN, the only ones a tier card may list
+ * (2026-11-02). `voice` and `chat` keep their gate in {@link FEATURE_LABELS},
+ * and no text may claim them until a person can open them: a card that said
+ * "voice entry" sold something this build does not have. When the microphone
+ * or the chat entry ships, its word joins this list in the same change.
+ */
+export const FEATURES_WITH_SCREEN = ['fasting', 'pantry'] as const satisfies readonly FeatureLabel[];
+
 /** Is this word one of the features this build knows? */
 export function isFeatureLabel(value: string): value is FeatureLabel {
   return FEATURE_LABELS.some((label) => label === value);

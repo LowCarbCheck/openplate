@@ -110,6 +110,20 @@ describe('X-Intake-Id', () => {
   });
 });
 
+describe('X-Quota-Used', () => {
+  it('reports the count the proxy stated, and only when it stated one', async () => {
+    stubFetch([() => answered({ 'X-Quota-Used': '10', 'X-Quota-Limit': '10' }), () => answered()]);
+    const seen: { used: number; limit: number }[] = [];
+    const credential = { ...managed(newIntakeId()), onQuotaCount: (count: { used: number; limit: number }) => seen.push(count) };
+    const provider = createOpenAiCompatibleProvider({ credential, model: 'm', baseUrl: 'https://sync.example/v1' });
+    await scan(provider);
+    assert.deepEqual(seen, [{ used: 10, limit: 10 }]);
+    // THE CONTROL: an answer with no count reports nothing more.
+    await scan(provider);
+    assert.equal(seen.length, 1);
+  });
+});
+
 describe('X-Trial-Scans-Left', () => {
   it('reports the count the proxy stated', async () => {
     stubFetch([() => answered({ [TRIAL_SCANS_LEFT_HEADER]: '2' })]);

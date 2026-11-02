@@ -3804,12 +3804,48 @@
       "weeklyLimit_one": "{{count}} scansione IA a settimana",
       "weeklyLimit_other": "{{count}} scansioni IA a settimana",
       "noScans": "Nessuna scansione IA",
-      "includes": "Include: {{features}}.",
       "pricePerMonth": "{{price}} al mese",
       "pricePerYear": "{{price}} all'anno",
       "current": "Il tuo piano",
       "switchTo": "Passa a {{name}}",
-      "switchYearly": "Paga invece su base annuale"
+      "switchYearly": "Paga invece su base annuale",
+      "recommended": "Consigliato",
+      "multiple": "{{multiple}} volte le scansioni gratuite",
+      "saving": "Risparmia il {{percent}}% rispetto a 12 pagamenti mensili",
+      "choose": "Scegli {{name}}",
+      "chosen": "{{name}} selezionato",
+      "scanFigure": {
+        "week_one": "scansione IA a settimana",
+        "week_other": "scansioni IA a settimana",
+        "day_one": "scansione IA al giorno",
+        "day_other": "scansioni IA al giorno"
+      }
+    },
+    "hero": {
+      "heading": {
+        "trial": "Continua a registrare i tuoi pasti con l'IA",
+        "free": "Registra più pasti con l'IA",
+        "choose": "Scegli il piano più adatto a te"
+      },
+      "body": {
+        "trial": "Le tue scansioni IA gratuite sono ancora disponibili. Scegli subito un piano, oppure usale prima e decidi più tardi.",
+        "free": "Ogni piano ti offre più scansioni IA.",
+        "choose": "Ogni piano ti offre più scansioni IA."
+      }
+    },
+    "meter": {
+      "scans_one": "{{used}} di {{count}} scansione IA gratuita utilizzata",
+      "scans_other": "{{used}} di {{count}} scansioni IA gratuite utilizzate",
+      "week_one": "{{used}} di {{count}} scansione IA utilizzata questa settimana",
+      "week_other": "{{used}} di {{count}} scansioni IA utilizzate questa settimana",
+      "day_one": "{{used}} di {{count}} scansione IA utilizzata oggi",
+      "day_other": "{{used}} di {{count}} scansioni IA utilizzate oggi"
+    },
+    "limitRibbon": {
+      "usedWeek_one": "Hai utilizzato la tua {{count}} scansione IA questa settimana.",
+      "usedWeek_other": "Hai utilizzato tutte le {{count}} scansioni IA questa settimana.",
+      "usedDay_one": "Hai utilizzato la tua {{count}} scansione IA oggi.",
+      "usedDay_other": "Hai utilizzato tutte le {{count}} scansioni IA oggi."
     },
     "move": {
       "effectNow": "Questa modifica ha effetto immediato. Il prezzo viene calcolato proporzionalmente rispetto a quanto già pagato.",

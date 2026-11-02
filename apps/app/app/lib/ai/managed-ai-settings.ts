@@ -32,7 +32,7 @@
  */
 import type { LocalAiSettings } from '#app/lib/local-store';
 import type { SyncSessionSnapshot } from '#app/lib/sync/sync-session';
-import { applyTrialScansLeft, getSyncVault } from '#app/lib/sync/sync-session';
+import { applyQuotaCount, applyTrialScansLeft, getSyncVault } from '#app/lib/sync/sync-session';
 import type { OpenAiCompatibleCredential } from '#app/services/vision/openai-compatible';
 
 /** The API namespace the instance's AI proxy is mounted under, appended to `CORE_URL`. */
@@ -263,5 +263,7 @@ export function managedAiCredential({ intakeId }: { intakeId: string }): OpenAiC
     // THE COUNT FOLLOWS THE SCAN (M253/05): the proxy states the scans left on
     // every answer, and the header countdown reads the snapshot.
     onTrialScansLeft: applyTrialScansLeft,
+    // AND THE ALLOWANCE COUNT WITH IT: the header's limit line reads the snapshot.
+    onQuotaCount: applyQuotaCount,
   };
 }

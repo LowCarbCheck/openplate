@@ -119,7 +119,8 @@ literal:
 Everything else keeps `bg-card`. Ordinary cards, list rows and inputs never get a brand fill.
 
 **At most one hero per screen, named:** diary is the day summary; overview is "Today"; trends is
-"This week"; landing is the screenshot frame; fasting is whichever of the three state cards is on
+"This week"; landing is the screenshot frame; the plan page is the usage hero, for a person with no
+paid plan on a biller that sells tiers; fasting is whichever of the three state cards is on
 screen (plan, scheduled, active), so the state changes and the count does not. The rule is "at
 most one", because an empty diary and a first visit legitimately draw none. A second
 `.surface-brand` on any of those screens is a bug, and it is a browser fact rather than a
@@ -322,6 +323,10 @@ call moves and passes vacuously the day it moves and nobody notices.
   `dark:border-primary/40 dark:shadow-primary/10`), because it is a product photograph that has to
   lift off the page rather than a card the user can act on (M146). It is the same element as §2's
   single landing `.surface-brand`, so the exception cannot spread without breaking that rule first.
+  The recommended tier card on the plan page may carry `shadow-md shadow-primary/20` beside its
+  `border-2 border-primary` (owner, 2026-11-02). It is the one card on that screen, and only when
+  the biller names it. A neutral card pays for its thinner border in its padding, so the two measure
+  the same and a pick changes a colour, never a size.
 - Interactive-card hover recipe: `transition-colors duration-300 hover:border-primary/40
   hover:bg-primary/5`. No `dark:` variant is needed, because `primary` is already per-theme, which
   the literal `teal-300`/`teal-600` pair it replaces was only ever emulating. (That pair is banned

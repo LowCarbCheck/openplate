@@ -3804,12 +3804,48 @@
       "weeklyLimit_one": "{{count}} analyse IA par semaine",
       "weeklyLimit_other": "{{count}} analyses IA par semaine",
       "noScans": "Aucune analyse par IA",
-      "includes": "Comprend : {{features}}.",
       "pricePerMonth": "{{price}} par mois",
       "pricePerYear": "{{price}} par an",
       "current": "Ton forfait",
       "switchTo": "Passer à {{name}}",
-      "switchYearly": "Payer plutôt à l'année"
+      "switchYearly": "Payer plutôt à l'année",
+      "recommended": "Recommandé",
+      "multiple": "{{multiple}}x les analyses gratuites",
+      "saving": "Économise {{percent}} % par rapport à 12 paiements mensuels",
+      "choose": "Choisir {{name}}",
+      "chosen": "{{name}} sélectionné",
+      "scanFigure": {
+        "week_one": "analyse IA par semaine",
+        "week_other": "analyses IA par semaine",
+        "day_one": "analyse IA par jour",
+        "day_other": "analyses IA par jour"
+      }
+    },
+    "hero": {
+      "heading": {
+        "trial": "Continue à enregistrer tes repas grâce à l'IA",
+        "free": "Enregistre davantage de repas grâce à l'IA",
+        "choose": "Choisis le forfait qui te convient"
+      },
+      "body": {
+        "trial": "Tes analyses IA gratuites sont toujours disponibles. Choisis un forfait maintenant, ou utilise-les d'abord et décide plus tard.",
+        "free": "Chaque forfait te donne plus d'analyses IA.",
+        "choose": "Chaque forfait te donne plus d'analyses IA."
+      }
+    },
+    "meter": {
+      "scans_one": "{{used}} analyse IA gratuite sur {{count}} utilisée",
+      "scans_other": "{{used}} analyses IA gratuites sur {{count}} utilisées",
+      "week_one": "{{used}} analyse IA sur {{count}} utilisée cette semaine",
+      "week_other": "{{used}} analyses IA sur {{count}} utilisées cette semaine",
+      "day_one": "{{used}} analyse IA sur {{count}} utilisée aujourd'hui",
+      "day_other": "{{used}} analyses IA sur {{count}} utilisées aujourd'hui"
+    },
+    "limitRibbon": {
+      "usedWeek_one": "Tu as utilisé ton analyse IA sur {{count}} cette semaine.",
+      "usedWeek_other": "{{count}} analyses IA utilisées cette semaine.",
+      "usedDay_one": "Tu as utilisé ton analyse IA sur {{count}} aujourd'hui.",
+      "usedDay_other": "{{count}} analyses IA utilisées aujourd'hui."
     },
     "move": {
       "effectNow": "Cette modification prend effet immédiatement. Le tarif est calculé au prorata de ce que tu as déjà payé.",

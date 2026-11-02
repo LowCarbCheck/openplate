@@ -201,6 +201,12 @@ export const tierSchema = z
     aiLimitPeriod: z.enum(['day', 'week']).optional().catch(undefined),
     capabilities: z.array(z.string()).catch([]),
     plans: z.array(offerPlanSchema),
+    /**
+     * `true` on the tier the biller recommends (2026-11-02). Absent from every
+     * other tier and from a biller older than the field, and anything that is
+     * not exactly `true` reads as absent: no highlight, never a broken offer.
+     */
+    recommended: z.literal(true).optional().catch(undefined),
   })
   .refine((tier) => new Set(tier.plans.map((plan) => plan.key)).size === tier.plans.length, {
     message: 'a plan key appears twice in one tier',

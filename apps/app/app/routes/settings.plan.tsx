@@ -65,7 +65,7 @@
  * There is no DOM test library in this repository, so a state that can only be
  * reached by clicking is a state nothing checks.
  */
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { useLoaderData, useSearchParams } from 'react-router';
 import { Trans, useTranslation } from 'react-i18next';
 import type { MetaFunction } from 'react-router';
@@ -110,7 +110,9 @@ import { offeredTrialDays, offeredTrialScans } from '#app/lib/plans/signup-door'
 import { grantedTrialDays } from '#app/lib/plans/trial-scans';
 import { usePaymentConfirmation } from '#app/hooks/use-payment-confirmation';
 import { recapSentenceKey } from '#app/lib/plans/trial-recap';
-import { PlanStatusCard, type SubscribedStanding } from '#app/components/plans/plan-status-card';
+import { PendingChangeSlot, PlanStatusCard, type SubscribedStanding } from '#app/components/plans/plan-status-card';
+import { PlanHero } from '#app/components/plans/plan-hero';
+import { heroMeterOf, type HeroMeter } from '#app/lib/plans/plan-meter';
 import {
   pendingChangeOf,
   pendingFactsOf,
@@ -283,6 +285,20 @@ export interface PlanScreenProps {
   /** `false` lists the tiers with no pick and no switch button: a payment is being confirmed. */
   canPickTier?: boolean;
   onPickTier?: (tierId: string) => void;
+  /** `true` gives the sold tiers the wider page. Absent keeps the one-plan column, byte for byte. */
+  isWide?: boolean;
+  /** The usage meter in the hero, or absent/`null` for none, whose box stays reserved. */
+  heroMeter?: HeroMeter | null;
+  /**
+   * A downgrade booked DURING this visit, said below the tier list: an object for
+   * the line, `null` for the slot emptied by Keep, absent for no slot. See
+   * {@link PlanScreenProps.pendingChange} for one the first read already named.
+   */
+  pendingAfterList?: PendingChange | null;
+  /** A person pressed a tier, which scrolls the order block into view. */
+  onRevealOrder?: () => void;
+  /** Where that scroll lands. */
+  orderRef?: RefObject<HTMLDivElement | null>;
   /**
    * What the biller answered to the last move between plans, or absent. Drawn in
    * the place the order block had, so the answer replaces what was pressed and
@@ -351,22 +367,52 @@ function paywallHeading(notice: PaywallNotice, t: (key: string, options?: { coun
   return t('paywall.heading.choose');
 }
 
+/** The hero's headline, whichever words it carries. */
+const HERO_HEADING_CLASS = 'text-2xl font-semibold';
+
+/** The standings the hero is for: everybody with no paid plan. */
+function isHeroStanding(standing: PlanStanding): boolean {
+  return standing.kind === 'trial' || standing.kind === 'free' || standing.kind === 'trial-ended' || standing.kind === 'lapsed';
+}
+
+/** The hero's words per standing. An administrator on a locked standing is not locked, so reads the general ones. */
+function heroWordsKey(standing: PlanStanding): 'trial' | 'free' | 'choose' {
+  if (standing.kind === 'trial') return 'trial';
+  if (standing.kind === 'free') return 'free';
+  return 'choose';
+}
+
+/** The headline and the sentence under it, for a person who is not locked. */
+function HeroWords({ standing, statusLine }: { standing: PlanStanding; statusLine: string }) {
+  const { t } = useTranslation();
+  const key = heroWordsKey(standing);
+  return (
+    <div className="space-y-2">
+      <h2 className={HERO_HEADING_CLASS}>{t(`plan.hero.heading.${key}`)}</h2>
+      <p data-slot="plan-status-line" className="text-sm text-muted-foreground">
+        {statusLine}
+      </p>
+      <p className="text-sm">{t(`plan.hero.body.${key}`)}</p>
+    </div>
+  );
+}
+
 /**
  * Why the app is locked, and that the data is still the person's.
  *
  * Square, with a hairline all round, the inset every settings block is drawn
  * in (DESIGN.md sections 5 and 11: no radius, no accent rule down one side).
  */
-function PaywallNoticeView({ notice }: { notice: PaywallNotice }) {
+function PaywallNoticeView({ notice, isInHero = false }: { notice: PaywallNotice; isInHero?: boolean }) {
   const { t } = useTranslation();
   const linkClass = 'text-primary underline underline-offset-4';
   return (
     <section
       data-slot="paywall-notice"
       aria-labelledby="paywall-heading"
-      className={cn(SETTINGS_INSET_CLASS, 'space-y-2 p-4')}
+      className={isInHero ? 'space-y-2' : cn(SETTINGS_INSET_CLASS, 'space-y-2 p-4')}
     >
-      <h2 id="paywall-heading" className="text-base font-semibold">
+      <h2 id="paywall-heading" className={isInHero ? HERO_HEADING_CLASS : 'text-base font-semibold'}>
         {paywallHeading(notice, t)}
       </h2>
       <p className="text-sm">{t('paywall.body')}</p>
@@ -404,7 +450,7 @@ function ReturnState({ isShown, children }: { isShown: boolean; children: ReactN
       aria-hidden={!isShown}
       inert={!isShown}
       className={cn(
-        'col-start-1 row-start-1 flex flex-col gap-3',
+        'col-start-1 row-start-1 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between',
         !isShown && 'invisible [&_*]:transition-none',
       )}
     >
@@ -454,13 +500,15 @@ function CheckoutReturnLine({
       </ReturnState>
       <ReturnState isShown={confirmation === 'confirmed'}>
         <p className="text-sm font-medium">{t('paywall.returned.active')}</p>
-        <Button asChild className="h-11 self-start">
+        {/* SECONDARY, NOT PRIMARY (2026-11-02): the plan page is not where the
+            person's next task is, and a filled button took the top of the page. */}
+        <Button asChild variant="secondary" className="h-11 self-start sm:self-auto">
           <Link to={PAYMENT_RETURN_HREF[door]}>{t(RETURN_DOOR_LABEL_KEY[door])}</Link>
         </Button>
       </ReturnState>
       <ReturnState isShown={confirmation === 'slow'}>
         <p className="text-sm">{t('paywall.returned.slow')}</p>
-        <Button type="button" variant="secondary" className="h-11 self-start" onClick={onCheckAgain}>
+        <Button type="button" variant="secondary" className="h-11 self-start sm:self-auto" onClick={onCheckAgain}>
           {t('paywall.returned.checkAgain')}
         </Button>
       </ReturnState>
@@ -474,14 +522,20 @@ export function PlanScreen(props: PlanScreenProps) {
   // WHILE A PAYMENT IS BEING CONFIRMED, only the line that says so. Nothing is
   // sold to somebody who has just paid, and no lock is explained to them.
   const isAwaitingPayment = checkoutReturn === 'success' && paymentConfirmation !== 'confirmed';
+  const returnLine = (
+    <CheckoutReturnLine
+      checkoutReturn={checkoutReturn}
+      confirmation={paymentConfirmation}
+      door={props.afterPaymentDoor}
+      onCheckAgain={props.onCheckAgain}
+    />
+  );
   return (
-    <div className="mx-auto max-w-xl space-y-5">
-      <CheckoutReturnLine
-        checkoutReturn={checkoutReturn}
-        confirmation={paymentConfirmation}
-        door={props.afterPaymentDoor}
-        onCheckAgain={props.onCheckAgain}
-      />
+    <div className={cn('mx-auto space-y-5', props.isWide === true ? 'max-w-5xl' : 'max-w-xl')}>
+      {/* THE RETURN LINE KEEPS ITS COLUMN whatever the page does next: the wide
+          page only arrives with the tiers, and a line that changed width would
+          change height under the person. */}
+      {props.isWide === true ? <div className="mx-auto max-w-xl">{returnLine}</div> : returnLine}
       {!isAwaitingPayment && <PlanBody {...props} />}
     </div>
   );
@@ -504,8 +558,21 @@ function PlanBody(props: PlanScreenProps) {
   // once a tier is picked, and a section that vanished at that moment would pull
   // the list the person just tapped up the screen (M2/05, no layout shift).
   const hasTierList = props.tiers !== undefined && props.tiers !== null && state.kind === 'ready';
+  const hasHero = hasTierList && subscribed === null && isHeroStanding(standing);
   const showsAccountSection =
-    subscribed === null && (state.kind !== 'ready' || order === null || portalAvailable || hasTierList);
+    subscribed === null && !hasHero && (state.kind !== 'ready' || order === null || portalAvailable || hasTierList);
+  const hasRecapLine = state.kind === 'ready' && props.recapMealCount !== null && props.recapMealCount > 0;
+  const recapLine = hasRecapLine && (
+    <p data-slot="plan-trial-recap" className="text-sm">
+      {t(recapSentenceKey(standing), { count: props.recapMealCount ?? 0 })}
+    </p>
+  );
+  // THE WAY BACK, for somebody who came to look and still has free scans.
+  const freeScansLink = props.offersFreeScansFirst && (
+    <Button asChild variant="secondary" className="h-11">
+      <Link to="/dashboard">{t('paywall.freeScansFirst')}</Link>
+    </Button>
+  );
 
   return (
     <>
@@ -513,7 +580,22 @@ function PlanBody(props: PlanScreenProps) {
           from the diary has a question this page must answer before it sells
           anything. Drawn in the same render as the order below it, never
           after, so it cannot push the plans down. */}
-      {props.paywallNotice !== null && <PaywallNoticeView notice={props.paywallNotice} />}
+      {hasHero && (
+        <PlanHero meter={props.heroMeter ?? null}>
+          {props.paywallNotice === null ?
+            <HeroWords
+              standing={standing}
+              statusLine={state.kind === 'ready' ? t(planStatusKey({ standing, plan: state.plan.plan })) : ''}
+            />
+          : <PaywallNoticeView notice={props.paywallNotice} isInHero />}
+          {recapLine}
+          {freeScansLink}
+          {portalAvailable && (
+            <PortalControls busy={busy} portalFailed={props.portalFailed} onManage={props.onManage} />
+          )}
+        </PlanHero>
+      )}
+      {!hasHero && props.paywallNotice !== null && <PaywallNoticeView notice={props.paywallNotice} />}
       {props.isAlreadySubscribed && order === null && (
         <p data-slot="plan-already-subscribed" className="text-sm">
           {t('plan.order.alreadySubscribed')}
@@ -580,11 +662,7 @@ function PlanBody(props: PlanScreenProps) {
       {/* WHAT THE TRIAL WAS USED FOR, above the plans, counted from this
           device's diary (M250/05). The page is held until the count is in,
           so this line never arrives above an order already drawn. */}
-      {state.kind === 'ready' && props.recapMealCount !== null && props.recapMealCount > 0 && (
-        <p data-slot="plan-trial-recap" className="text-sm">
-          {t(recapSentenceKey(standing), { count: props.recapMealCount })}
-        </p>
-      )}
+      {!hasHero && recapLine}
 
       {/* THE TIERS, listed as the biller sent them, above the order they open
           (M2/05). Absent for a biller that sells one plan, and then this is
@@ -596,29 +674,41 @@ function PlanBody(props: PlanScreenProps) {
           pickedTierId={props.pickedTierId ?? null}
           canPick={props.canPickTier === true}
           onPick={props.onPickTier ?? (() => {})}
+          onReveal={props.onRevealOrder}
         />
       )}
 
-      {order === null && props.moveResult !== undefined && props.moveResult !== null && (
-        <MoveResultLine result={props.moveResult} />
-      )}
+      {/* THE ANSWERS AND THE ORDER KEEP THE ONE COLUMN, whatever width the list
+          above took, and the order is where a press on a tier scrolls to. The
+          margin clears the sticky header. */}
+      <div ref={props.orderRef} data-slot="plan-order-column" className="mx-auto max-w-xl scroll-mt-20 space-y-5 empty:hidden">
+        {order === null && props.moveResult !== undefined && props.moveResult !== null && (
+          <MoveResultLine result={props.moveResult} />
+        )}
 
-      {order !== null && (
-        <PlanOrder
-          {...order}
-          onSelectPlan={props.onSelectPlan}
-          onConsentChange={props.onConsentChange}
-          onOrder={props.onOrder}
-        />
-      )}
+        {props.pendingAfterList !== undefined && (
+          <PendingChangeSlot
+            change={props.pendingAfterList}
+            isKeeping={busy === 'keep'}
+            keepFailed={props.keepFailed === true}
+            onKeepPlan={props.onKeepPlan ?? (() => {})}
+          />
+        )}
 
-      {/* THE WAY BACK, for somebody who came to look and still has free
-          scans. Below the order, the "not now" beside the offer. */}
-      {props.offersFreeScansFirst && (
-        <Button asChild variant="secondary" className="h-11">
-          <Link to="/dashboard">{t('paywall.freeScansFirst')}</Link>
-        </Button>
-      )}
+        {order !== null && (
+          <PlanOrder
+            {...order}
+            onSelectPlan={props.onSelectPlan}
+            onConsentChange={props.onConsentChange}
+            onOrder={props.onOrder}
+          />
+        )}
+      </div>
+
+      {/* Below the order, the "not now" beside the offer. In the tiers world it
+          sits in the hero: nothing stays under an order block that arrives with a
+          pick, because it would be pushed down as the person presses. */}
+      {!hasHero && freeScansLink}
     </>
   );
 }
@@ -711,6 +801,14 @@ export default function SettingsPlan() {
   const [bookedPending, setBookedPending] = useState<PendingFacts | null>(null);
   const [isPendingCancelled, setIsPendingCancelled] = useState(false);
   const [keepFailed, setKeepFailed] = useState(false);
+  // WHERE THE BOOKED CHANGE IS SAID, decided once by the visit's first plan read
+  // and then held, so the card keeps one shape for the whole visit. `null` until
+  // that read is in.
+  const [isPendingInCard, setIsPendingInCard] = useState<boolean | null>(null);
+  // A press on a tier asks for the order block, which may arrive a commit later.
+  const orderRef = useRef<HTMLDivElement>(null);
+  const isRevealPending = useRef(false);
+  const [revealCount, setRevealCount] = useState(0);
 
   // The loader has already passed the door, so the read is always enabled
   // here, and the descriptor it passed is the one the standing reads.
@@ -806,14 +904,26 @@ export default function SettingsPlan() {
     offer === null ? null
     : tiers === null ? offer
     : offerForTier({ offer, view: tiers, tierId: effectiveTierId });
-  // THE BOOKED DOWNGRADE (M2): the slot exists, empty, for every tier subscriber
-  // from the first paint, and holds the line once the offer names both tiers.
+  // THE BOOKED DOWNGRADE (M2). A CARD WITH NOTHING BOOKED HAS NO SLOT: an empty
+  // reservation under the renewal date was the tall box the owner reported.
+  // A first read that names a change keeps a slot for the visit, empty until the
+  // offer names both tiers. A change booked during the visit is said below the
+  // list, which moves nothing above the person's press.
+  const firstRead = planViewOf(read);
+  if (isPendingInCard === null && read.kind === 'ready') {
+    setIsPendingInCard(pendingFactsOf({ planView: firstRead, booked: null, isCancelled: false }) !== null);
+  }
   const pendingChange: PendingChange | null | undefined =
     isTierSubscriber ?
       pendingChangeOf({
         facts: pendingFactsOf({ planView: planViewOf(read), booked: bookedPending, isCancelled: isPendingCancelled }),
         tiers,
       })
+    : undefined;
+  const pendingInCard = isPendingInCard === true ? pendingChange : undefined;
+  const pendingAfterList =
+    isPendingInCard === false && pendingChange !== undefined && (pendingChange !== null || isPendingCancelled) ?
+      pendingChange
     : undefined;
   const pickedRow = tiers?.rows.find((row) => row.id === effectiveTierId) ?? null;
   const move: MoveEffect | null = isTierSubscriber ? (pickedRow?.effect ?? null) : null;
@@ -993,6 +1103,20 @@ export default function SettingsPlan() {
     setConsents(NO_CONSENTS);
   }, []);
 
+  /** A person's press on a tier: the scroll waits for the order block it opens. */
+  const onRevealOrder = useCallback(() => {
+    isRevealPending.current = true;
+    setRevealCount((count) => count + 1);
+  }, []);
+
+  const hasOrderBlock = order !== null;
+  useEffect(() => {
+    if (!isRevealPending.current || !hasOrderBlock || orderRef.current === null) return;
+    isRevealPending.current = false;
+    const isReduced = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
+    orderRef.current.scrollIntoView({ behavior: isReduced ? 'auto' : 'smooth', block: 'start' });
+  }, [revealCount, hasOrderBlock, effectiveTierId]);
+
   const onConsentChange = useCallback((key: ConsentKey, isTicked: boolean) => {
     setConsents((current) => ({ ...current, [key]: isTicked }));
   }, []);
@@ -1053,7 +1177,8 @@ export default function SettingsPlan() {
       checkoutReturn={checkoutReturn}
       portalFailed={portalFailed}
       keepFailed={keepFailed}
-      pendingChange={pendingChange}
+      pendingChange={pendingInCard}
+      pendingAfterList={pendingAfterList}
       onKeepPlan={onKeepPlan}
       orderYearlyHref={switchStart === null ? null : ORDER_YEARLY_HREF}
       switchStartsAt={switchStartsAt}
@@ -1063,6 +1188,15 @@ export default function SettingsPlan() {
       moveResult={moveResult}
       canPickTier={(wantsOrder || wantsTierList) && !isSwitching}
       onPickTier={onPickTier}
+      onRevealOrder={onRevealOrder}
+      orderRef={orderRef}
+      isWide={tiers !== null || isTierSubscriber}
+      heroMeter={heroMeterOf({
+        standing,
+        trialScans: session.account?.trialScans,
+        quota: session.account?.aiQuota,
+        now: new Date(),
+      })}
       onSelectPlan={setPickedPlan}
       onConsentChange={onConsentChange}
       onOrder={onOrder}

@@ -37,7 +37,14 @@ import type { PrivateStoreSession } from './private-store';
 import type { StorageHealNotice } from './storage-heal';
 import type { SyncStateStore, KeyValueStorage } from './sync-state';
 import { assertDeviceMayOpen, browserStorage, releaseDeviceLockForOwner } from './sync-state';
-import { decodeAiLimitPeriod, decodeAiQuota, type AiLimitPeriod, type AiQuota } from '#app/lib/plans/ai-quota';
+import {
+  decodeAiLimitPeriod,
+  decodeAiQuota,
+  withQuotaCount,
+  type AiLimitPeriod,
+  type AiQuota,
+  type QuotaCount,
+} from '#app/lib/plans/ai-quota';
 import { decodeFreeDailyAiLimit } from '#app/lib/plans/free-grant';
 import { decodeTrialEndsAt, decodeTrialScans, withScansLeft, type TrialScans } from '#app/lib/plans/trial-scans';
 import { decodeHealthConsent, type HealthConsent } from '#app/lib/health-consent/health-consent';
@@ -341,6 +348,23 @@ export function applyTrialScansLeft(left: number): void {
   const trialScans = withScansLeft({ trial: account.trialScans ?? null, left });
   if (trialScans === null || trialScans.left === account.trialScans?.left) return;
   publish({ ...snapshot, account: { ...account, trialScans } });
+}
+
+/**
+ * Moves the AI count on screen to what the proxy just said (2026-11-02).
+ *
+ * The managed adapter calls this with every `X-Quota-Used` it reads. Without it
+ * `aiQuota.used` moved only at an account read, so a person who just spent their
+ * last scan would still read as having one left, and the limit line in the header
+ * would come a resume too late. A snapshot with no account or no quota is left
+ * alone: the next account read brings the whole view.
+ */
+export function applyQuotaCount(count: QuotaCount): void {
+  const account = snapshot.account;
+  if (account === null || account.aiQuota === null || account.aiQuota === undefined) return;
+  const aiQuota = withQuotaCount({ quota: account.aiQuota, count, now: new Date() });
+  if (aiQuota.used === account.aiQuota.used) return;
+  publish({ ...snapshot, account: { ...account, aiQuota } });
 }
 
 /**

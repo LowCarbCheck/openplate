@@ -332,8 +332,14 @@ function accountPatch({
   createdAt,
   trialScans,
   capabilities,
+  aiQuota,
+  freeDailyAiLimit,
+  freeAiLimitPeriod,
 }: AccountAllowance): AccountAllowance {
   const patch: AccountAllowance = { dailyAiLimit, allowanceExpiresAt };
+  if (aiQuota !== undefined) patch.aiQuota = aiQuota;
+  if (freeDailyAiLimit !== undefined) patch.freeDailyAiLimit = freeDailyAiLimit;
+  if (freeAiLimitPeriod !== undefined) patch.freeAiLimitPeriod = freeAiLimitPeriod;
   if (createdAt !== undefined) patch.createdAt = createdAt;
   if (trialScans !== undefined) patch.trialScans = trialScans;
   if (capabilities !== undefined) patch.capabilities = capabilities;
@@ -345,6 +351,22 @@ const accountEnvelopeSchema = z.looseObject({ account: z.record(z.string(), z.un
 
 /** The allowance facts a spec gives the fixture account. */
 export interface AccountAllowance {
+  /**
+   * `AccountView.aiQuota`: what the proxy would hold the next request to, `null`
+   * for a proxy that would refuse, or absent to leave the key out, as a core older
+   * than the field does.
+   */
+  aiQuota?: {
+    kind: 'paid' | 'free' | 'trial';
+    limit: number;
+    period: 'day' | 'week';
+    used: number;
+    resetsAt: string;
+  } | null;
+  /** `AccountView.freeDailyAiLimit`: a standing free grant, which makes the standing `free`. */
+  freeDailyAiLimit?: number;
+  /** `AccountView.freeAiLimitPeriod`: the window of that grant. */
+  freeAiLimitPeriod?: 'day' | 'week';
   dailyAiLimit: number;
   /** The ISO instant the allowance ends, or `null` for none. */
   allowanceExpiresAt: string | null;
