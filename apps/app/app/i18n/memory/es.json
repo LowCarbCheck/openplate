@@ -11962,6 +11962,13 @@
     "at": "2026-09-29",
     "es": "Las páginas públicas de una instancia administrada enlazan de vuelta a openplate.de."
   },
+  "846fa6b070e45706": {
+    "en": "Plan details are clearer.",
+    "path": "releases:v0_71_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-02",
+    "es": "Los detalles del plan son más claros."
+  },
   "84703df1bdc28690": {
     "en": "Per 100 g",
     "path": "common:add.custom.per100gToggle",
@@ -12710,6 +12717,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Cambia la contraseña con la que inicias sesión."
+  },
+  "8ca21e94c1e4aa80": {
+    "en": "The scan count updates immediately.",
+    "path": "releases:v0_71_0.fixed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-02",
+    "es": "El recuento de escaneos se actualiza de inmediato."
   },
   "8ca3d91abf0f21e7": {
     "en": "Suspend",
@@ -13942,6 +13956,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-10-10",
     "es": "proteína por alcanzar hoy"
+  },
+  "9943e3545bc58cd0": {
+    "en": "The plan status header is smaller.",
+    "path": "releases:v0_71_0.changed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-02",
+    "es": "La cabecera de estado del plan es más pequeña."
   },
   "99468f7a06776fdc": {
     "en": "Pregnancy and breastfeeding raise your need for energy and carbohydrates. Talk to your midwife or doctor before you limit either one. High protein or Just track may fit you better. Read <sourceLink>what the DGE advises</sourceLink>.",
@@ -15832,6 +15853,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-28",
     "es": "No se guardó tu consentimiento. Comprueba tu conexión e inténtalo de nuevo."
+  },
+  "ae237d73faa46ec6": {
+    "en": "The header shows when AI scans run out.",
+    "path": "releases:v0_71_0.added.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-02",
+    "es": "La cabecera muestra cuándo se agotan los escaneos de IA."
   },
   "ae75d57958e2e98e": {
     "en": "What you have at home. Photograph a shelf.",
@@ -20256,6 +20284,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "es": "Añadir entrada"
+  },
+  "e022ffd12392f054": {
+    "en": "Removed unreleased features from plan cards.",
+    "path": "releases:v0_71_0.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-02",
+    "es": "Se eliminaron las funciones no publicadas de las tarjetas de los planes."
   },
   "e02fcf525e3d5a49": {
     "en": "This sync server does not offer sharing. Nothing here is switched on, and nothing was sent.",

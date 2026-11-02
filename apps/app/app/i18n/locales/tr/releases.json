@@ -1,4 +1,18 @@
 {
+  "v0_71_0": {
+    "date": "2026-11-02",
+    "added": {
+      "01": "Başlık, yapay zeka taramalarının ne zaman bittiğini gösterir."
+    },
+    "changed": {
+      "01": "Plan ayrıntıları daha nettir.",
+      "02": "Plan durumu başlığı daha küçüktür."
+    },
+    "fixed": {
+      "01": "Yayımlanmamış özellikler plan kartlarından kaldırıldı.",
+      "02": "Tarama sayısı hemen güncellenir."
+    }
+  },
   "v0_70_1": {
     "date": "2026-11-02",
     "fixed": {
@@ -9,13 +23,6 @@
     "date": "2026-10-29",
     "fixed": {
       "01": "Net karbonhidrat, AB etiketindeki lifi artık iki kez düşmüyor."
-    }
-  },
-  "v0_69_2": {
-    "date": "2026-10-22",
-    "fixed": {
-      "01": "Ekleme ekranı, yapay zekayı algıladığında artık kayma yapmıyor.",
-      "02": "Sunucu, güvenlik düzeltmesi içeren bir Node.js sürümünde çalışır."
     }
   }
 }

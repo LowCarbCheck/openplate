@@ -1,4 +1,18 @@
 {
+  "v0_71_0": {
+    "date": "2026-11-02",
+    "added": {
+      "01": "L'intestazione mostra quando le scansioni IA si esauriscono."
+    },
+    "changed": {
+      "01": "I dettagli del piano sono più chiari.",
+      "02": "L'intestazione dello stato del piano è più piccola."
+    },
+    "fixed": {
+      "01": "Rimosse le funzionalità non rilasciate dalle schede del piano.",
+      "02": "Il conteggio delle scansioni si aggiorna subito."
+    }
+  },
   "v0_70_1": {
     "date": "2026-11-02",
     "fixed": {
@@ -9,13 +23,6 @@
     "date": "2026-10-29",
     "fixed": {
       "01": "I carboidrati netti non sottraggono più due volte le fibre da un'etichetta europea."
-    }
-  },
-  "v0_69_2": {
-    "date": "2026-10-22",
-    "fixed": {
-      "01": "La schermata di aggiunta non salta più quando rileva la presenza dell'IA.",
-      "02": "Il server usa una versione di Node.js che include una correzione di sicurezza."
     }
   }
 }

@@ -1,4 +1,18 @@
 {
+  "v0_71_0": {
+    "date": "2026-11-02",
+    "added": {
+      "01": "L'en-tête indique quand le quota d'analyses par IA est épuisé."
+    },
+    "changed": {
+      "01": "Les détails du forfait sont plus clairs.",
+      "02": "L'en-tête du statut du forfait est plus compact."
+    },
+    "fixed": {
+      "01": "Suppression des fonctionnalités non publiées sur les fiches de forfait.",
+      "02": "Le nombre d'analyses s'actualise immédiatement."
+    }
+  },
   "v0_70_1": {
     "date": "2026-11-02",
     "fixed": {
@@ -9,13 +23,6 @@
     "date": "2026-10-29",
     "fixed": {
       "01": "Les glucides nets ne déduisent plus les fibres deux fois pour les étiquettes de l'UE."
-    }
-  },
-  "v0_69_2": {
-    "date": "2026-10-22",
-    "fixed": {
-      "01": "L'écran d'ajout ne saute plus lorsqu'il détecte la présence de l'IA.",
-      "02": "Le serveur fonctionne sur une version de Node.js qui intègre un correctif de sécurité."
     }
   }
 }

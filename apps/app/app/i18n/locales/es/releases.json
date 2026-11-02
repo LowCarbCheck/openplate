@@ -1,4 +1,18 @@
 {
+  "v0_71_0": {
+    "date": "2026-11-02",
+    "added": {
+      "01": "La cabecera muestra cuándo se agotan los escaneos de IA."
+    },
+    "changed": {
+      "01": "Los detalles del plan son más claros.",
+      "02": "La cabecera de estado del plan es más pequeña."
+    },
+    "fixed": {
+      "01": "Se eliminaron las funciones no publicadas de las tarjetas de los planes.",
+      "02": "El recuento de escaneos se actualiza de inmediato."
+    }
+  },
   "v0_70_1": {
     "date": "2026-11-02",
     "fixed": {
@@ -9,13 +23,6 @@
     "date": "2026-10-29",
     "fixed": {
       "01": "Los carbohidratos netos ya no restan la fibra dos veces de una etiqueta de la UE."
-    }
-  },
-  "v0_69_2": {
-    "date": "2026-10-22",
-    "fixed": {
-      "01": "La pantalla de añadir ya no da saltos cuando detecta la IA.",
-      "02": "El servidor se ejecuta en una versión de Node.js con un parche de seguridad."
     }
   }
 }

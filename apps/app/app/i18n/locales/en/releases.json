@@ -1,4 +1,18 @@
 {
+  "v0_71_0": {
+    "date": "2026-11-02",
+    "added": {
+      "01": "The header shows when AI scans run out."
+    },
+    "changed": {
+      "01": "Plan details are clearer.",
+      "02": "The plan status header is smaller."
+    },
+    "fixed": {
+      "01": "Removed unreleased features from plan cards.",
+      "02": "The scan count updates immediately."
+    }
+  },
   "v0_70_1": {
     "date": "2026-11-02",
     "fixed": {
@@ -9,13 +23,6 @@
     "date": "2026-10-29",
     "fixed": {
       "01": "Net carbs no longer take the fiber out of an EU label twice."
-    }
-  },
-  "v0_69_2": {
-    "date": "2026-10-22",
-    "fixed": {
-      "01": "The add screen no longer jumps when it learns about AI.",
-      "02": "The server runs on a Node.js release with a security fix."
     }
   }
 }

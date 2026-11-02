@@ -11962,6 +11962,13 @@
     "at": "2026-09-29",
     "fr": "Les pages publiques d'une instance gérée renvoient vers openplate.de."
   },
+  "846fa6b070e45706": {
+    "en": "Plan details are clearer.",
+    "path": "releases:v0_71_0.changed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-02",
+    "fr": "Les détails du forfait sont plus clairs."
+  },
   "84703df1bdc28690": {
     "en": "Per 100 g",
     "path": "common:add.custom.per100gToggle",
@@ -12710,6 +12717,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Modifie le mot de passe qui te sert à te connecter."
+  },
+  "8ca21e94c1e4aa80": {
+    "en": "The scan count updates immediately.",
+    "path": "releases:v0_71_0.fixed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-02",
+    "fr": "Le nombre d'analyses s'actualise immédiatement."
   },
   "8ca3d91abf0f21e7": {
     "en": "Suspend",
@@ -13942,6 +13956,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-10-10",
     "fr": "protéines à atteindre aujourd'hui"
+  },
+  "9943e3545bc58cd0": {
+    "en": "The plan status header is smaller.",
+    "path": "releases:v0_71_0.changed.02",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-02",
+    "fr": "L'en-tête du statut du forfait est plus compact."
   },
   "99468f7a06776fdc": {
     "en": "Pregnancy and breastfeeding raise your need for energy and carbohydrates. Talk to your midwife or doctor before you limit either one. High protein or Just track may fit you better. Read <sourceLink>what the DGE advises</sourceLink>.",
@@ -15832,6 +15853,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-28",
     "fr": "Ton consentement n'a pas été enregistré. Vérifie ta connexion et réessaie."
+  },
+  "ae237d73faa46ec6": {
+    "en": "The header shows when AI scans run out.",
+    "path": "releases:v0_71_0.added.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-02",
+    "fr": "L'en-tête indique quand le quota d'analyses par IA est épuisé."
   },
   "ae75d57958e2e98e": {
     "en": "What you have at home. Photograph a shelf.",
@@ -20256,6 +20284,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "fr": "Ajouter l'entrée"
+  },
+  "e022ffd12392f054": {
+    "en": "Removed unreleased features from plan cards.",
+    "path": "releases:v0_71_0.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-02",
+    "fr": "Suppression des fonctionnalités non publiées sur les fiches de forfait."
   },
   "e02fcf525e3d5a49": {
     "en": "This sync server does not offer sharing. Nothing here is switched on, and nothing was sent.",

@@ -11,19 +11,21 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+## [0.71.0] - 2026-11-02
+
 ### Added
 
-- **The header shows when AI scans run out.** When you hit your limit and an upgrade exists, the header displays a link to the plans and a close button. Dismissing the notice keeps it hidden until your allowance resets.
+- **The header shows when AI scans run out.** When you hit your limit and an upgrade exists, the header displays a link to the plans and a close button. Dismissing the notice keeps it hidden until your allowance resets. ([c5f493fc](https://github.com/LowCarbCheck/openplate/commit/c5f493fc))
 
 ### Changed
 
-- **Plan details are clearer.** Paid plans appear as cards showing the scan allowance, its increase over the free tier, a feature list, and yearly savings. One plan can be marked as recommended to highlight its card. Users on the free tier see their used scans and the reset date.
-- **The plan status header is smaller.** The layout removes blank space below the renewal date. The link back to the diary after payment is no longer styled as the primary button.
+- **Plan details are clearer.** Paid plans appear as cards showing the scan allowance, its increase over the free tier, a feature list, and yearly savings. One plan can be marked as recommended to highlight its card. Users on the free tier see their used scans and the reset date. ([c5f493fc](https://github.com/LowCarbCheck/openplate/commit/c5f493fc))
+- **The plan status header is smaller.** The layout removes blank space below the renewal date. The link back to the diary after payment is no longer styled as the primary button. ([c5f493fc](https://github.com/LowCarbCheck/openplate/commit/c5f493fc))
 
 ### Fixed
 
-- **Removed unreleased features from plan cards.** Cards no longer list voice and chat entry, which lack screens.
-- **The scan count updates immediately.** The account and plan pages previously waited for an account reload to show the new total.
+- **Removed unreleased features from plan cards.** Cards no longer list voice and chat entry, which lack screens. ([c5f493fc](https://github.com/LowCarbCheck/openplate/commit/c5f493fc))
+- **The scan count updates immediately.** The account and plan pages previously waited for an account reload to show the new total. ([c5f493fc](https://github.com/LowCarbCheck/openplate/commit/c5f493fc))
 
 ## [0.70.1] - 2026-11-02
 

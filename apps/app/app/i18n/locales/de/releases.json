@@ -1,4 +1,18 @@
 {
+  "v0_71_0": {
+    "date": "2026-11-02",
+    "added": {
+      "01": "Die Kopfzeile zeigt, wann KI-Scans aufgebraucht sind."
+    },
+    "changed": {
+      "01": "Plandetails sind übersichtlicher.",
+      "02": "Die Kopfzeile für den Planstatus ist kleiner."
+    },
+    "fixed": {
+      "01": "Unveröffentlichte Funktionen aus Plankarten entfernt.",
+      "02": "Die Anzahl der Scans aktualisiert sich sofort."
+    }
+  },
   "v0_70_1": {
     "date": "2026-11-02",
     "fixed": {
@@ -9,13 +23,6 @@
     "date": "2026-10-29",
     "fixed": {
       "01": "Netto-Kohlenhydrate ziehen die Ballaststoffe bei EU-Kennzeichnungen nicht mehr doppelt ab."
-    }
-  },
-  "v0_69_2": {
-    "date": "2026-10-22",
-    "fixed": {
-      "01": "Die Hinzufügen-Ansicht springt nicht mehr, wenn sie von der KI erfährt.",
-      "02": "Der Server läuft auf einem Node.js-Release mit einer Sicherheitskorrektur."
     }
   }
 }
