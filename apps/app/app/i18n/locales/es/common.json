@@ -3696,8 +3696,9 @@
     "activityMail": {
       "title": "Correos de recordatorio",
       "stats": {
-        "optedIn": "{{optedIn}} personas pidieron recordatorios.",
-        "kind": "{{sent}} enviados, {{cameBack}} volvieron"
+        "optedIn_one": "{{count}} persona pidió recordatorios.",
+        "optedIn_other": "{{count}} personas pidieron recordatorios.",
+        "kind": "Enviados: {{sent}}, de vuelta: {{cameBack}}"
       },
       "firstScan": {
         "title": "Recordatorio de la primera foto",

@@ -478,7 +478,7 @@ const englishCatalogSchema = catalogSchema
         settings: z.object({ title: z.string() }),
         activityMail: z.object({
           title: z.string(),
-          stats: z.object({ optedIn: z.string(), kind: z.string() }),
+          stats: z.object({ optedIn_one: z.string(), optedIn_other: z.string(), kind: z.string() }),
           daysLabel: z.string(),
           firstScan: z.object({ title: z.string() }),
           quiet: z.object({ title: z.string() }),

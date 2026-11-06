@@ -2701,6 +2701,13 @@
     "at": "2026-09-14",
     "tr": "Bugün senin için kaç fotoğrafın okunduğu."
   },
+  "1bae64cd8d8f0b41": {
+    "en": "Sent: {{sent}}, came back: {{cameBack}}",
+    "path": "common:admin.activityMail.stats.kind",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "tr": "Gönderilen: {{sent}}, dönen: {{cameBack}}"
+  },
   "1bc308ee723d08ca": {
     "en": "New password",
     "path": "common:reset.newPasswordLabel",
@@ -12480,13 +12487,6 @@
     "at": "2026-10-29",
     "tr": "Otomatik"
   },
-  "89e790f60457cea4": {
-    "en": "{{sent}} sent, {{cameBack}} came back",
-    "path": "common:admin.activityMail.stats.kind",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-11-06",
-    "tr": "{{sent}} gönderildi, {{cameBack}} geri döndü"
-  },
   "89f4be500bc83669": {
     "en": "Ask the study to send the link again, or open it from the consent materials.",
     "path": "common:research.join.queryString.askAgain",
@@ -13438,6 +13438,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-23",
     "tr": "Ayda {{price}}'den başlayan planlar."
+  },
+  "934bf9fb84ead48a": {
+    "en": "{{count}} people asked for reminders.",
+    "path": "common:admin.activityMail.stats.optedIn_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "tr": "{{count}} kişi hatırlatıcı istedi."
   },
   "9356af6053e82883": {
     "en": "Anthropic direct",
@@ -19046,6 +19053,13 @@
     "at": "2026-09-14",
     "tr": "{{count}} dilim ekmek"
   },
+  "d20aa09fca1ac057": {
+    "en": "{{count}} person asked for reminders.",
+    "path": "common:admin.activityMail.stats.optedIn_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "tr": "{{count}} kişi hatırlatıcı istedi."
+  },
   "d21a2dde561a6557": {
     "en": "Snack",
     "path": "common:diary.meals.snack",
@@ -22902,13 +22916,6 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "openplate yalnızca saatleri sayar. Tıbbi tavsiye vermez."
-  },
-  "f993ed937d4c942e": {
-    "en": "{{optedIn}} people asked for reminders.",
-    "path": "common:admin.activityMail.stats.optedIn",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-11-06",
-    "tr": "{{optedIn}} kişi hatırlatma istedi."
   },
   "f9ac5e0ecd582e6c": {
     "en": "Sharing a diary needs sync, and whoever runs this openplate has not set it up. Nothing here can be used.",

@@ -3696,8 +3696,9 @@
     "activityMail": {
       "title": "Hatırlatma e-postaları",
       "stats": {
-        "optedIn": "{{optedIn}} kişi hatırlatma istedi.",
-        "kind": "{{sent}} gönderildi, {{cameBack}} geri döndü"
+        "optedIn_one": "{{count}} kişi hatırlatıcı istedi.",
+        "optedIn_other": "{{count}} kişi hatırlatıcı istedi.",
+        "kind": "Gönderilen: {{sent}}, dönen: {{cameBack}}"
       },
       "firstScan": {
         "title": "İlk fotoğraf hatırlatması",

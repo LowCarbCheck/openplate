@@ -3696,8 +3696,9 @@
     "activityMail": {
       "title": "Email di promemoria",
       "stats": {
-        "optedIn": "{{optedIn}} persone hanno richiesto i promemoria.",
-        "kind": "{{sent}} inviate, {{cameBack}} tornate"
+        "optedIn_one": "{{count}} persona ha richiesto i promemoria.",
+        "optedIn_other": "{{count}} persone hanno richiesto i promemoria.",
+        "kind": "Inviati: {{sent}}, tornati: {{cameBack}}"
       },
       "firstScan": {
         "title": "Promemoria per la prima foto",

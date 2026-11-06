@@ -3696,8 +3696,9 @@
     "activityMail": {
       "title": "Erinnerungs-E-Mails",
       "stats": {
-        "optedIn": "{{optedIn}} Personen haben Erinnerungen angefordert.",
-        "kind": "{{sent}} gesendet, {{cameBack}} zurückgekehrt"
+        "optedIn_one": "{{count}} Person hat Erinnerungen angefordert.",
+        "optedIn_other": "{{count}} Personen haben Erinnerungen angefordert.",
+        "kind": "Gesendet: {{sent}}, zurückgekehrt: {{cameBack}}"
       },
       "firstScan": {
         "title": "Erinnerung an das erste Foto",

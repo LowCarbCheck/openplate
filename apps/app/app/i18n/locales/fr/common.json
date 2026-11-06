@@ -3696,8 +3696,9 @@
     "activityMail": {
       "title": "E-mails de rappel",
       "stats": {
-        "optedIn": "{{optedIn}} personnes ont demandé des rappels.",
-        "kind": "{{sent}} envoyés, {{cameBack}} revenus"
+        "optedIn_one": "{{count}} personne a demandé des rappels.",
+        "optedIn_other": "{{count}} personnes ont demandé des rappels.",
+        "kind": "Envois : {{sent}}, retours : {{cameBack}}"
       },
       "firstScan": {
         "title": "Rappel pour la première photo",

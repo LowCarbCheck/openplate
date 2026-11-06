@@ -88,7 +88,7 @@ test('the section loads the core values, the numbers and both kinds', async ({ p
 
   await expect(page.locator(SECTION)).toBeVisible();
   await expect(page.locator(`${SECTION} [data-slot="activity-mail-opted-in"]`)).toHaveText(
-    EN.admin.activityMail.stats.optedIn.replace('{{optedIn}}', '41'),
+    EN.admin.activityMail.stats.optedIn_other.replace('{{count}}', '41'),
   );
 
   const first = kindBox(page, 'firstScan');
@@ -105,6 +105,36 @@ test('the section loads the core values, the numbers and both kinds', async ({ p
     EN.admin.activityMail.stats.kind.replace('{{sent}}', '23').replace('{{cameBack}}', '8'),
   );
   expect(stub.unanswered, 'the console called a route this tier does not answer').toEqual([]);
+});
+
+// THE PLURAL LINE (2026-11). One opted-in account read "1 people asked for reminders." in production,
+// because the string took a named number and had one form. The English is hand-written and lives outside
+// the wordsmith pass, so these two sentences are pinned as written. The 2-case is the control: a line that
+// answered "1 person" for everything, or "people" for everything, fails exactly one of the two.
+for (const { optedIn, sentence } of [
+  { optedIn: 1, sentence: '1 person asked for reminders.' },
+  { optedIn: 2, sentence: '2 people asked for reminders.' },
+] as const) {
+  test(`the opted-in line reads "${sentence}" for ${optedIn} account${optedIn === 1 ? '' : 's'}`, async ({ page }) => {
+    const reminders = reminderCore();
+    reminders.stats.optedIn = optedIn;
+    await openSettings(page, reminders);
+
+    await expect(page.locator(`${SECTION} [data-slot="activity-mail-opted-in"]`)).toHaveText(sentence);
+  });
+}
+
+// THE LABEL LINE (2026-11). "{{sent}} sent, {{cameBack}} came back" forced a participle to agree with a
+// number in French, Italian and Spanish ("1 envoyés"). The line is a label form now, "Sent: 1, came back: 0",
+// so no language agrees with a number. Pinned as written for the same reason as the plural line above.
+test('the kind line reads as labels, "Sent: 1, came back: 0", for one sent and none back', async ({ page }) => {
+  const reminders = reminderCore();
+  reminders.stats.firstScan = { sent: 1, cameBack: 0 };
+  await openSettings(page, reminders);
+
+  await expect(kindBox(page, 'firstScan').locator('[data-slot="activity-mail-kind-stats"]')).toHaveText(
+    'Sent: 1, came back: 0',
+  );
 });
 
 test('control: a core older than the feature draws no reminder section, and the page still works', async ({ page }) => {

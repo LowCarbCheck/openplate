@@ -3696,8 +3696,9 @@
     "activityMail": {
       "title": "Reminder emails",
       "stats": {
-        "optedIn": "{{optedIn}} people asked for reminders.",
-        "kind": "{{sent}} sent, {{cameBack}} came back"
+        "optedIn_one": "{{count}} person asked for reminders.",
+        "optedIn_other": "{{count}} people asked for reminders.",
+        "kind": "Sent: {{sent}}, came back: {{cameBack}}"
       },
       "firstScan": {
         "title": "First photo reminder",

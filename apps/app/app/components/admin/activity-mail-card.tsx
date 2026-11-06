@@ -110,7 +110,7 @@ export function ActivityMailCard({
       <CardContent className="space-y-6">
         {/* The numbers sit above both kinds. Their boxes are there before the read lands. */}
         <p data-slot="activity-mail-opted-in" className="min-h-5 text-sm">
-          {stats === null ? '' : t('admin.activityMail.stats.optedIn', { optedIn: stats.optedIn })}
+          {stats === null ? '' : t('admin.activityMail.stats.optedIn', { count: stats.optedIn })}
         </p>
 
         {ACTIVITY_MAIL_KINDS.map((kind) => {

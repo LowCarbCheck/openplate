@@ -2701,6 +2701,13 @@
     "at": "2026-09-14",
     "de": "Wie viele Fotos heute für dich ausgelesen wurden."
   },
+  "1bae64cd8d8f0b41": {
+    "en": "Sent: {{sent}}, came back: {{cameBack}}",
+    "path": "common:admin.activityMail.stats.kind",
+    "model": "hand-written",
+    "at": "2026-11-06",
+    "de": "Gesendet: {{sent}}, zurückgekehrt: {{cameBack}}"
+  },
   "1bc308ee723d08ca": {
     "en": "New password",
     "path": "common:reset.newPasswordLabel",
@@ -12480,13 +12487,6 @@
     "at": "2026-10-29",
     "de": "Automatisch"
   },
-  "89e790f60457cea4": {
-    "en": "{{sent}} sent, {{cameBack}} came back",
-    "path": "common:admin.activityMail.stats.kind",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-11-06",
-    "de": "{{sent}} gesendet, {{cameBack}} zurückgekehrt"
-  },
   "89f4be500bc83669": {
     "en": "Ask the study to send the link again, or open it from the consent materials.",
     "path": "common:research.join.queryString.askAgain",
@@ -13438,6 +13438,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-23",
     "de": "Tarife ab {{price}} im Monat."
+  },
+  "934bf9fb84ead48a": {
+    "en": "{{count}} people asked for reminders.",
+    "path": "common:admin.activityMail.stats.optedIn_other",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "de": "{{count}} Personen haben Erinnerungen angefordert."
   },
   "9356af6053e82883": {
     "en": "Anthropic direct",
@@ -19046,6 +19053,13 @@
     "at": "2026-09-14",
     "de": "{{count}} Scheibe Brot"
   },
+  "d20aa09fca1ac057": {
+    "en": "{{count}} person asked for reminders.",
+    "path": "common:admin.activityMail.stats.optedIn_one",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "de": "{{count}} Person hat Erinnerungen angefordert."
+  },
   "d21a2dde561a6557": {
     "en": "Snack",
     "path": "common:diary.meals.snack",
@@ -22902,13 +22916,6 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "openplate zählt nur die Stunden. Es bietet keine medizinische Beratung."
-  },
-  "f993ed937d4c942e": {
-    "en": "{{optedIn}} people asked for reminders.",
-    "path": "common:admin.activityMail.stats.optedIn",
-    "model": "google/gemini-3.8-flash",
-    "at": "2026-11-06",
-    "de": "{{optedIn}} Personen haben Erinnerungen angefordert."
   },
   "f9ac5e0ecd582e6c": {
     "en": "Sharing a diary needs sync, and whoever runs this openplate has not set it up. Nothing here can be used.",
