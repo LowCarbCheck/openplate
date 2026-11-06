@@ -7,6 +7,12 @@ change moves the minor.
 
 ## [Unreleased]
 
+## [0.39.0] - 2026-11-06
+
+### Fixed
+
+- **"Last seen" now counts a signup, a recovery and a session refresh.** `lastSeenAt` in the admin account views updated only on a password login or a proxied photo. An account created by a user who stayed signed in showed as never signed in. A signup, a recovery-code sign-in and a successful token refresh now write this field. A sync poll still does not. Migration 0036 backfills the column once from the newest session token. It never overwrites a later timestamp. No configuration change. ([5f5f0e64](https://github.com/LowCarbCheck/openplate/commit/5f5f0e64))
+
 ## [0.38.2] - 2026-11-02
 
 ### Fixed
