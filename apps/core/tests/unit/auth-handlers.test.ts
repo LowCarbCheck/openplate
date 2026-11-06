@@ -511,6 +511,113 @@ test('an expired refresh token is rejected without revoking anything', async () 
   assert.match(outcome.reason, /expired/);
 });
 
+// ── `accounts.last_seen_at` ────────────────────────────────────────────────
+// The admin people list reads this column as "Last sign-in", so a person who
+// signed up and stayed signed in must not read "Never". Each test moves the
+// clock after the signup, so a stamp from a LATER act cannot be mistaken for the
+// signup's own.
+
+const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
+
+test('signup stamps last_seen_at with the instant the account came into being', async () => {
+  const fixture = inviteFixture();
+  const session = await signUp(fixture);
+
+  assert.deepEqual(fixture.store.lastSeenFor(session.account.id), fixture.now());
+});
+
+test('a recovery-code sign-in stamps last_seen_at', async () => {
+  const fixture = inviteFixture();
+  const session = await signUp(fixture);
+  const signedUpAt = fixture.now();
+
+  fixture.advance(60 * 60 * 1000);
+  const outcome = await handleRecover({ email: EMAIL, recoveryAuthHash: RECOVERY_AUTH_HASH }, fixture.ctx);
+  assert.equal(outcome.status, 'ok');
+
+  const seenAt = fixture.store.lastSeenFor(session.account.id);
+  assert.notDeepEqual(seenAt, signedUpAt, 'the recovery must move the stamp past the signup');
+  assert.deepEqual(seenAt, fixture.now());
+});
+
+test('a recovery attempt on a suspended account does NOT stamp last_seen_at', async () => {
+  const fixture = inviteFixture();
+  const session = await signUp(fixture);
+  const signedUpAt = fixture.now();
+  await fixture.store.suspendAccount({ accountId: session.account.id, suspendedAt: fixture.now() });
+
+  fixture.advance(60 * 60 * 1000);
+  const outcome = await handleRecover({ email: EMAIL, recoveryAuthHash: RECOVERY_AUTH_HASH }, fixture.ctx);
+  assert.equal(outcome.status, 'forbidden');
+
+  assert.deepEqual(fixture.store.lastSeenFor(session.account.id), signedUpAt);
+});
+
+test('a successful refresh stamps last_seen_at, so an app that stays open is not "Never" or "quiet"', async () => {
+  const fixture = inviteFixture();
+  const session = await signUp(fixture);
+  const signedUpAt = fixture.now();
+
+  fixture.advance(FIFTEEN_MINUTES_MS);
+  const rotated = await handleRefresh({ refreshToken: requireTokens(session).refreshToken }, fixture.ctx);
+  assert.equal(rotated.status, 'ok');
+
+  const seenAt = fixture.store.lastSeenFor(session.account.id);
+  assert.notDeepEqual(seenAt, signedUpAt, 'the refresh must move the stamp past the signup');
+  assert.deepEqual(seenAt, fixture.now());
+});
+
+test('a replayed refresh token does NOT stamp last_seen_at', async () => {
+  const fixture = inviteFixture();
+  const session = await signUp(fixture);
+
+  fixture.advance(FIFTEEN_MINUTES_MS);
+  await handleRefresh({ refreshToken: requireTokens(session).refreshToken }, fixture.ctx);
+  const lastRealRefreshAt = fixture.now();
+
+  // A thief replays the spent token a quarter of an hour later.
+  fixture.advance(FIFTEEN_MINUTES_MS);
+  const replay = await handleRefresh({ refreshToken: requireTokens(session).refreshToken }, fixture.ctx);
+  assert.equal(replay.status, 'unauthorized');
+
+  assert.deepEqual(fixture.store.lastSeenFor(session.account.id), lastRealRefreshAt);
+});
+
+test('an expired refresh token does NOT stamp last_seen_at', async () => {
+  const fixture = inviteFixture();
+  const session = await signUp(fixture);
+  const signedUpAt = fixture.now();
+
+  fixture.advance(REFRESH_TOKEN_TTL_MS + 1000);
+  const outcome = await handleRefresh({ refreshToken: requireTokens(session).refreshToken }, fixture.ctx);
+  assert.equal(outcome.status, 'unauthorized');
+
+  assert.deepEqual(fixture.store.lastSeenFor(session.account.id), signedUpAt);
+});
+
+test('a refresh on a suspended account does NOT stamp last_seen_at', async () => {
+  const fixture = inviteFixture();
+  const session = await signUp(fixture);
+  const signedUpAt = fixture.now();
+
+  await fixture.store.suspendAccount({ accountId: session.account.id, suspendedAt: fixture.now() });
+  await fixture.store.insertTokens([
+    {
+      accountId: session.account.id,
+      kind: 'refresh',
+      tokenHash: hashToken('a-live-refresh-token'),
+      familyId: 'family-x',
+      expiresAt: new Date(fixture.now().getTime() + REFRESH_TOKEN_TTL_MS),
+    },
+  ]);
+
+  fixture.advance(FIFTEEN_MINUTES_MS);
+  const refused = await handleRefresh({ refreshToken: 'a-live-refresh-token' }, fixture.ctx);
+  assert.equal(refused.status, 'forbidden');
+
+  assert.deepEqual(fixture.store.lastSeenFor(session.account.id), signedUpAt);
+});
+
 test('logout revokes the caller family, leaving other devices signed in', async () => {
   const fixture = inviteFixture();
   const deviceOne = requireTokens(await signUp(fixture));

@@ -351,11 +351,13 @@ export interface AccountStore {
    * Stamps `accounts.last_seen_at`. Operator diagnostics only: never a rate
    * limit, never an authorization input.
    *
-   * ITS ONE CALLER IS THE AI PROXY, and that is a deliberate narrowing rather
-   * than the obvious place. Writing it from the bearer middleware would mean
-   * one UPDATE on every authenticated request, including every sync poll, to
-   * answer a question no code asks. The proxy is a request a person made on
-   * purpose, so "last seen" means what an operator reads it as.
+   * THE CALLERS ARE ACTS OF A PERSON, listed here so a new one is a decision:
+   * signup, login, recovery-code sign-in, a successful session refresh
+   * (`accounts/auth-handlers.ts`) and a proxied completion (`ai/proxy.ts`).
+   * The refresh is in because it is the only sign the app is still open: it
+   * runs about once per fifteen minutes. It is NOT written from the bearer
+   * middleware, which would mean one UPDATE on every authenticated request,
+   * including every sync poll, to answer a question no code asks.
    */
   touchLastSeen(input: { accountId: number; seenAt: Date }): Promise<void>;
 

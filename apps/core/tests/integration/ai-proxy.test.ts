@@ -196,6 +196,9 @@ test("a signed-in account's completion is proxied, and the row counts it", async
   const service = await startWithAi();
   try {
     const session = await service.signupThroughInvite({ email: 'anna@example.org', dailyAiLimit: 5 });
+    // Signing up stamps `last_seen_at` too, so clear it: what the check at the
+    // end sees must be the proxy's own write, not the signup's.
+    await database.db.update(accounts).set({ lastSeenAt: null }).where(eq(accounts.id, session.account.id));
 
     const answered = await service.request<{ choices: unknown[] }>({
       method: 'POST',

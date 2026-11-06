@@ -160,10 +160,9 @@ test('the metadata endpoints describe the real rows', async () => {
   assert.equal(single.body.account.freeDailyAiLimit, 200);
   assert.equal(single.body.account.aiUsedToday, 0);
   assert.equal(single.body.account.suspendedAt, null);
-  // NULL, and correctly so: signing up is not signing in. `last_seen_at` is
-  // written by a login and by a proxied completion, and this account has done
-  // neither, so an operator is told nothing rather than told the join date.
-  assert.equal(single.body.account.lastSeenAt, null);
+  // Signing up stamps `last_seen_at`, so a person who signed up and never
+  // signed in again does not read as "Never". It is the join instant here.
+  assert.ok(Number.isFinite(Date.parse(single.body.account.lastSeenAt ?? '')), 'signup stamps last_seen_at');
   // 1024 base64 characters decode to 768 bytes — the DECODED length is what
   // `size_bytes` holds and what an operator is told.
   assert.equal(single.body.account.blob?.sizeBytes, Buffer.from(CIPHERTEXT, 'base64').byteLength);

@@ -742,6 +742,11 @@ export async function handleSignup(
     return { status: 'conflict', reason: 'an account already exists for this email' };
   }
 
+  // Signing up is the first time the person is seen. Without this stamp a
+  // person who signed up, onboarded and never signed in again (the app keeps
+  // its session alive by refreshing) read as "Never" in the admin list. Same
+  // instant as the redemption, so the two rows agree on when it happened.
+  await ctx.store.touchLastSeen({ accountId: created.account.id, seenAt: now });
   const session = await issueSession(created.account, ctx);
   ctx.logger.info('Account created', { accountId: created.account.id });
   return { status: 'created', body: session };
@@ -776,10 +781,9 @@ export async function handleLogin(
   // who needs to be told why they cannot get in.
   if (account.suspendedAt !== null) return suspended();
 
-  // One of the two writers of `accounts.last_seen_at`, the other being the AI
-  // proxy. Both are deliberate acts a person took, which is what makes the
-  // column mean what an operator reads it as; a refresh or a sync poll is the
-  // client's timer and is not recorded.
+  // One of the writers of `accounts.last_seen_at`; the others are signup,
+  // recovery, a successful refresh and a proxied completion (see the column's
+  // comment in `db/schema.ts`). A sync poll is not one of them.
   await ctx.store.touchLastSeen({ accountId: account.id, seenAt: ctx.now() });
   return { status: 'ok', body: await issueSession(account, ctx) };
 }
@@ -910,6 +914,12 @@ export async function handleRefresh(
   });
   const spent = await ctx.store.spendRefreshToken({ tokenId: stored.id, revokedAt: now, issue: session.rows });
   if (spent === 'already-revoked') return await answerRefreshReuse(stored, { ctx, now });
+  // AFTER A SUCCESSFUL SPEND ONLY, never on the reuse, expired or suspended
+  // paths above: those are not a person using the app. The app refreshes about
+  // once per fifteen minutes while it is open, so this is one UPDATE per
+  // refresh, and it is what keeps a person who stays signed in from reading as
+  // "Never" or "quiet" in the admin list.
+  await ctx.store.touchLastSeen({ accountId: stored.accountId, seenAt: now });
   return { status: 'ok', body: { tokens: session.tokens } };
 }
 
@@ -1086,6 +1096,8 @@ export async function handleRecover(
   // demonstrated ownership is told why the door is shut.
   if (proof.account.suspendedAt !== null) return suspended();
 
+  // Signing in with the recovery code is a sign-in, stamped as `handleLogin` does.
+  await ctx.store.touchLastSeen({ accountId: proof.account.id, seenAt: ctx.now() });
   const session = await issueSession(proof.account, ctx);
   ctx.logger.info('Account recovered with a recovery code', { accountId: proof.account.id });
   return { status: 'ok', body: session };

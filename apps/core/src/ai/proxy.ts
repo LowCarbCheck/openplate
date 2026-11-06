@@ -1322,8 +1322,9 @@ export function createChatCompletionsHandler(deps: ChatCompletionsDeps): Request
       return;
     }
 
-    // The one write this route makes to the account row, and the only writer of
-    // `accounts.last_seen_at` in the service. Operator diagnostics: never a
+    // The one write this route makes to the account row, and one of the writers
+    // of `accounts.last_seen_at` (signup, login, recovery and refresh in
+    // `accounts/auth-handlers.ts` are the others). Operator diagnostics: never a
     // rate limit, never an authorization input. It is deliberately AFTER the
     // relay, so a failed request does not report the person as active.
     await accounts.touchLastSeen({ accountId: account.id, seenAt: requestedAt });

@@ -248,13 +248,17 @@ export const accounts = pgTable(
      * Nullable because an account that has never signed in since the column
      * existed has no honest value to report.
      *
-     * WRITTEN BY EXACTLY TWO PLACES, a login (`accounts/auth-handlers.ts`) and
-     * a proxied completion (`ai/proxy.ts`), and deliberately not by the bearer
-     * middleware: that would be one UPDATE on every authenticated request,
-     * including every sync poll, to answer a question no code asks. Both
-     * writers are acts a person took on purpose, so the column means what an
-     * operator reads it as, and since M201 an operator does read it
-     * (`server/admin-routes.ts`).
+     * THE LAST TIME A PERSON SIGNED UP, SIGNED IN, RECOVERED, THE APP REFRESHED
+     * ITS SESSION, OR A PHOTO WAS READ. Written by `accounts/auth-handlers.ts`
+     * (signup, login, recovery, refresh) and `ai/proxy.ts` (a proxied
+     * completion), and deliberately not by the bearer middleware: that would
+     * be one UPDATE on every authenticated request, including every sync poll,
+     * to answer a question no code asks. A refresh is in because it is the only
+     * sign an open app gives, about once per fifteen minutes. Every writer is
+     * an act a person took or an app they have open, so the column means what
+     * an operator reads it as, and since M201 an operator does read it
+     * (`server/admin-routes.ts`). A null means no such act was ever recorded,
+     * and a migration backfilled it from the newest token row.
      */
     lastSeenAt: timestamp('last_seen_at'),
     /**
