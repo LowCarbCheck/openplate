@@ -72,6 +72,8 @@ export function makeSyncSignupSchema(
       confirmPassphrase: z.string().default(''),
       /** `on` when the consent box is ticked, absent when it is not or is not drawn. */
       healthConsent: z.string().default(''),
+      /** `on` when the reminder-email box is ticked, absent when it is not or is not drawn. Never required. */
+      activityMail: z.string().default(''),
     })
     .superRefine((value, ctx) => {
       const passphraseProblem = validateSyncPassphrase(value.passphrase, t);

@@ -109,6 +109,33 @@ export interface AdminConsoleStub {
   everyInviteState?: boolean;
   /** Adds one new account on a weekly free default of ten. See {@link WEEKLY_DEFAULT_PERSON_ID}. */
   weeklyDefault?: 'resolved' | 'own-column-only';
+  /**
+   * A core WITH the reminder emails (2026-11): the settings read, the numbers
+   * and the test. Left out, those three answer `404`, as a core built before
+   * the feature does, so every older spec keeps talking to the same instance
+   * and the console draws no reminder section.
+   */
+  activityMail?: ActivityMailAdminStub;
+}
+
+/** The reminder emails a routed core holds, and what the page asked of it. */
+export interface ActivityMailAdminStub {
+  /** What `GET /settings` answers under `activityMail`. A `PATCH` moves it, as the core does. */
+  settings: { firstScan: { enabled: boolean; days: number }; quiet: { enabled: boolean; days: number } };
+  /** What `GET /activity-mail/stats` answers. */
+  stats: {
+    optedIn: number;
+    firstScan: { sent: number; cameBack: number };
+    quiet: { sent: number; cameBack: number };
+  };
+  /** The status `POST /activity-mail/test` answers: `202` (the default) or `429`. */
+  testAnswer?: 202 | 429;
+  /** Holds every test answer until it settles, so a spec reads the page while the test is in flight. */
+  testGate?: Promise<void>;
+  /** Every `PATCH /settings` body, in order. */
+  patches: unknown[];
+  /** The `kind` of every test asked for, in order. */
+  tests: string[];
 }
 
 /** A fresh stub: nobody signed in yet, nothing unanswered, no gates. */
@@ -516,6 +543,8 @@ async function answerAdmin(route: Route, stub: AdminConsoleStub): Promise<void> 
   if (request.method() === 'GET' && path === '/feedback') {
     return route.fulfill({ json: { reports: firstPageOnly({ items: REPORTS, offset }), total: REPORTS.length } });
   }
+  const answeredActivityMail = await answerActivityMail({ route, request, path, stub });
+  if (answeredActivityMail) return;
   const person = PERSON_PATH.exec(path);
   const found = person === null ? undefined : people.find((candidate) => candidate.id === Number(person[1]));
   if (request.method() === 'GET' && found !== undefined && person?.[2] === undefined) {
@@ -547,6 +576,69 @@ async function answerAdmin(route: Route, stub: AdminConsoleStub): Promise<void> 
 
   stub.unanswered.push(`${request.method()} ${ADMIN_API_PREFIX}${path}`);
   return route.fulfill({ status: 404, json: { error: 'not routed by admin-console-stub.ts' } });
+}
+
+/** A `PATCH /settings` body, read loosely: only the reminder block is this stub's business. */
+const ACTIVITY_MAIL_PATCH_BODY = z.looseObject({
+  activityMail: z
+    .object({
+      firstScan: z.object({ enabled: z.boolean(), days: z.number().int() }),
+      quiet: z.object({ enabled: z.boolean(), days: z.number().int() }),
+    })
+    .optional(),
+});
+
+/** The body of `POST /activity-mail/test`. */
+const ACTIVITY_MAIL_TEST_BODY = z.object({ kind: z.enum(['first-scan', 'quiet']) });
+
+/**
+ * The four reminder routes. A core without the feature answers the reads `404`
+ * (nothing is recorded as unanswered: that IS an older core's answer), and the
+ * writes fall through to the unanswered list.
+ *
+ * @returns whether the request was answered here.
+ */
+async function answerActivityMail(input: {
+  route: Route;
+  request: ReturnType<Route['request']>;
+  path: string;
+  stub: AdminConsoleStub;
+}): Promise<boolean> {
+  const { route, request, path, stub } = input;
+  const mail = stub.activityMail;
+  const isRead = request.method() === 'GET' && (path === '/settings' || path === '/activity-mail/stats');
+  if (isRead && mail === undefined) {
+    await route.fulfill({ status: 404, json: { error: 'not found' } });
+    return true;
+  }
+  if (mail === undefined) return false;
+  if (request.method() === 'GET' && path === '/settings') {
+    await route.fulfill({ json: { settings: { nutrientReferenceBasis: 'dge', activityMail: mail.settings } } });
+    return true;
+  }
+  if (request.method() === 'GET' && path === '/activity-mail/stats') {
+    await route.fulfill({ json: mail.stats });
+    return true;
+  }
+  if (request.method() === 'PATCH' && path === '/settings') {
+    const body = request.postDataJSON();
+    mail.patches.push(body);
+    const parsed = ACTIVITY_MAIL_PATCH_BODY.parse(body);
+    if (parsed.activityMail !== undefined) mail.settings = parsed.activityMail;
+    await route.fulfill({ json: { settings: { nutrientReferenceBasis: 'dge', activityMail: mail.settings } } });
+    return true;
+  }
+  if (request.method() === 'POST' && path === '/activity-mail/test') {
+    mail.tests.push(ACTIVITY_MAIL_TEST_BODY.parse(request.postDataJSON()).kind);
+    await mail.testGate;
+    const status = mail.testAnswer ?? 202;
+    // An EMPTY body on the `202`, the way the core may answer: the client must read it as accepted.
+    await (status === 202 ?
+      route.fulfill({ status, body: '' })
+    : route.fulfill({ status, json: { error: 'rate limited' } }));
+    return true;
+  }
+  return false;
 }
 
 /** An auth answer that carries an account. LOOSE, so every other field reaches the app untouched. */

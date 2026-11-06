@@ -20,7 +20,12 @@
  */
 import { z } from 'zod';
 
-import type { NutrientReferenceBasis } from './admin-wire';
+import {
+  ACTIVITY_MAIL_DAY_BOUNDS,
+  type ActivityMailKind,
+  type AdminActivityMailSettings,
+  type NutrientReferenceBasis,
+} from './admin-wire';
 import type { Translate } from '../sync/setup-flow';
 
 /**
@@ -48,3 +53,51 @@ export const BASIS_LABEL_KEY = {
   efsa: 'admin.settings.basis.efsa',
   us: 'admin.settings.basis.us',
 } satisfies Record<NutrientReferenceBasis, string>;
+
+// ─── The reminder emails (2026-11) ──────────────────────────────────────────
+//
+// Not a Conform form: each kind is a switch and a day count, the page keeps
+// the two in plain state, and this is the one pure rule they share. The bounds
+// are the wire's (`ACTIVITY_MAIL_DAY_BOUNDS`), so the page refuses a number the
+// core would refuse before a request is made.
+
+/** What the page holds for one kind while it is edited: the switch, and the day count as typed. */
+export interface ActivityMailKindDraft {
+  enabled: boolean;
+  days: string;
+}
+
+/**
+ * Reads a typed day count: a whole number inside the kind's bounds, or `null`.
+ *
+ * STRICT ON PURPOSE. `Number('7.5')`, `Number('1e1')` and `Number('')` are all
+ * numbers or zero to JavaScript, and none of them is a number of days anybody
+ * typed on purpose; only plain digits are read.
+ *
+ * @param input.kind - which reminder the count belongs to.
+ * @param input.raw - the text of the days box.
+ */
+export function parseActivityMailDays({ kind, raw }: { kind: ActivityMailKind; raw: string }): number | null {
+  const text = raw.trim();
+  if (!/^\d{1,3}$/.test(text)) return null;
+  const days = Number(text);
+  const { min, max } = ACTIVITY_MAIL_DAY_BOUNDS[kind];
+  return days >= min && days <= max ? days : null;
+}
+
+/**
+ * The draft as a wire value, or `null` when a day count is out of range.
+ * Both kinds are checked, so one bad box never lets the other one be saved
+ * alone.
+ */
+export function readActivityMailDrafts(
+  drafts: Record<ActivityMailKind, ActivityMailKindDraft>,
+): AdminActivityMailSettings | null {
+  const firstScan = parseActivityMailDays({ kind: 'firstScan', raw: drafts.firstScan.days });
+  const quiet = parseActivityMailDays({ kind: 'quiet', raw: drafts.quiet.days });
+  if (firstScan === null || quiet === null) return null;
+  return {
+    firstScan: { enabled: drafts.firstScan.enabled, days: firstScan },
+    quiet: { enabled: drafts.quiet.enabled, days: quiet },
+  };
+}

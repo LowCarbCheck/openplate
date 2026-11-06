@@ -124,7 +124,7 @@ export const PATH_RULES: ReadonlyArray<PathRule> = [
   { pattern: /^app\/components\/health-consent/, area: 'health-consent' },
   {
     pattern:
-      /^app\/components\/(account-door|accounts-need-https|needs-https-notice|create-account-panel|credential-submit-button|password-fields|sign-in-panel|invite-only-dialog|paste-invite-link)\b/,
+      /^app\/components\/(account-door|accounts-need-https|needs-https-notice|create-account-panel|activity-mail-field|credential-submit-button|password-fields|sign-in-panel|invite-only-dialog|paste-invite-link)\b/,
     area: 'accounts-and-sign-in',
   },
   { pattern: /^app\/components\/(offline-banner|update-ribbon|whats-new-card)\b/, area: 'offline-and-updates' },
@@ -154,7 +154,7 @@ export const PATH_RULES: ReadonlyArray<PathRule> = [
   { pattern: /^app\/lib\/content\//, area: 'content-and-legal' },
   { pattern: /^app\/lib\/(moved\/|update-|bundle-freshness|whats-new|service-worker)/, area: 'offline-and-updates' },
   { pattern: /^app\/lib\/(trend-|adherence-|insights-|range-summary|rolling-average|slot-stats)/, area: 'insights' },
-  { pattern: /^app\/lib\/(scan-|intake-|photo-|plate-photo|pantry-|recipe-)/, area: 'scan' },
+  { pattern: /^app\/lib\/(scan-|intake-|photo-|plate-photo|pantry-|recipe-|camera-capture-)/, area: 'scan' },
   { pattern: /^app\/lib\/(onboarding|eating-style)/, area: 'onboarding' },
   { pattern: /^app\/lib\/(join-|sign-in-flow|turnstile)/, area: 'accounts-and-sign-in' },
   {

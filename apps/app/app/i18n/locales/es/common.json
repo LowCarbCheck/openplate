@@ -3692,6 +3692,34 @@
       "week": "Esta semana",
       "month": "Este mes",
       "earlier": "Anteriormente"
+    },
+    "activityMail": {
+      "title": "Correos de recordatorio",
+      "stats": {
+        "optedIn": "{{optedIn}} personas pidieron recordatorios.",
+        "kind": "{{sent}} enviados, {{cameBack}} volvieron"
+      },
+      "firstScan": {
+        "title": "Recordatorio de la primera foto",
+        "hint": "Se envía una vez, tras un número fijo de días desde el registro, a quienes no hayan probado una foto del plato."
+      },
+      "quiet": {
+        "title": "Recordatorio por ausencia",
+        "hint": "Se envía una vez cada vez que alguien pasa un número fijo de días sin abrir la aplicación."
+      },
+      "daysLabel": "Días",
+      "daysRange": "Introduce un número entero del {{min}} al {{max}}.",
+      "test": {
+        "button": "Enviarme una prueba",
+        "sending": "Enviando la prueba.",
+        "sent": "Prueba enviada. Revisa tu bandeja de entrada.",
+        "throttled": "Demasiadas pruebas ahora mismo. Inténtalo de nuevo en unos minutos.",
+        "failed": "La prueba no se envió."
+      },
+      "save": "Guardar",
+      "saving": "Guardando",
+      "saved": "Guardado.",
+      "failed": "El cambio no se aplicó."
     }
   },
   "aiIntake": {
@@ -4180,5 +4208,20 @@
     "homeScreen": "Si añadiste openplate a tu pantalla de inicio, elimina este icono y añade {{host}} en su lugar.",
     "iphone": "iPhone (Safari): toca Compartir y luego Añadir a la pantalla de inicio.",
     "android": "Android (Chrome): abre el menú y luego toca Instalar aplicación o Añadir a pantalla de inicio."
+  },
+  "activityMail": {
+    "signup": {
+      "label": "Enviarme un recordatorio por correo si paso un tiempo sin usar openplate",
+      "hint": "Dos tipos como máximo: uno si no has probado una foto del plato y otro si has estado ausente. Puedes desactivarlos en cualquier momento."
+    },
+    "settings": {
+      "title": "Correos de recordatorio",
+      "description": "Un correo breve si no has probado una foto del plato o si llevas un tiempo sin entrar.",
+      "toast": {
+        "on": "Los correos de recordatorio están activados.",
+        "off": "Los correos de recordatorio están desactivados.",
+        "failed": "El cambio no se guardó. Inténtalo de nuevo."
+      }
+    }
   }
 }

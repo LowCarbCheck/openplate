@@ -47,7 +47,12 @@ import {
   type AdminAiBudget,
   type AdminFeedbackReport,
   type AdminFeedbackReportDetail,
-  type AdminInstanceSettings,
+  type AdminInstanceSettingsRead,
+  type AdminActivityMailSettings,
+  type AdminActivityMailStats,
+  type ActivityMailKind,
+  ACTIVITY_MAIL_TEST_KIND,
+  activityMailStatsSchema,
   type AdminStats,
   type Delivery,
   type InviteCreated,
@@ -430,14 +435,75 @@ export class AdminClient {
    * not go through, which is what the caller's failure branch says.
    */
   async patchSettings(input: {
-    nutrientReferenceBasis: NutrientReferenceBasis;
-  }): Promise<AdminOutcome<AdminInstanceSettings>> {
+    nutrientReferenceBasis?: NutrientReferenceBasis;
+    activityMail?: AdminActivityMailSettings;
+  }): Promise<AdminOutcome<AdminInstanceSettingsRead>> {
+    // ONLY WHAT WAS GIVEN. A save of the reminders must not re-send the basis,
+    // and a save of the basis must not re-send the reminders: the core applies
+    // what it is sent, and a key the page did not edit is not the page's to write.
+    const body: Record<string, JsonValue> = {};
+    if (input.nutrientReferenceBasis !== undefined) body.nutrientReferenceBasis = input.nutrientReferenceBasis;
+    if (input.activityMail !== undefined) body.activityMail = input.activityMail;
     return this.send({
       path: `${ADMIN_API_PREFIX}/settings`,
       method: 'PATCH',
-      body: { nutrientReferenceBasis: input.nutrientReferenceBasis },
-      parse: (body) => instanceSettingsResponseSchema.parse(body).settings,
+      body,
+      parse: (reply) => instanceSettingsResponseSchema.parse(reply).settings,
     });
+  }
+
+  /**
+   * Reads the instance's settings, the reminder switches among them.
+   *
+   * A `404` IS AN ANSWER, `null`: a core older than the reminders has no such
+   * read, and the page then draws no reminder section instead of a failure.
+   */
+  async readSettings(): Promise<AdminOutcome<AdminInstanceSettingsRead | null>> {
+    try {
+      return await this.send({
+        path: `${ADMIN_API_PREFIX}/settings`,
+        method: 'GET',
+        parse: (body): AdminInstanceSettingsRead | null => instanceSettingsResponseSchema.parse(body).settings,
+      });
+    } catch (error) {
+      if (isSyncRequestError(error) && error.kind === 'not-found') return { status: 'ok', value: null };
+      throw error;
+    }
+  }
+
+  /** How many people asked for reminders, and what each kind did. A `404` is `null`, like {@link readSettings}. */
+  async activityMailStats(): Promise<AdminOutcome<AdminActivityMailStats | null>> {
+    try {
+      return await this.send({
+        path: `${ADMIN_API_PREFIX}/activity-mail/stats`,
+        method: 'GET',
+        parse: (body): AdminActivityMailStats | null => activityMailStatsSchema.parse(body),
+      });
+    } catch (error) {
+      if (isSyncRequestError(error) && error.kind === 'not-found') return { status: 'ok', value: null };
+      throw error;
+    }
+  }
+
+  /**
+   * Sends one reminder of this kind to the administrator's own address.
+   *
+   * `throttled` IS A VALUE, not a throw: the core rate limits the test (`429`)
+   * and the page answers it with a sentence beside the button. Everything else
+   * that is not a `403` throws, like every other write.
+   */
+  async sendActivityMailTest(input: { kind: ActivityMailKind }): Promise<AdminOutcome<'sent' | 'throttled'>> {
+    try {
+      return await this.send({
+        path: `${ADMIN_API_PREFIX}/activity-mail/test`,
+        method: 'POST',
+        body: { kind: ACTIVITY_MAIL_TEST_KIND[input.kind] },
+        parse: () => 'sent',
+      });
+    } catch (error) {
+      if (isSyncRequestError(error) && error.kind === 'throttled') return { status: 'ok', value: 'throttled' };
+      throw error;
+    }
   }
 
   /** The four counts across the top of the page, unwrapped from the `{"stats": …}` envelope. */

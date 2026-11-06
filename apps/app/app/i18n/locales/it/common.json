@@ -3692,6 +3692,34 @@
       "week": "Questa settimana",
       "month": "Questo mese",
       "earlier": "In precedenza"
+    },
+    "activityMail": {
+      "title": "Email di promemoria",
+      "stats": {
+        "optedIn": "{{optedIn}} persone hanno richiesto i promemoria.",
+        "kind": "{{sent}} inviate, {{cameBack}} tornate"
+      },
+      "firstScan": {
+        "title": "Promemoria per la prima foto",
+        "hint": "Inviata una sola volta, un numero stabilito di giorni dopo l'iscrizione, a chi non ha ancora provato una foto del piatto."
+      },
+      "quiet": {
+        "title": "Promemoria di inattività",
+        "hint": "Inviata una volta ogni volta che qualcuno non apre l'app per un numero stabilito di giorni."
+      },
+      "daysLabel": "Giorni",
+      "daysRange": "Inserisci un numero intero da {{min}} a {{max}}.",
+      "test": {
+        "button": "Inviami un test",
+        "sending": "Invio del test in corso.",
+        "sent": "Test inviato. Controlla la casella di posta.",
+        "throttled": "Troppi test inviati di recente. Riprova tra qualche minuto.",
+        "failed": "Il test non è partito."
+      },
+      "save": "Salva",
+      "saving": "Salvataggio in corso",
+      "saved": "Salvato.",
+      "failed": "La modifica non è andata a buon fine."
     }
   },
   "aiIntake": {
@@ -4180,5 +4208,20 @@
     "homeScreen": "Se hai aggiunto openplate alla schermata iniziale, rimuovi questa icona e aggiungi invece {{host}}.",
     "iphone": "iPhone (Safari): tocca Condividi, poi Aggiungi alla schermata Home.",
     "android": "Android (Chrome): apri il menu, poi tocca Installa app o Aggiungi a schermata Home."
+  },
+  "activityMail": {
+    "signup": {
+      "label": "Inviami un promemoria via email se non uso openplate per un po'",
+      "hint": "Al massimo due tipi: uno se non hai provato una foto del piatto, uno se non accedi da un po'. Puoi disattivarli in qualsiasi momento."
+    },
+    "settings": {
+      "title": "Email di promemoria",
+      "description": "Una breve email se non hai ancora provato una foto del piatto o se non accedi da un po'.",
+      "toast": {
+        "on": "Le email di promemoria sono attive.",
+        "off": "Le email di promemoria sono disattivate.",
+        "failed": "La modifica non è stata salvata. Riprova."
+      }
+    }
   }
 }

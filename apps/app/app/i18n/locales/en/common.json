@@ -3692,6 +3692,34 @@
       "week": "This week",
       "month": "This month",
       "earlier": "Earlier"
+    },
+    "activityMail": {
+      "title": "Reminder emails",
+      "stats": {
+        "optedIn": "{{optedIn}} people asked for reminders.",
+        "kind": "{{sent}} sent, {{cameBack}} came back"
+      },
+      "firstScan": {
+        "title": "First photo reminder",
+        "hint": "Sent once, a set number of days after sign-up, to people who have not tried a plate photo."
+      },
+      "quiet": {
+        "title": "Away reminder",
+        "hint": "Sent once each time someone has not opened the app for a set number of days."
+      },
+      "daysLabel": "Days",
+      "daysRange": "Enter a whole number from {{min}} to {{max}}.",
+      "test": {
+        "button": "Send a test to me",
+        "sending": "Sending the test.",
+        "sent": "Test sent. Check your inbox.",
+        "throttled": "Too many tests just now. Try again in a few minutes.",
+        "failed": "The test did not go out."
+      },
+      "save": "Save",
+      "saving": "Saving",
+      "saved": "Saved.",
+      "failed": "That change did not go through."
     }
   },
   "aiIntake": {
@@ -4180,5 +4208,20 @@
     "homeScreen": "If you added openplate to your home screen, remove this icon and add {{host}} instead.",
     "iphone": "iPhone (Safari): tap Share, then Add to Home Screen.",
     "android": "Android (Chrome): open the menu, then tap Install app or Add to Home screen."
+  },
+  "activityMail": {
+    "signup": {
+      "label": "Email me a reminder if I don't use openplate for a while",
+      "hint": "Two kinds at most: one if you haven't tried a plate photo, one if you've been away. You can turn them off anytime."
+    },
+    "settings": {
+      "title": "Reminder emails",
+      "description": "A short email if you haven't tried a plate photo, or if you've been away for a while.",
+      "toast": {
+        "on": "Reminder emails are on.",
+        "off": "Reminder emails are off.",
+        "failed": "That change did not save. Try again."
+      }
+    }
   }
 }

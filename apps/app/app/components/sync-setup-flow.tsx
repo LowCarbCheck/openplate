@@ -12,9 +12,15 @@ import {
   type SyncSetupOutcome,
   type SyncSetupServerError,
 } from '#app/lib/sync/setup-flow';
-import { makeSyncSignupSchema, type SyncInviteRule, type SyncSignupValues } from '#app/lib/sync/signup-schema';
+import {
+  makeSyncSignupSchema,
+  TICKED_CHECKBOX_VALUE,
+  type SyncInviteRule,
+  type SyncSignupValues,
+} from '#app/lib/sync/signup-schema';
 import { readSyncErrorField } from '#app/lib/sync/form-field-error';
 import { PasswordFields } from '#app/components/password-fields';
+import { ActivityMailField } from '#app/components/activity-mail-field';
 import { HealthConsentField } from '#app/components/health-consent-field';
 import type { HealthConsentRequestWire } from '#app/lib/sync/engine/client/auth-wire';
 import type { InstanceHealthConsent } from '#app/lib/sync/engine/protocol';
@@ -86,6 +92,7 @@ export function SyncSetupFlow({
   resume,
   invite,
   healthConsent,
+  isActivityMailOffered = false,
 }: {
   provision: (input: SyncProvisionInput) => Promise<SyncSetupOutcome>;
   /**
@@ -121,6 +128,12 @@ export function SyncSetupFlow({
    * handshake after a refusal) is drawn unticked again.
    */
   healthConsent?: InstanceHealthConsent;
+  /**
+   * The instance sends reminder emails (`instance.activityMail`), so the form
+   * draws the box, unticked. Omitted or `false` draws nothing and hands
+   * `provision` `null`, which leaves the signup body as it always was.
+   */
+  isActivityMailOffered?: boolean;
 }) {
   const { t } = useTranslation();
   const [state, dispatch] = useReducer(syncSetupReducer, { resume: resume !== undefined }, initialSyncSetupState);
@@ -191,7 +204,13 @@ export function SyncSetupFlow({
     hasResumedRef.current = true;
     // No consent here: the repair writes key records for an account that
     // already exists, and only a signup carries a consent.
-    void runProvision({ passphrase: resume.passphrase, invite: '', displayName: '', healthConsent: null });
+    void runProvision({
+      passphrase: resume.passphrase,
+      invite: '',
+      displayName: '',
+      healthConsent: null,
+      isActivityMailOptedIn: null,
+    });
   }, [resume, runProvision]);
 
   /**
@@ -228,6 +247,8 @@ export function SyncSetupFlow({
       // wording the person saw when they ticked it. The schema has already
       // refused an unticked box wherever one is drawn.
       healthConsent: healthConsent === undefined ? null : { version: healthConsent.version },
+      // `true` only for a ticked box, `null` where none was drawn.
+      isActivityMailOptedIn: isActivityMailOffered ? submission.value.activityMail === TICKED_CHECKBOX_VALUE : null,
     });
   }
 
@@ -237,6 +258,7 @@ export function SyncSetupFlow({
         invite={invite}
         isInviteRevealed={isInviteRejected(state.serverError)}
         healthConsent={healthConsent}
+        isActivityMailOffered={isActivityMailOffered}
         lastResult={detailsResult}
         onSubmit={handleDetailsSubmit}
       />
@@ -261,6 +283,8 @@ export interface SyncProvisionInput {
   invite: string;
   displayName: string;
   healthConsent: HealthConsentRequestWire | null;
+  /** Whether the reminder-email box was ticked, or `null` where the instance offers none and no box was drawn. */
+  isActivityMailOptedIn: boolean | null;
 }
 
 /** How the details form should treat the invite, when there is one at all. */
@@ -302,6 +326,7 @@ function DetailsStep({
   invite,
   isInviteRevealed,
   healthConsent,
+  isActivityMailOffered,
   lastResult,
   onSubmit,
 }: {
@@ -310,6 +335,8 @@ function DetailsStep({
   isInviteRevealed: boolean;
   /** The consent the instance asks for, or `undefined` for none, and then no box is drawn. */
   healthConsent: InstanceHealthConsent | undefined;
+  /** Draw the reminder-email box. Never ticked for anybody. */
+  isActivityMailOffered: boolean;
   lastResult: ReturnType<SyncSignupSubmission['reply']> | undefined;
   onSubmit: (submission: SyncSignupSubmission) => void;
 }) {
@@ -330,7 +357,13 @@ function DetailsStep({
     // a reported error would sit there, `aria-invalid` and all, until the next
     // submit.
     shouldRevalidate: 'onInput',
-    defaultValue: { invite: invite?.initialValue ?? '', displayName: '', passphrase: '', confirmPassphrase: '' },
+    defaultValue: {
+      invite: invite?.initialValue ?? '',
+      displayName: '',
+      passphrase: '',
+      confirmPassphrase: '',
+      activityMail: '',
+    },
     onSubmit(event, { submission }) {
       // Nothing is posted anywhere: this form's "action" is a browser-side
       // ceremony, and the default navigation would abandon it.
@@ -345,6 +378,9 @@ function DetailsStep({
   const isInviteHidden = invite?.isFromLink === true && !isInviteRevealed;
   // Conform's `key` goes on the element it remounts, never into a spread.
   const { key: consentKey, ...consentInputProps } = getInputProps(fields.healthConsent, { type: 'checkbox' });
+  const { key: activityMailKey, ...activityMailInputProps } = getInputProps(fields.activityMail, {
+    type: 'checkbox',
+  });
 
   return (
     <form {...getFormProps(form)} className="space-y-4">
@@ -396,6 +432,11 @@ function DetailsStep({
           isMessageShown={(fields.healthConsent.errors?.length ?? 0) > 0}
         />
       )}
+
+      {/* THE REMINDER BOX, only where the instance sends reminders. Unticked
+          by default, and after the consent box because the consent is the one
+          that blocks the button; this one never does. */}
+      {isActivityMailOffered && <ActivityMailField key={activityMailKey} inputProps={activityMailInputProps} />}
 
       {/* Only what belongs to no field lands here: a service refusal with a
           named field went back to that field on the way in. */}

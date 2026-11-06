@@ -67,6 +67,26 @@ export interface ManagedCoreStub {
   } | null;
   /** `AccountView.freeDailyAiLimit`: a standing free grant, which makes the standing `free`. Absent leaves the key out. */
   freeDailyAiLimit?: number;
+  /** `AccountView.freeAiLimitPeriod`: the window of `freeDailyAiLimit`. Absent leaves the key out, as a core older than the weekly limits does. */
+  freeAiLimitPeriod?: 'day' | 'week';
+  /**
+   * `instance.activityMail` on the handshake (2026-11): whether the core sends
+   * reminder emails. Absent leaves the key out, as a core older than the field
+   * does, which the app reads as `false`. Read per request.
+   */
+  activityMail?: boolean;
+  /**
+   * `AccountView.activityMail`: whether the account asked for reminders. Absent
+   * leaves the key out. The stub moves it, as the core does, when a signup or a
+   * `PATCH /v1/auth/account` carries `activityMail`.
+   */
+  accountActivityMail?: boolean;
+  /**
+   * Every body `POST /v1/auth/signup` and `PATCH /v1/auth/account` carried
+   * about the reminders, in order, so a spec reads what the app really sent.
+   * Left out, nothing is recorded.
+   */
+  activityMailWrites?: ActivityMailWrite[];
   /** The `GET /plans/offer` body, read per request, or absent for the one-plan fixture. */
   offerBody?: string;
   /** Counted per `GET /plans/offer`, so a spec can prove a placement did not ask. */
@@ -115,6 +135,47 @@ export interface ManagedCoreStub {
    * does. Read per request.
    */
   capabilities?: readonly string[] | null;
+}
+
+/** The reminder fields of one request body, exactly as they arrived. `undefined` is a key the body did not carry. */
+export interface ActivityMailWrite {
+  route: 'signup' | 'patch';
+  activityMail: boolean | undefined;
+  language: string | undefined;
+  /** Whether the body also carried a `displayName`, which the reminder PATCH never does. */
+  hasDisplayName: boolean;
+}
+
+/** The two reminder keys of a signup or account PATCH body, read loosely: anything else in it is not this stub's business. */
+const activityMailBodySchema = z.looseObject({
+  activityMail: z.boolean().optional(),
+  language: z.string().optional(),
+  displayName: z.unknown().optional(),
+});
+
+/**
+ * An account PATCH body, read with no opinion about its values, so the core's own refusals can be
+ * reproduced below. `activityMailBodySchema` would drop a non-boolean `activityMail` silently.
+ */
+const accountPatchBodySchema = z.looseObject({
+  activityMail: z.unknown().optional(),
+  language: z.unknown().optional(),
+});
+
+/**
+ * The core's refusals for the reminder keys of `PATCH /v1/auth/account` (`handleUpdateAccount` in
+ * `apps/core/src/accounts/auth-handlers.ts`), word for word, or `null` when the body is fine.
+ * A stub that accepted every body is how the app sent `language` beside `activityMail: false`,
+ * which the real core answers with a 400, and no spec saw it.
+ */
+function activityMailRefusal(body: { activityMail?: unknown; language?: unknown }): string | null {
+  if (body.activityMail !== undefined && !z.boolean().safeParse(body.activityMail).success) {
+    return 'activityMail must be true or false';
+  }
+  if (body.language !== undefined && body.activityMail !== true) {
+    return 'language is set together with activityMail: true';
+  }
+  return null;
 }
 
 /** A trial account that has scans left, on an instance with member invites. */
@@ -166,7 +227,10 @@ function accountPatch(stub: ManagedCoreStub) {
     stub.aiUsedToday === undefined ? withPeriod : { ...withPeriod, aiUsedToday: stub.aiUsedToday };
   const withGrant =
     stub.freeDailyAiLimit === undefined ? withUsed : { ...withUsed, freeDailyAiLimit: stub.freeDailyAiLimit };
-  return stub.aiQuota === undefined ? withGrant : { ...withGrant, aiQuota: stub.aiQuota };
+  const withFreePeriod =
+    stub.freeAiLimitPeriod === undefined ? withGrant : { ...withGrant, freeAiLimitPeriod: stub.freeAiLimitPeriod };
+  const withQuota = stub.aiQuota === undefined ? withFreePeriod : { ...withFreePeriod, aiQuota: stub.aiQuota };
+  return stub.accountActivityMail === undefined ? withQuota : { ...withQuota, activityMail: stub.accountActivityMail };
 }
 
 /** The handshake's instance block, with `healthConsent` only when the stub names one. */
@@ -182,6 +246,7 @@ function instanceBlock(stub: ManagedCoreStub) {
     ['trial', stub.trialDays === undefined ? { scans: 10 } : { scans: 10, days: stub.trialDays }],
   ]);
   if (stub.healthConsent !== undefined) instance.set('healthConsent', stub.healthConsent);
+  if (stub.activityMail !== undefined) instance.set('activityMail', stub.activityMail);
   return Object.fromEntries(instance);
 }
 
@@ -214,6 +279,7 @@ export async function routeManagedCore(page: Page, stub: ManagedCoreStub): Promi
   await page.route(
     (url) => url.href.startsWith(`${E2E_CORE_URL}/v1/auth/`),
     async (route) => {
+      recordSignupActivityMail(route.request(), stub);
       // A spec that loads a new document mid-request drops this one: see `route-fetch.ts`.
       const fetched = await fetchRouteText(route);
       if (fetched === null) return;
@@ -228,6 +294,38 @@ export async function routeManagedCore(page: Page, stub: ManagedCoreStub): Promi
       );
     },
   );
+  // REGISTERED AFTER the route above, so it answers first (2026-11). The fake
+  // service has no reminder choice; this is the core's rule: `PATCH
+  // /v1/auth/account` with `activityMail` and `language` records the choice and
+  // answers the account with it.
+  await page.route(`${E2E_CORE_URL}/v1/auth/account`, async (route) => {
+    const request = route.request();
+    const raw = request.method() === 'PATCH' ? accountPatchBodySchema.safeParse(request.postDataJSON()) : null;
+    // A read, the preflight, or a body that is not an object go on to the fake service.
+    if (raw === null || !raw.success) return route.fallback();
+    const cors = { 'Access-Control-Allow-Origin': request.headers().origin ?? '*' };
+    // The core's own 400s, so a body it would refuse fails here as it fails in production.
+    const refusal = activityMailRefusal(raw.data);
+    if (refusal !== null) return route.fulfill({ status: 400, headers: cors, json: { error: refusal } });
+    const body = activityMailBodySchema.safeParse(raw.data);
+    // The display name's own PATCH goes on to the fake service.
+    if (!body.success || body.data.activityMail === undefined) return route.fallback();
+    stub.activityMailWrites?.push({
+      route: 'patch',
+      activityMail: body.data.activityMail,
+      language: body.data.language,
+      hasDisplayName: body.data.displayName !== undefined,
+    });
+    stub.accountActivityMail = body.data.activityMail;
+    const authorization = request.headers().authorization ?? '';
+    const read = await fetch(`${E2E_CORE_URL}/v1/auth/account`, { headers: { authorization } });
+    const envelope = accountEnvelopeSchema.parse(await read.json());
+    return route.fulfill({
+      status: read.status,
+      headers: cors,
+      json: { ...envelope, account: { ...envelope.account, ...accountPatch(stub) } },
+    });
+  });
   // REGISTERED AFTER the route above, so it answers first. The refresh is the
   // call a resumed session spends first, so refusing it is how a spec ends a
   // session the SERVER ended, in the two ways the core can: a revoked token
@@ -269,6 +367,23 @@ export async function routeManagedCore(page: Page, stub: ManagedCoreStub): Promi
       json: { ...envelope, account: { ...envelope.account, ...accountPatch(stub) } },
     });
   });
+}
+
+/**
+ * Records the reminder keys of a signup body, and moves the account's choice the way the core does.
+ * Only `POST /v1/auth/signup` is read; every other request passes untouched.
+ */
+function recordSignupActivityMail(request: Request, stub: ManagedCoreStub): void {
+  if (request.method() !== 'POST' || new URL(request.url()).pathname !== '/v1/auth/signup') return;
+  const body = activityMailBodySchema.safeParse(request.postDataJSON());
+  if (!body.success) return;
+  stub.activityMailWrites?.push({
+    route: 'signup',
+    activityMail: body.data.activityMail,
+    language: body.data.language,
+    hasDisplayName: false,
+  });
+  if (body.data.activityMail !== undefined) stub.accountActivityMail = body.data.activityMail;
 }
 
 /** What the sync refusal below saw: every write it let through and every one it refused. */

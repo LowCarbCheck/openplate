@@ -149,7 +149,13 @@ type Phase =
    * when it asks for none or the handshake could not be read. Read before the
    * form is drawn, so the box is there from the form's first paint.
    */
-  | { status: 'ready'; inviteToken: string; invite: SyncInviteDetails; healthConsent: InstanceHealthConsent | null };
+  | {
+      status: 'ready';
+      inviteToken: string;
+      invite: SyncInviteDetails;
+      healthConsent: InstanceHealthConsent | null;
+      isActivityMailOffered: boolean;
+    };
 
 export default function Join() {
   const { t, i18n } = useTranslation();
@@ -265,7 +271,15 @@ export default function Join() {
         }
         const instance = await instanceRead;
         if (!isMounted) return;
-        setPhase({ status: 'ready', inviteToken, invite, healthConsent: instance?.healthConsent ?? null });
+        setPhase({
+          status: 'ready',
+          inviteToken,
+          invite,
+          healthConsent: instance?.healthConsent ?? null,
+          // Read with the consent, before the form is drawn, so the box is
+          // there from the first paint. Absent reads `false`: no box.
+          isActivityMailOffered: instance?.activityMail === true,
+        });
       } catch {
         if (!isMounted) return;
         // "We could not reach the server" is NOT "your invitation is not
@@ -341,6 +355,7 @@ export default function Join() {
               serverUrl={configuredSyncUrl}
               initialInvite={shown.inviteToken}
               healthConsent={shown.healthConsent}
+              isActivityMailOffered={shown.isActivityMailOffered}
               onAlreadyRegistered={() => setPhase({ status: 'already-registered', email: shown.invite.email })}
               onDeviceHeld={(owner) => {
                 // The guard's own refusal, for a lock another tab wrote after

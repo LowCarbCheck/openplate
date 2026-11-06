@@ -31,6 +31,7 @@
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { toLanguageCode } from '#app/i18n/language-prefs';
 import { SyncSetupFlow, type SyncProvisionInput } from '#app/components/sync-setup-flow';
 import { readFreshServerInstance } from '#app/hooks/use-server-instance';
 import type { InstanceHealthConsent } from '#app/lib/sync/engine/protocol';
@@ -47,6 +48,7 @@ export function CreateAccountPanel({
   serverUrl,
   initialInvite,
   healthConsent: initialHealthConsent,
+  isActivityMailOffered = false,
   onCancel,
   onAlreadyRegistered,
   onDeviceHeld,
@@ -65,6 +67,13 @@ export function CreateAccountPanel({
    * handshake again and draws the box for what it says now.
    */
   healthConsent: InstanceHealthConsent | null;
+  /**
+   * The instance sends reminder emails (`instance.activityMail`, read by the
+   * caller off the same handshake as `healthConsent`, BEFORE the form is
+   * drawn, so the box is there from the first paint and nothing moves).
+   * Omitted draws no box and sends nothing about it.
+   */
+  isActivityMailOffered?: boolean;
   /** Omitted where there is nowhere to cancel BACK to, e.g. `/join`, which is a page rather than a mode. */
   onCancel?: () => void;
   /**
@@ -85,7 +94,7 @@ export function CreateAccountPanel({
   /** Fired once, when the account card has been shown and acknowledged. */
   onCeremonyComplete?: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [isCeremonyActive, setIsCeremonyActive] = useState(false);
   const [healthConsent, setHealthConsent] = useState<InstanceHealthConsent | null>(initialHealthConsent);
 
@@ -127,9 +136,16 @@ export function CreateAccountPanel({
       <SyncSetupFlow
         invite={{ initialValue: initialInvite, isFromLink: initialInvite !== '', isRequired: true }}
         healthConsent={healthConsent ?? undefined}
+        isActivityMailOffered={isActivityMailOffered}
         onCeremonyActiveChange={handleCeremonyActiveChange}
         onCeremonyComplete={onCeremonyComplete}
-        provision={async ({ passphrase, invite, displayName, healthConsent: agreed }: SyncProvisionInput) => {
+        provision={async ({
+          passphrase,
+          invite,
+          displayName,
+          healthConsent: agreed,
+          isActivityMailOptedIn,
+        }: SyncProvisionInput) => {
           // The person has acted on the prefilled code, so the pending slot
           // has done its job and is emptied HERE rather than on mount: until
           // this moment a reload still has to be able to bring the token back,
@@ -142,6 +158,12 @@ export function CreateAccountPanel({
               passphrase,
               displayName: displayName === '' ? null : displayName,
               healthConsent: agreed,
+              // The UI language, so the mail is written in the words the
+              // person has been reading. `null` where no box was drawn.
+              activityMail:
+                isActivityMailOptedIn === null ? null : (
+                  { isOptedIn: isActivityMailOptedIn, language: toLanguageCode(i18n.language) }
+                ),
             });
             trackAccountCreated();
             return account;

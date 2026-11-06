@@ -428,5 +428,61 @@ export const NUTRIENT_REFERENCE_BASES: readonly NutrientReferenceBasis[] = ['dge
 export const instanceSettingsSchema = z.object({ nutrientReferenceBasis: nutrientReferenceBasisSchema });
 export type AdminInstanceSettings = z.infer<typeof instanceSettingsSchema>;
 
+// ─── The reminder emails (2026-11) ──────────────────────────────────────────
+//
+// `activityMail` rides on the SAME settings route as the basis, transcribed
+// from `apps/core/PROTOCOL.md`. Two kinds of reminder, each with a switch and a
+// day count: `firstScan` (days after sign-up, for somebody who has not tried a
+// plate photo) and `quiet` (days since the app was last opened).
+
+/** The two reminder kinds, in the order the page draws them. */
+export const ACTIVITY_MAIL_KINDS = ['firstScan', 'quiet'] as const;
+export type ActivityMailKind = (typeof ACTIVITY_MAIL_KINDS)[number];
+
+/**
+ * The inclusive day bounds the core enforces per kind. Transcribed, and pinned
+ * by `tests/unit/admin-wire.test.ts`; the form refuses a number outside them
+ * before a request is made, and the service refuses it again.
+ */
+export const ACTIVITY_MAIL_DAY_BOUNDS = {
+  firstScan: { min: 3, max: 30 },
+  quiet: { min: 7, max: 60 },
+} as const satisfies Record<ActivityMailKind, { min: number; max: number }>;
+
+/** One kind's switch and day count, as the core holds them. */
+export const activityMailKindSettingsSchema = z.object({ enabled: z.boolean(), days: z.number().int() });
+export type AdminActivityMailKindSettings = z.infer<typeof activityMailKindSettingsSchema>;
+
+export const activityMailSettingsSchema = z.object({
+  firstScan: activityMailKindSettingsSchema,
+  quiet: activityMailKindSettingsSchema,
+});
+export type AdminActivityMailSettings = z.infer<typeof activityMailSettingsSchema>;
+
+/**
+ * What `GET` and `PATCH /v1/admin/settings` answer: every key OPTIONAL, because
+ * a core older than the reminders sends no `activityMail`, and a `PATCH` that
+ * sent only `activityMail` may read back only what the core chooses to echo.
+ */
+export const instanceSettingsReadSchema = z.object({
+  nutrientReferenceBasis: nutrientReferenceBasisSchema.optional(),
+  activityMail: activityMailSettingsSchema.optional(),
+});
+export type AdminInstanceSettingsRead = z.infer<typeof instanceSettingsReadSchema>;
+
+/** `GET /v1/admin/activity-mail/stats`: how many asked, and per kind how many went out and how many came back. */
+export const activityMailStatsSchema = z.object({
+  optedIn: z.number().int(),
+  firstScan: z.object({ sent: z.number().int(), cameBack: z.number().int() }),
+  quiet: z.object({ sent: z.number().int(), cameBack: z.number().int() }),
+});
+export type AdminActivityMailStats = z.infer<typeof activityMailStatsSchema>;
+
+/** The wire's name of each kind in `POST /v1/admin/activity-mail/test`. */
+export const ACTIVITY_MAIL_TEST_KIND = { firstScan: 'first-scan', quiet: 'quiet' } as const satisfies Record<
+  ActivityMailKind,
+  string
+>;
+
 /** The envelope `PATCH /v1/admin/settings` answers in. */
-export const instanceSettingsResponseSchema = z.object({ settings: instanceSettingsSchema });
+export const instanceSettingsResponseSchema = z.object({ settings: instanceSettingsReadSchema });

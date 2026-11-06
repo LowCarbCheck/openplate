@@ -3692,6 +3692,34 @@
       "week": "Bu hafta",
       "month": "Bu ay",
       "earlier": "Daha önce"
+    },
+    "activityMail": {
+      "title": "Hatırlatma e-postaları",
+      "stats": {
+        "optedIn": "{{optedIn}} kişi hatırlatma istedi.",
+        "kind": "{{sent}} gönderildi, {{cameBack}} geri döndü"
+      },
+      "firstScan": {
+        "title": "İlk fotoğraf hatırlatması",
+        "hint": "Kayıttan belirli bir gün sayısı sonra, henüz tabak fotoğrafı denememiş kişilere bir kez gönderilir."
+      },
+      "quiet": {
+        "title": "Uzak kalma hatırlatması",
+        "hint": "Birisi uygulamayı belirli bir gün sayısı boyunca açmadığında her seferinde bir kez gönderilir."
+      },
+      "daysLabel": "Gün",
+      "daysRange": "{{min}} ile {{max}} arasında bir tam sayı gir.",
+      "test": {
+        "button": "Bana bir test gönder",
+        "sending": "Test gönderiliyor.",
+        "sent": "Test gönderildi. Gelen kutunu kontrol et.",
+        "throttled": "Şu anda çok fazla test gönderildi. Birkaç dakika sonra tekrar dene.",
+        "failed": "Test gönderilemedi."
+      },
+      "save": "Kaydet",
+      "saving": "Kaydediliyor",
+      "saved": "Kaydedildi.",
+      "failed": "Bu değişiklik işlenemedi."
     }
   },
   "aiIntake": {
@@ -4180,5 +4208,20 @@
     "homeScreen": "openplate uygulamasını ana ekranına eklediysen bu simgeyi kaldır ve yerine {{host}} adresini ekle.",
     "iphone": "iPhone (Safari): Paylaş'a, ardından Ana Ekrana Ekle'ye dokun.",
     "android": "Android (Chrome): menüyü aç, ardından Uygulamayı yükle'ye veya Ana ekrana ekle'ye dokun."
+  },
+  "activityMail": {
+    "signup": {
+      "label": "openplate uygulamasını bir süre kullanmazsam bana bir hatırlatma e-postası gönder",
+      "hint": "En fazla iki tür: biri tabak fotoğrafı denemediysen, diğeri ise bir süredir uzaktaysan. Bunları istediğin zaman kapatabilirsin."
+    },
+    "settings": {
+      "title": "Hatırlatma e-postaları",
+      "description": "Bir tabak fotoğrafı denemediysen veya bir süredir uzaktaysan kısa bir e-posta.",
+      "toast": {
+        "on": "Hatırlatma e-postaları açık.",
+        "off": "Hatırlatma e-postaları kapalı.",
+        "failed": "Bu değişiklik kaydedilemedi. Tekrar dene."
+      }
+    }
   }
 }

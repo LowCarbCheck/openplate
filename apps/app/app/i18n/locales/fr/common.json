@@ -3692,6 +3692,34 @@
       "week": "Cette semaine",
       "month": "Ce mois-ci",
       "earlier": "Plus tôt"
+    },
+    "activityMail": {
+      "title": "E-mails de rappel",
+      "stats": {
+        "optedIn": "{{optedIn}} personnes ont demandé des rappels.",
+        "kind": "{{sent}} envoyés, {{cameBack}} revenus"
+      },
+      "firstScan": {
+        "title": "Rappel pour la première photo",
+        "hint": "Envoyé une fois, un nombre défini de jours après l'inscription, aux personnes qui n'ont pas essayé de photo d'assiette."
+      },
+      "quiet": {
+        "title": "Rappel d'absence",
+        "hint": "Envoyé une fois chaque fois qu'une personne n'a pas ouvert l'application depuis un nombre défini de jours."
+      },
+      "daysLabel": "Jours",
+      "daysRange": "Saisis un nombre entier de {{min}} à {{max}}.",
+      "test": {
+        "button": "M'envoyer un test",
+        "sending": "Envoi du test en cours.",
+        "sent": "Test envoyé. Vérifie ta boîte de réception.",
+        "throttled": "Trop de tests en ce moment. Réessaie dans quelques minutes.",
+        "failed": "Le test n'est pas parti."
+      },
+      "save": "Enregistrer",
+      "saving": "Enregistrement en cours",
+      "saved": "Enregistré.",
+      "failed": "Cette modification n'a pas été prise en compte."
     }
   },
   "aiIntake": {
@@ -4180,5 +4208,20 @@
     "homeScreen": "Si tu as ajouté openplate à ton écran d'accueil, supprime cette icône et ajoute {{host}} à la place.",
     "iphone": "iPhone (Safari) : touche Partager, puis Sur l'écran d'accueil.",
     "android": "Android (Chrome) : ouvre le menu, puis touche Installer l'application ou Ajouter à l'écran d'accueil."
+  },
+  "activityMail": {
+    "signup": {
+      "label": "M'envoyer un rappel par e-mail si je n'utilise pas openplate pendant un certain temps",
+      "hint": "Deux types au maximum : un si tu n'as pas essayé de photo d'assiette, un si tu es resté absent. Tu peux les désactiver à tout moment."
+    },
+    "settings": {
+      "title": "E-mails de rappel",
+      "description": "Un court e-mail si tu n'as pas essayé de photo d'assiette, ou si tu es resté absent pendant un moment.",
+      "toast": {
+        "on": "Les e-mails de rappel sont activés.",
+        "off": "Les e-mails de rappel sont désactivés.",
+        "failed": "Cette modification n'a pas été enregistrée. Réessaie."
+      }
+    }
   }
 }

@@ -2743,6 +2743,13 @@
     "at": "2026-09-14",
     "de": "Heute {{used}} von {{limit}} genutzt."
   },
+  "1c1d81ef3e0f4a37": {
+    "en": "Sending the test.",
+    "path": "common:admin.activityMail.test.sending",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "de": "Der Test wird gesendet."
+  },
   "1c1ef4305ed099c8": {
     "en": "AI scan a week",
     "path": "common:plan.tiers.scanFigure.week_one",
@@ -4234,6 +4241,13 @@
     "at": "2026-09-14",
     "de": "{{logged}} von {{total}} Tagen eingetragen"
   },
+  "2d381f62a34d8744": {
+    "en": "The test did not go out.",
+    "path": "common:admin.activityMail.test.failed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "de": "Der Test wurde nicht gesendet."
+  },
   "2d55a471c7966d67": {
     "en": "Second trimester",
     "path": "common:bodyMetrics.reproductive.trimester.second",
@@ -5465,6 +5479,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Das Datum darf nicht in der Zukunft liegen"
+  },
+  "3e06ac495db09c1b": {
+    "en": "Sent once each time someone has not opened the app for a set number of days.",
+    "path": "common:admin.activityMail.quiet.hint",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "de": "Wird jeweils einmal gesendet, wenn jemand die App eine festgelegte Anzahl von Tagen lang nicht geöffnet hat."
   },
   "3e3cd176a267189c": {
     "en": "Nothing to show yet. A morning with nothing to report gets no notification.",
@@ -8833,6 +8854,13 @@
     "at": "2026-09-14",
     "de": "Das war der erste Teller, den dein eigener KI-Anbieter erkannt hat."
   },
+  "62e241f46f861b46": {
+    "en": "Days",
+    "path": "common:admin.activityMail.daysLabel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "de": "Tage"
+  },
   "62fc15db81bc869e": {
     "en": "Go to sharing",
     "path": "common:connectClinician.granted.cta",
@@ -9007,6 +9035,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-24",
     "de": "Foto"
+  },
+  "64ba28d10452eb22": {
+    "en": "Sent once, a set number of days after sign-up, to people who have not tried a plate photo.",
+    "path": "common:admin.activityMail.firstScan.hint",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "de": "Wird einmalig eine festgelegte Anzahl von Tagen nach der Registrierung an Personen gesendet, die noch kein Tellerfoto ausprobiert haben."
   },
   "64ba6895e53fff75": {
     "en": "Your goal was {{target}}.",
@@ -9778,6 +9813,13 @@
     "at": "2026-09-14",
     "de": "Foto wird hochgeladen…"
   },
+  "6e931ddb5b4c7ef2": {
+    "en": "Test sent. Check your inbox.",
+    "path": "common:admin.activityMail.test.sent",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "de": "Test gesendet. Prüfe deinen Posteingang."
+  },
   "6e9784b65a0470bc": {
     "en": "Enter a weight between {{min}} and {{max}} kg",
     "path": "common:goals.weight.errors.outOfRange",
@@ -10127,6 +10169,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Nächstes Fasten für {{time}} planen"
+  },
+  "71f7a590d7f594dd": {
+    "en": "Too many tests just now. Try again in a few minutes.",
+    "path": "common:admin.activityMail.test.throttled",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "de": "Gerade zu viele Tests. Versuche es in ein paar Minuten erneut."
   },
   "71f8280539d50189": {
     "en": "Shared. You verified:",
@@ -12424,6 +12473,13 @@
     "at": "2026-10-29",
     "de": "Automatisch"
   },
+  "89e790f60457cea4": {
+    "en": "{{sent}} sent, {{cameBack}} came back",
+    "path": "common:admin.activityMail.stats.kind",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "de": "{{sent}} gesendet, {{cameBack}} zurückgekehrt"
+  },
   "89f4be500bc83669": {
     "en": "Ask the study to send the link again, or open it from the consent materials.",
     "path": "common:research.join.queryString.askAgain",
@@ -12535,6 +12591,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Deine letzte Zahlung hat nicht geklappt."
+  },
+  "8afd2c20586bb296": {
+    "en": "Email me a reminder if I don't use openplate for a while",
+    "path": "common:activityMail.signup.label",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "de": "Erinnere mich per E-Mail, wenn ich openplate eine Weile nicht nutze"
   },
   "8b083c94aec5ee72": {
     "en": "This replaces your current AI connection ({{current}}). Nothing is revoked anywhere. You can set it up again later.",
@@ -13992,6 +14055,13 @@
     "at": "2026-09-14",
     "de": "Das sieht nicht nach einem Einladungscode aus. Sie beginnen mit {{prefix}}."
   },
+  "99d75cfc6d549b1c": {
+    "en": "Reminder emails",
+    "path": "common:activityMail.settings.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "de": "Erinnerungs-E-Mails"
+  },
   "99d7a981107d9c97": {
     "en": "Photograph your plate or search for what you ate. openplate shows you the carbs in seconds, and tracks them against the daily goal you set. This instance needs an account, and your diary is encrypted on this device before a copy reaches the server.",
     "path": "common:meta.landingDescriptionManaged",
@@ -15231,6 +15301,13 @@
     "at": "2026-09-14",
     "de": "Beim ersten Einrichten wird ein API-Schlüssel gebraucht."
   },
+  "a6f7c3175dcc6726": {
+    "en": "Send a test to me",
+    "path": "common:admin.activityMail.test.button",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "de": "Test an mich senden"
+  },
   "a709185cd920be20": {
     "en": "Changed your mind? This removes every detail above from this device.",
     "path": "common:bodyMetrics.clear.hint",
@@ -15279,6 +15356,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Jedes Lebensmittel, das du einträgst, landet direkt im Speicher dieses Browsers. Der Server speichert eine verschlüsselte Kopie in einer Datenbank und kann sie nicht lesen, weil der Schlüssel nie übertragen wird. Du kannst jederzeit alles als Datei exportieren."
+  },
+  "a7ab8a4b3f1a5dda": {
+    "en": "A short email if you haven't tried a plate photo, or if you've been away for a while.",
+    "path": "common:activityMail.settings.description",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "de": "Eine kurze E-Mail, wenn du noch kein Tellerfoto ausprobiert hast oder wenn du eine Weile abwesend warst."
   },
   "a7ab94e22d74a662": {
     "en": "Measured against your current goals.",
@@ -16554,6 +16638,13 @@
     "at": "2026-09-14",
     "de": "Gramm"
   },
+  "b59e85cbf3bed131": {
+    "en": "First photo reminder",
+    "path": "common:admin.activityMail.firstScan.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "de": "Erinnerung an das erste Foto"
+  },
   "b5a355bf996ef839": {
     "en": "No meal",
     "path": "common:add.meal.none",
@@ -16637,6 +16728,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-28",
     "de": "Trage das Mittagessen auf deinem Telefon ein und prüfe deine Woche auf deinem Laptop. Jedes Konto funktioniert standardmäßig so. Dein Tagebuch wird vor dem Hochladen auf deinem Gerät verschlüsselt. Die betreibende Person verwahrt einen Sicherungsschlüssel, damit du dein Tagebuch nach einem vergessenen Passwort wiederherstellen kannst. Mit diesem Schlüssel kann sie dein Tagebuch lesen."
+  },
+  "b68f55aa8c6595b1": {
+    "en": "Reminder emails are off.",
+    "path": "common:activityMail.settings.toast.off",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "de": "Erinnerungs-E-Mails sind deaktiviert."
   },
   "b69389b85dd74276": {
     "en": "Your fasts now follow you to your other devices.",
@@ -17765,6 +17863,13 @@
     "at": "2026-09-14",
     "de": "Eine E-Mail-Adresse ist erforderlich."
   },
+  "c431e86fa5f45347": {
+    "en": "That change did not go through.",
+    "path": "common:admin.activityMail.failed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "de": "Diese Änderung wurde nicht übernommen."
+  },
   "c43a9ba71feb6404": {
     "en": "May be raw or undercooked meat, avoid in pregnancy",
     "path": "common:cautions.pregnancy.raw-meat",
@@ -17806,6 +17911,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "von {{goal}}"
+  },
+  "c4ca5752507173f4": {
+    "en": "Reminder emails are on.",
+    "path": "common:activityMail.settings.toast.on",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "de": "Erinnerungs-E-Mails sind aktiviert."
   },
   "c4e4e7cfa62001d7": {
     "en": "Delete account",
@@ -18044,6 +18156,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Das sind viele Versuche in kurzer Zeit. Warte eine Minute und probier es dann noch einmal."
+  },
+  "c7f62da2f7a1f098": {
+    "en": "Reminder emails",
+    "path": "common:admin.activityMail.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "de": "Erinnerungs-E-Mails"
   },
   "c84c5ff421cc4eb6": {
     "en": "chia seeds",
@@ -18359,6 +18478,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "openplate, ein Ernährungstagebuch, das auf deinem Gerät bleibt"
+  },
+  "cc76e5df3536184c": {
+    "en": "Saved.",
+    "path": "common:admin.activityMail.saved",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "de": "Gespeichert."
   },
   "cc7cb45c07245367": {
     "en": "Dismiss",
@@ -20558,6 +20684,13 @@
     "at": "2026-09-18",
     "de": "Du hast eine Mahlzeit erneut eingetragen, ohne sie einzutippen."
   },
+  "e297f0fa3349cf25": {
+    "en": "Two kinds at most: one if you haven't tried a plate photo, one if you've been away. You can turn them off anytime.",
+    "path": "common:activityMail.signup.hint",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "de": "Höchstens zwei Arten: eine, wenn du noch kein Tellerfoto ausprobiert hast, eine, wenn du abwesend warst. Du kannst sie jederzeit deaktivieren."
+  },
   "e2b6556946f7850b": {
     "en": "Name",
     "path": "common:declarations.withdraw.nameLabel",
@@ -20592,6 +20725,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Dieser Server hat keinen Forschungsbereich, also gibt es nichts abzurufen."
+  },
+  "e35121bc62d2c783": {
+    "en": "That change did not save. Try again.",
+    "path": "common:activityMail.settings.toast.failed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "de": "Diese Änderung wurde nicht gespeichert. Versuche es erneut."
   },
   "e371011ef87a1d9c": {
     "en": "over {{goal}}",
@@ -20725,6 +20865,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-24",
     "de": "Alle aus YAZIO importierten Einträge entfernen?"
+  },
+  "e4c29b3880ffd18c": {
+    "en": "Enter a whole number from {{min}} to {{max}}.",
+    "path": "common:admin.activityMail.daysRange",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "de": "Gib eine ganze Zahl von {{min}} bis {{max}} ein."
   },
   "e50470a16fa8bb9b": {
     "en": "Agree and continue",
@@ -21124,6 +21271,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "Wird geladen…"
+  },
+  "e854b60c0b4ad8a0": {
+    "en": "Saving",
+    "path": "common:admin.activityMail.saving",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "de": "Wird gespeichert"
   },
   "e88dd7ce9062ca20": {
     "en": "your height and sex",
@@ -21930,6 +22084,13 @@
     "at": "2026-09-23",
     "de": "Du kannst ein Hauptziel auswählen, also den Wert, den das Tagebuch zuerst anzeigt."
   },
+  "f087f6232c349381": {
+    "en": "Away reminder",
+    "path": "common:admin.activityMail.quiet.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "de": "Abwesenheitserinnerung"
+  },
   "f091f1ea1bb49dcf": {
     "en": "You do this once, and then never again. Three steps, and only the middle one asks anything of you.",
     "path": "common:landing.setup.subtitle",
@@ -22434,6 +22595,13 @@
     "at": "2026-09-14",
     "de": "Aus einer Sicherung wiederherstellen"
   },
+  "f6594ae202b991d6": {
+    "en": "Save",
+    "path": "common:admin.activityMail.save",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "de": "Speichern"
+  },
   "f66f511547b95dd7": {
     "en": "Mind trying another? Good light and a top-down angle help.",
     "path": "common:scan.errors.photoQualityBody",
@@ -22720,6 +22888,13 @@
     "model": "hand-written",
     "at": "2026-09-14",
     "de": "openplate zählt nur die Stunden. Es bietet keine medizinische Beratung."
+  },
+  "f993ed937d4c942e": {
+    "en": "{{optedIn}} people asked for reminders.",
+    "path": "common:admin.activityMail.stats.optedIn",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "de": "{{optedIn}} Personen haben Erinnerungen angefordert."
   },
   "f9ac5e0ecd582e6c": {
     "en": "Sharing a diary needs sync, and whoever runs this openplate has not set it up. Nothing here can be used.",

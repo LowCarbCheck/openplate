@@ -34,6 +34,8 @@ import type { Route } from './+types/settings.notifications';
 
 import { InstallAffordanceAction } from '#app/components/install-card';
 import { RouteErrorBoundary } from '#app/components/route-error-boundary';
+import { ActivityMailSetting } from '#app/components/settings/activity-mail-setting';
+import { useSyncSession } from '#app/components/sync-status';
 import { Button } from '#app/components/ui/button';
 import { SettingsSection } from '#app/components/settings/settings-section';
 import { Input } from '#app/components/ui/input';
@@ -61,6 +63,9 @@ import {
 } from '#app/lib/push';
 import type { PushAvailability, PushBlockedReason, PushPrefs } from '#app/lib/push';
 import { publishStatus } from '#app/lib/status';
+import { isActivityMailControlShown } from '#app/lib/sync/activity-mail';
+import { setSyncActivityMail } from '#app/lib/sync/sync-actions';
+import { toLanguageCode } from '#app/i18n/language-prefs';
 import { metaLanguage, metaTitle } from '#app/i18n/meta-title';
 // The SAME formatter the fasting routine uses for a minute of the day, because
 // this is also the `value` of an `<input type="time">`, which accepts exactly
@@ -389,6 +394,8 @@ export default function SettingsNotifications() {
   const install = useInstallAffordance();
   const instance = useServerInstance();
   const fastingGate = useFeatureGate('fasting');
+  const session = useSyncSession();
+  const [isActivityMailSaving, setIsActivityMailSaving] = useState(false);
 
   // `null` until the browser facts are readable: `isSecureContext`,
   // `PushManager` and the permission are all window reads, and a server render
@@ -528,6 +535,42 @@ export default function SettingsNotifications() {
     [dismissals, prefs, t],
   );
 
+  // THE REMINDER EMAILS are the account's, kept on the service, so this is a
+  // PATCH and never a device write. The switch follows the view that comes
+  // back (`setSyncActivityMail` publishes it), and a refusal leaves it where
+  // it was and says so in the header status.
+  const handleActivityMail = useCallback(
+    async (next: boolean): Promise<void> => {
+      setIsActivityMailSaving(true);
+      try {
+        await setSyncActivityMail({ activityMail: next, language: toLanguageCode(i18n.language) });
+        publishStatus({
+          text: t(next ? 'activityMail.settings.toast.on' : 'activityMail.settings.toast.off'),
+          tone: 'success',
+        });
+      } catch {
+        publishStatus({ text: t('activityMail.settings.toast.failed'), tone: 'error' });
+      } finally {
+        setIsActivityMailSaving(false);
+      }
+    },
+    [i18n.language, t],
+  );
+  const accountActivityMail = session.account?.activityMail === true;
+  const isActivityMailShownNow = isActivityMailControlShown({
+    hasAccount: session.account !== null,
+    instanceOffers: instance?.activityMail === true,
+    accountOptedIn: accountActivityMail,
+  });
+  // LATCHED FOR THE VISIT. An account that opted in on an instance that has
+  // since switched the feature off is shown the switch because it said yes; the
+  // moment it says no, the rule above would take the switch away under the
+  // finger that just turned it off, and the page would jump. Once drawn, it
+  // stays until the person leaves.
+  const [hasShownActivityMail, setHasShownActivityMail] = useState(false);
+  if (isActivityMailShownNow && !hasShownActivityMail) setHasShownActivityMail(true);
+  const isActivityMailShown = isActivityMailShownNow || hasShownActivityMail;
+
   const handleSave = useCallback(async (): Promise<void> => {
     setIsSaving(true);
     try {
@@ -613,6 +656,14 @@ export default function SettingsNotifications() {
             cannot disagree. */}
         {showsStandalonePreview && <CatchUpPreview previewLines={previewLines} />}
       </SettingsSection>
+
+      {isActivityMailShown && (
+        <ActivityMailSetting
+          isOn={accountActivityMail}
+          isSaving={isActivityMailSaving}
+          onChange={(next) => void handleActivityMail(next)}
+        />
+      )}
 
       {/* The promise that closes the page, in every state. `mt-auto` is what
           makes a two-sentence page end at the bottom of the screen rather than

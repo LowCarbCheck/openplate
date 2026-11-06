@@ -104,6 +104,7 @@ import { releasePushForSignOut } from '#app/lib/push';
 import { decodeAiLimitPeriod, decodeAiQuota } from '#app/lib/plans/ai-quota';
 import { decodeFreeDailyAiLimit } from '#app/lib/plans/free-grant';
 import { decodeCapabilities } from '#app/lib/plans/capabilities';
+import { decodeActivityMail } from '#app/lib/sync/activity-mail';
 import { decodeTrialEndsAt, decodeTrialScans } from '#app/lib/plans/trial-scans';
 import {
   decodeHealthConsent,
@@ -346,6 +347,7 @@ export async function createSyncAccount({
   passphrase,
   displayName,
   healthConsent = null,
+  activityMail = null,
   deriveHash = workerArgon2idDeriver,
   params = ARGON2ID_DEFAULT_PARAMS,
   fetchImpl,
@@ -370,6 +372,12 @@ export async function createSyncAccount({
    * spends nothing, so the invite is still good for the next try.
    */
   healthConsent?: HealthConsentRequestWire | null;
+  /**
+   * The reminder-email choice, or `null` where the instance offers none and the
+   * signup body is exactly what it was before the field existed. `isOptedIn`
+   * is `true` only when the person ticked the box, which starts unticked.
+   */
+  activityMail?: { isOptedIn: boolean; language: LanguageCode } | null;
 } & SyncActionOptions): Promise<SyncSetupOutcome> {
   const { authClient, http } = clients({ serverUrl, fetchImpl });
   // FIRST, before the key derivation and before the invite is spent (ADR-0023).
@@ -412,6 +420,7 @@ export async function createSyncAccount({
       { kind: 'recovery', kdfDescriptor: null, wrappedDek: bytesToBase64(keys.recoveryKeyRecord.wrappedDek) },
     ],
     healthConsent,
+    activityMail,
   });
 
   openSyncVault({
@@ -1207,6 +1216,26 @@ export async function setSyncDisplayName({ displayName }: { displayName: string 
 }
 
 /**
+ * Turns reminder emails on or off for the signed-in account, and tells the
+ * service which language to write them in (`PATCH /v1/auth/account`).
+ *
+ * The view that comes back is published, so the settings switch reads what the
+ * service now holds and not what the tap asked for.
+ */
+export async function setSyncActivityMail({
+  activityMail,
+  language,
+}: {
+  activityMail: boolean;
+  language: LanguageCode;
+}): Promise<void> {
+  const vault = getSyncVault();
+  if (vault === null) throw new Error('setSyncActivityMail called without an open sync session');
+  const account = await vault.authClient.patchActivityMail({ activityMail, language });
+  publishAccountView(account);
+}
+
+/**
  * Copies a freshly read `AccountView` into the session snapshot.
  *
  * ONE MAPPING for every read that returns the whole view (the name change, the
@@ -1236,6 +1265,7 @@ function publishAccountView(account: AccountViewWire): void {
       createdAt: account.createdAt,
       healthConsent: decodeHealthConsent(account.healthConsent),
       capabilities: decodeCapabilities(account.capabilities),
+      activityMail: decodeActivityMail(account.activityMail),
     },
   });
 }

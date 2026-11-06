@@ -524,6 +524,8 @@ export class SyncAuthClient implements SyncTokenProvider {
     recoveryCode: string;
     keyRecords: KeyRecordSubmissionWire[];
     healthConsent: HealthConsentRequestWire | null;
+    /** `null` where the instance offers no reminder emails: the key and `language` are then left out. */
+    activityMail?: { isOptedIn: boolean; language: LanguageCode } | null;
   }): Promise<SessionResponseWire> {
     const request: SignupRequestWire = {
       inviteToken: input.inviteToken,
@@ -535,6 +537,10 @@ export class SyncAuthClient implements SyncTokenProvider {
       keyRecords: input.keyRecords,
     };
     if (input.healthConsent !== null) request.healthConsent = { version: input.healthConsent.version };
+    if (input.activityMail !== undefined && input.activityMail !== null) {
+      request.activityMail = input.activityMail.isOptedIn;
+      request.language = input.activityMail.language;
+    }
     const response = await this.requestJson<SessionResponseWire>({
       path: `${AUTH_API_PREFIX}/signup`,
       method: 'POST',
@@ -857,7 +863,26 @@ export class SyncAuthClient implements SyncTokenProvider {
    * menu two rows away keeps the old one.
    */
   async patchAccount(input: { displayName: string | null }): Promise<AccountViewWire> {
-    const request: PatchAccountRequestWire = { displayName: input.displayName };
+    return this.sendAccountPatch({ displayName: input.displayName });
+  }
+
+  /**
+   * Turns reminder emails on or off, with the language they are written in
+   * (`PATCH /v1/auth/account`, `PROTOCOL.md` §5.15).
+   *
+   * The language rides along ONLY when the mail is switched on. The core
+   * answers `400 language is set together with activityMail: true` to an off
+   * body that names one, so a person could never turn reminders off.
+   *
+   * The updated view is ADOPTED into the session, for the reason
+   * {@link patchAccount} gives.
+   */
+  async patchActivityMail(input: { activityMail: boolean; language: LanguageCode }): Promise<AccountViewWire> {
+    if (!input.activityMail) return this.sendAccountPatch({ activityMail: false });
+    return this.sendAccountPatch({ activityMail: true, language: input.language });
+  }
+
+  private async sendAccountPatch(request: PatchAccountRequestWire): Promise<AccountViewWire> {
     const body = await this.requestJson<AccountResponseWire>({
       path: `${AUTH_API_PREFIX}/account`,
       method: 'PATCH',
@@ -1153,13 +1178,17 @@ export class SyncAuthClient implements SyncTokenProvider {
    * which is what a body-less success looks like to a parser.
    */
   async requestAsAccount(input: { path: string; method: AuthorizedMethod; body?: JsonValue }): Promise<JsonValue> {
-    const body = await this.requestJson<JsonValue | undefined>({
+    const response = await this.sendWithRefresh({
       path: input.path,
       method: input.method,
       body: input.body,
       authenticated: true,
     });
-    return body ?? null;
+    if (response.status === 204) return null;
+    // A `202` MAY CARRY NO BODY (the reminder test answers one), and an empty
+    // body is "accepted", not a response this app could not read.
+    if (response.status === 202 && (await response.clone().text()).trim() === '') return null;
+    return await readJson(response);
   }
 
   /**

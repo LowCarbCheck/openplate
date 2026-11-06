@@ -290,6 +290,18 @@ export type InstanceDescriptor = {
    * that has no account yet can still say what a stranger would get.
    */
   defaultCapabilities?: string[] | null;
+  /**
+   * Whether this instance sends reminder emails to the people who asked for
+   * them (`PROTOCOL.md` §5.6, 2026-11). One kind for somebody who has not tried
+   * a plate photo, one for somebody who has been away.
+   *
+   * OPTIONAL IN THE TYPE, but the decoder always writes it, answering `false`
+   * for a service older than the field and for a nonsense value. Absent and
+   * `false` are the same fact for every reader: draw no checkbox at sign-up and
+   * no switch in settings, except for an account that already has the
+   * reminders on (so a person can always turn them off).
+   */
+  activityMail?: boolean;
 };
 
 /** What {@link InstanceDescriptor.healthConsent} asks for: the version of the wording a person agrees to. */
@@ -447,6 +459,10 @@ const instanceDescriptorSchema = z.object({
   // allowed", and neither may fail the whole descriptor and take the AI model
   // down with it. A malformed list must never CLOSE a feature.
   defaultCapabilities: z.array(z.string()).nullable().catch(null),
+  // `.catch(false)` for the reason the lines above give: a core older than the
+  // field and a nonsense value both read "no reminder emails", the safe
+  // direction, because the service refuses the opt-in anyway.
+  activityMail: z.boolean().catch(false),
 });
 
 /** The decoder for {@link ProtocolHandshake}, the health endpoint is an I/O boundary, so its body is parsed, not assumed. */

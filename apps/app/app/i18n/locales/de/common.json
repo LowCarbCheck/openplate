@@ -3692,6 +3692,34 @@
       "week": "Diese Woche",
       "month": "Diesen Monat",
       "earlier": "Früher"
+    },
+    "activityMail": {
+      "title": "Erinnerungs-E-Mails",
+      "stats": {
+        "optedIn": "{{optedIn}} Personen haben Erinnerungen angefordert.",
+        "kind": "{{sent}} gesendet, {{cameBack}} zurückgekehrt"
+      },
+      "firstScan": {
+        "title": "Erinnerung an das erste Foto",
+        "hint": "Wird einmalig eine festgelegte Anzahl von Tagen nach der Registrierung an Personen gesendet, die noch kein Tellerfoto ausprobiert haben."
+      },
+      "quiet": {
+        "title": "Abwesenheitserinnerung",
+        "hint": "Wird jeweils einmal gesendet, wenn jemand die App eine festgelegte Anzahl von Tagen lang nicht geöffnet hat."
+      },
+      "daysLabel": "Tage",
+      "daysRange": "Gib eine ganze Zahl von {{min}} bis {{max}} ein.",
+      "test": {
+        "button": "Test an mich senden",
+        "sending": "Der Test wird gesendet.",
+        "sent": "Test gesendet. Prüfe deinen Posteingang.",
+        "throttled": "Gerade zu viele Tests. Versuche es in ein paar Minuten erneut.",
+        "failed": "Der Test wurde nicht gesendet."
+      },
+      "save": "Speichern",
+      "saving": "Wird gespeichert",
+      "saved": "Gespeichert.",
+      "failed": "Diese Änderung wurde nicht übernommen."
     }
   },
   "aiIntake": {
@@ -4180,5 +4208,20 @@
     "homeScreen": "Wenn du openplate zu deinem Startbildschirm hinzugefügt hast, entferne dieses Symbol und füge stattdessen {{host}} hinzu.",
     "iphone": "iPhone (Safari): Tippe auf Teilen, dann auf Zum Home-Bildschirm.",
     "android": "Android (Chrome): Öffne das Menü, tippe dann auf App installieren oder Zum Startbildschirm hinzufügen."
+  },
+  "activityMail": {
+    "signup": {
+      "label": "Erinnere mich per E-Mail, wenn ich openplate eine Weile nicht nutze",
+      "hint": "Höchstens zwei Arten: eine, wenn du noch kein Tellerfoto ausprobiert hast, eine, wenn du abwesend warst. Du kannst sie jederzeit deaktivieren."
+    },
+    "settings": {
+      "title": "Erinnerungs-E-Mails",
+      "description": "Eine kurze E-Mail, wenn du noch kein Tellerfoto ausprobiert hast oder wenn du eine Weile abwesend warst.",
+      "toast": {
+        "on": "Erinnerungs-E-Mails sind aktiviert.",
+        "off": "Erinnerungs-E-Mails sind deaktiviert.",
+        "failed": "Diese Änderung wurde nicht gespeichert. Versuche es erneut."
+      }
+    }
   }
 }

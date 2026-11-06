@@ -49,6 +49,7 @@ import { decodeFreeDailyAiLimit } from '#app/lib/plans/free-grant';
 import { decodeTrialEndsAt, decodeTrialScans, withScansLeft, type TrialScans } from '#app/lib/plans/trial-scans';
 import { decodeHealthConsent, type HealthConsent } from '#app/lib/health-consent/health-consent';
 import { decodeCapabilities } from '#app/lib/plans/capabilities';
+import { decodeActivityMail } from '#app/lib/sync/activity-mail';
 
 /**
  * The address this device last signed in with.
@@ -222,6 +223,13 @@ export interface SyncSessionSnapshot {
      * directly. OPTIONAL for the reason `createdAt` above is.
      */
     capabilities?: string[] | null;
+    /**
+     * Whether the account asked for reminder emails (2026-11). Absent, `false`
+     * and "not read yet" all read off, and a reader draws the settings switch
+     * from the instance's own flag in that case. OPTIONAL for the reason
+     * `createdAt` above is.
+     */
+    activityMail?: boolean;
   } | null;
   /**
    * True while this device may still be reopening a session it already had.
@@ -436,6 +444,7 @@ export function openSyncSession(next: SyncVault, initial: { lastSyncedAt: number
       createdAt: knownAccount?.createdAt ?? null,
       healthConsent: decodeHealthConsent(knownAccount?.healthConsent),
       capabilities: decodeCapabilities(knownAccount?.capabilities),
+      activityMail: decodeActivityMail(knownAccount?.activityMail),
     },
     isResuming: false,
     phase: 'idle',

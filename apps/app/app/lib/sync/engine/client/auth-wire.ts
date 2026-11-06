@@ -111,6 +111,15 @@ export interface AccountViewWire {
   /** The window `freeDailyAiLimit` counts over. ABSENT on an older core, which means `'day'`. Same rule as `aiLimitPeriod`. */
   freeAiLimitPeriod?: 'day' | 'week';
   /**
+   * Whether this account asked for reminder emails (`PROTOCOL.md` §5.15,
+   * 2026-11). ABSENT on a core older than the field, which means `false`.
+   *
+   * Read only through `decodeActivityMail`, because this interface is a cast,
+   * not a parse. A person turns it on at sign-up or in settings, and off in
+   * settings; it is never switched on for them.
+   */
+  activityMail?: boolean;
+  /**
    * The grant the proxy applies to the NEXT request, with the count in its
    * window and the instant it starts again, or `null` when the proxy would
    * refuse (`PROTOCOL.md` §5.15). ABSENT on a core older than the field.
@@ -320,6 +329,15 @@ export interface SignupRequestWire {
    * exactly what it was before the field existed.
    */
   healthConsent?: HealthConsentRequestWire;
+  /**
+   * Whether the person ticked the reminder-email box, SENT ONLY where
+   * `instance.activityMail` is true and LEFT OUT everywhere else, so that body
+   * is exactly what it was before the field existed. Never `true` unless the
+   * box was ticked: the box starts unticked.
+   */
+  activityMail?: boolean;
+  /** The UI language the mail is written in, one of the six app languages. Sent with {@link activityMail}. */
+  language?: LanguageCode;
 }
 
 export interface LoginRequestWire {
@@ -405,10 +423,20 @@ export interface AccountResponseWire {
   account: AccountViewWire;
 }
 
-/** `PATCH /v1/auth/account` — the one thing an account owner may edit about themselves. */
-export interface PatchAccountRequestWire {
-  displayName: string | null;
-}
+/**
+ * `PATCH /v1/auth/account`, what an account owner may edit about themselves:
+ * the display name, or the reminder-email choice with the language the mail is
+ * written in. Two bodies, never mixed: each has its own control.
+ *
+ * The core refuses a `language` beside `activityMail: false` (`400 language is
+ * set together with activityMail: true`): the language is only for the mail
+ * that is switched on. So the type has no `language` on the off body, and a
+ * caller cannot build the refused one.
+ */
+export type PatchAccountRequestWire =
+  | { displayName: string | null }
+  | { activityMail: true; language: LanguageCode }
+  | { activityMail: false };
 
 /** `POST /v1/auth/reset/request` — always answered `202`, whether or not the address has an account. */
 export interface ResetRequestWire {

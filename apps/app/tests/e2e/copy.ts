@@ -103,6 +103,8 @@ const catalogSchema = z.object({
   }),
   aiIntake: z.object({ plansLink: z.string() }),
   scan: z.object({
+    /** The connect card's title, drawn by every variant of `ConnectCard` and by nothing else. */
+    setup: z.object({ title: z.string() }),
     capture: z.object({
       trialScansUsed: z.string(),
       analyze: z.string(),
@@ -457,6 +459,41 @@ const englishCatalogSchema = catalogSchema
         coverage: z.object({ notEnoughData: z.string() }),
         name: z.object({ magnesium: z.string() }),
         snapshot: z.object({ title: z.string(), linkDay: z.string(), linkRange: z.string() }),
+      }),
+    }),
+  )
+  // The reminder emails (2026-11): the sign-up box, the settings switch, and the console section.
+  // English only until the translation run has bought them for the other five catalogs.
+  .and(
+    z.object({
+      activityMail: z.object({
+        signup: z.object({ label: z.string(), hint: z.string() }),
+        settings: z.object({
+          title: z.string(),
+          description: z.string(),
+          toast: z.object({ on: z.string(), off: z.string(), failed: z.string() }),
+        }),
+      }),
+      admin: z.object({
+        settings: z.object({ title: z.string() }),
+        activityMail: z.object({
+          title: z.string(),
+          stats: z.object({ optedIn: z.string(), kind: z.string() }),
+          daysLabel: z.string(),
+          firstScan: z.object({ title: z.string() }),
+          quiet: z.object({ title: z.string() }),
+          daysRange: z.string(),
+          test: z.object({
+            button: z.string(),
+            sending: z.string(),
+            sent: z.string(),
+            throttled: z.string(),
+            failed: z.string(),
+          }),
+          saved: z.string(),
+          failed: z.string(),
+          save: z.string(),
+        }),
       }),
     }),
   );

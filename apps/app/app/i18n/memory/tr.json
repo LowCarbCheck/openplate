@@ -2743,6 +2743,13 @@
     "at": "2026-09-14",
     "tr": "Bugün {{used}} / {{limit}} kullanıldı."
   },
+  "1c1d81ef3e0f4a37": {
+    "en": "Sending the test.",
+    "path": "common:admin.activityMail.test.sending",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "tr": "Test gönderiliyor."
+  },
   "1c1ef4305ed099c8": {
     "en": "AI scan a week",
     "path": "common:plan.tiers.scanFigure.week_one",
@@ -4234,6 +4241,13 @@
     "at": "2026-09-14",
     "tr": "Son {{total}} günün {{logged}} günü kaydedildi"
   },
+  "2d381f62a34d8744": {
+    "en": "The test did not go out.",
+    "path": "common:admin.activityMail.test.failed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "tr": "Test gönderilemedi."
+  },
   "2d55a471c7966d67": {
     "en": "Second trimester",
     "path": "common:bodyMetrics.reproductive.trimester.second",
@@ -5465,6 +5479,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Tarih gelecekte olamaz"
+  },
+  "3e06ac495db09c1b": {
+    "en": "Sent once each time someone has not opened the app for a set number of days.",
+    "path": "common:admin.activityMail.quiet.hint",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "tr": "Birisi uygulamayı belirli bir gün sayısı boyunca açmadığında her seferinde bir kez gönderilir."
   },
   "3e3cd176a267189c": {
     "en": "Nothing to show yet. A morning with nothing to report gets no notification.",
@@ -8833,6 +8854,13 @@
     "at": "2026-09-14",
     "tr": "İlk tabağın kendi yapay zeka sağlayıcın tarafından tanımlandı."
   },
+  "62e241f46f861b46": {
+    "en": "Days",
+    "path": "common:admin.activityMail.daysLabel",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "tr": "Gün"
+  },
   "62fc15db81bc869e": {
     "en": "Go to sharing",
     "path": "common:connectClinician.granted.cta",
@@ -9007,6 +9035,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-24",
     "tr": "Fotoğraf"
+  },
+  "64ba28d10452eb22": {
+    "en": "Sent once, a set number of days after sign-up, to people who have not tried a plate photo.",
+    "path": "common:admin.activityMail.firstScan.hint",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "tr": "Kayıttan belirli bir gün sayısı sonra, henüz tabak fotoğrafı denememiş kişilere bir kez gönderilir."
   },
   "64ba6895e53fff75": {
     "en": "Your goal was {{target}}.",
@@ -9778,6 +9813,13 @@
     "at": "2026-09-14",
     "tr": "Fotoğraf yükleniyor…"
   },
+  "6e931ddb5b4c7ef2": {
+    "en": "Test sent. Check your inbox.",
+    "path": "common:admin.activityMail.test.sent",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "tr": "Test gönderildi. Gelen kutunu kontrol et."
+  },
   "6e9784b65a0470bc": {
     "en": "Enter a weight between {{min}} and {{max}} kg",
     "path": "common:goals.weight.errors.outOfRange",
@@ -10127,6 +10169,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Bir sonrakini {{time}} için planla"
+  },
+  "71f7a590d7f594dd": {
+    "en": "Too many tests just now. Try again in a few minutes.",
+    "path": "common:admin.activityMail.test.throttled",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "tr": "Şu anda çok fazla test gönderildi. Birkaç dakika sonra tekrar dene."
   },
   "71f8280539d50189": {
     "en": "Shared. You verified:",
@@ -12424,6 +12473,13 @@
     "at": "2026-10-29",
     "tr": "Otomatik"
   },
+  "89e790f60457cea4": {
+    "en": "{{sent}} sent, {{cameBack}} came back",
+    "path": "common:admin.activityMail.stats.kind",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "tr": "{{sent}} gönderildi, {{cameBack}} geri döndü"
+  },
   "89f4be500bc83669": {
     "en": "Ask the study to send the link again, or open it from the consent materials.",
     "path": "common:research.join.queryString.askAgain",
@@ -12535,6 +12591,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Son ödemen gerçekleşmedi."
+  },
+  "8afd2c20586bb296": {
+    "en": "Email me a reminder if I don't use openplate for a while",
+    "path": "common:activityMail.signup.label",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "tr": "openplate uygulamasını bir süre kullanmazsam bana bir hatırlatma e-postası gönder"
   },
   "8b083c94aec5ee72": {
     "en": "This replaces your current AI connection ({{current}}). Nothing is revoked anywhere. You can set it up again later.",
@@ -13992,6 +14055,13 @@
     "at": "2026-09-14",
     "tr": "Bu bir davet koduna benzemiyor. Davet kodları {{prefix}} ile başlar."
   },
+  "99d75cfc6d549b1c": {
+    "en": "Reminder emails",
+    "path": "common:activityMail.settings.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "tr": "Hatırlatma e-postaları"
+  },
   "99d7a981107d9c97": {
     "en": "Photograph your plate or search for what you ate. openplate shows you the carbs in seconds, and tracks them against the daily goal you set. This instance needs an account, and your diary is encrypted on this device before a copy reaches the server.",
     "path": "common:meta.landingDescriptionManaged",
@@ -15231,6 +15301,13 @@
     "at": "2026-09-14",
     "tr": "İlk kurulum için bir API anahtarı gereklidir."
   },
+  "a6f7c3175dcc6726": {
+    "en": "Send a test to me",
+    "path": "common:admin.activityMail.test.button",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "tr": "Bana bir test gönder"
+  },
   "a709185cd920be20": {
     "en": "Changed your mind? This removes every detail above from this device.",
     "path": "common:bodyMetrics.clear.hint",
@@ -15279,6 +15356,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Kaydettiğin her yiyecek doğrudan bu tarayıcının kendi depolama alanına yazılır. Sunucu bir veritabanında şifreli bir kopya tutar ama anahtar asla günlük ile birlikte iletilmediğinden bunu okuyamaz. İstediğin zaman tümünü tek bir dosya olarak dışa aktar."
+  },
+  "a7ab8a4b3f1a5dda": {
+    "en": "A short email if you haven't tried a plate photo, or if you've been away for a while.",
+    "path": "common:activityMail.settings.description",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "tr": "Bir tabak fotoğrafı denemediysen veya bir süredir uzaktaysan kısa bir e-posta."
   },
   "a7ab94e22d74a662": {
     "en": "Measured against your current goals.",
@@ -16554,6 +16638,13 @@
     "at": "2026-09-14",
     "tr": "Gram"
   },
+  "b59e85cbf3bed131": {
+    "en": "First photo reminder",
+    "path": "common:admin.activityMail.firstScan.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "tr": "İlk fotoğraf hatırlatması"
+  },
   "b5a355bf996ef839": {
     "en": "No meal",
     "path": "common:add.meal.none",
@@ -16637,6 +16728,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-28",
     "tr": "Öğle yemeğini telefonuna kaydet, ardından haftanı dizüstü bilgisayarından gözden geçir. Her hesap varsayılan olarak bu şekilde çalışır. Günlüğün yüklenmeden önce cihazında şifrelenir. İşletici, unuttuğun bir paroladan sonra günlüğünü geri alabilmen için bir yedekleme anahtarı saklar ve bu anahtar işleticinin günlüğünü okumasına olanak tanır."
+  },
+  "b68f55aa8c6595b1": {
+    "en": "Reminder emails are off.",
+    "path": "common:activityMail.settings.toast.off",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "tr": "Hatırlatma e-postaları kapalı."
   },
   "b69389b85dd74276": {
     "en": "Your fasts now follow you to your other devices.",
@@ -17765,6 +17863,13 @@
     "at": "2026-09-14",
     "tr": "Bir e-posta adresi gerekli."
   },
+  "c431e86fa5f45347": {
+    "en": "That change did not go through.",
+    "path": "common:admin.activityMail.failed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "tr": "Bu değişiklik işlenemedi."
+  },
   "c43a9ba71feb6404": {
     "en": "May be raw or undercooked meat, avoid in pregnancy",
     "path": "common:cautions.pregnancy.raw-meat",
@@ -17806,6 +17911,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "/ {{goal}}"
+  },
+  "c4ca5752507173f4": {
+    "en": "Reminder emails are on.",
+    "path": "common:activityMail.settings.toast.on",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "tr": "Hatırlatma e-postaları açık."
   },
   "c4e4e7cfa62001d7": {
     "en": "Delete account",
@@ -18044,6 +18156,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Kısa sürede çok fazla deneme yapıldı. Bir dakika bekle, sonra tekrar dene."
+  },
+  "c7f62da2f7a1f098": {
+    "en": "Reminder emails",
+    "path": "common:admin.activityMail.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "tr": "Hatırlatma e-postaları"
   },
   "c84c5ff421cc4eb6": {
     "en": "chia seeds",
@@ -18359,6 +18478,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "openplate, cihazında kalan bir besin takip uygulaması"
+  },
+  "cc76e5df3536184c": {
+    "en": "Saved.",
+    "path": "common:admin.activityMail.saved",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "tr": "Kaydedildi."
   },
   "cc7cb45c07245367": {
     "en": "Dismiss",
@@ -20558,6 +20684,13 @@
     "at": "2026-09-18",
     "tr": "Bir öğünü yeniden yazmadan tekrar kaydettin."
   },
+  "e297f0fa3349cf25": {
+    "en": "Two kinds at most: one if you haven't tried a plate photo, one if you've been away. You can turn them off anytime.",
+    "path": "common:activityMail.signup.hint",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "tr": "En fazla iki tür: biri tabak fotoğrafı denemediysen, diğeri ise bir süredir uzaktaysan. Bunları istediğin zaman kapatabilirsin."
+  },
   "e2b6556946f7850b": {
     "en": "Name",
     "path": "common:declarations.withdraw.nameLabel",
@@ -20592,6 +20725,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Bu sunucunun araştırma hattı yok, bu yüzden çekilecek bir kohort bulunmuyor."
+  },
+  "e35121bc62d2c783": {
+    "en": "That change did not save. Try again.",
+    "path": "common:activityMail.settings.toast.failed",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "tr": "Bu değişiklik kaydedilemedi. Tekrar dene."
   },
   "e371011ef87a1d9c": {
     "en": "over {{goal}}",
@@ -20725,6 +20865,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-24",
     "tr": "YAZIO üzerinden içe aktarılan tüm girdiler kaldırılsın mı?"
+  },
+  "e4c29b3880ffd18c": {
+    "en": "Enter a whole number from {{min}} to {{max}}.",
+    "path": "common:admin.activityMail.daysRange",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "tr": "{{min}} ile {{max}} arasında bir tam sayı gir."
   },
   "e50470a16fa8bb9b": {
     "en": "Agree and continue",
@@ -21124,6 +21271,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "Yükleniyor…"
+  },
+  "e854b60c0b4ad8a0": {
+    "en": "Saving",
+    "path": "common:admin.activityMail.saving",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "tr": "Kaydediliyor"
   },
   "e88dd7ce9062ca20": {
     "en": "your height and sex",
@@ -21930,6 +22084,13 @@
     "at": "2026-09-23",
     "tr": "Günlüğün ilk gösterdiği sayı olan ana hedefi seçebilirsin."
   },
+  "f087f6232c349381": {
+    "en": "Away reminder",
+    "path": "common:admin.activityMail.quiet.title",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "tr": "Uzak kalma hatırlatması"
+  },
   "f091f1ea1bb49dcf": {
     "en": "You do this once, and then never again. Three steps, and only the middle one asks anything of you.",
     "path": "common:landing.setup.subtitle",
@@ -22434,6 +22595,13 @@
     "at": "2026-09-14",
     "tr": "Bir yedek dosyasından geri yükle"
   },
+  "f6594ae202b991d6": {
+    "en": "Save",
+    "path": "common:admin.activityMail.save",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "tr": "Kaydet"
+  },
   "f66f511547b95dd7": {
     "en": "Mind trying another? Good light and a top-down angle help.",
     "path": "common:scan.errors.photoQualityBody",
@@ -22720,6 +22888,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-14",
     "tr": "openplate yalnızca saatleri sayar. Tıbbi tavsiye vermez."
+  },
+  "f993ed937d4c942e": {
+    "en": "{{optedIn}} people asked for reminders.",
+    "path": "common:admin.activityMail.stats.optedIn",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "tr": "{{optedIn}} kişi hatırlatma istedi."
   },
   "f9ac5e0ecd582e6c": {
     "en": "Sharing a diary needs sync, and whoever runs this openplate has not set it up. Nothing here can be used.",
