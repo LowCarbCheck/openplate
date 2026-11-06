@@ -476,7 +476,7 @@ function createLetterMailer(options: LetterMailerOptions): Mailer {
     },
 
     async sendAccountNotice(input: SendAccountNoticeInput): Promise<void> {
-      const message = buildAccountNoticeMessage({ language });
+      const message = buildAccountNoticeMessage({ language, clientBaseUrl: links.clientBaseUrl });
       await transport.send({ to: input.email, subject: message.subject, text: message.text, html: message.html });
       // No address, and nothing that says which member's mint caused it.
       logger.info('Account notice mailed');
@@ -507,7 +507,10 @@ function createLetterMailer(options: LetterMailerOptions): Mailer {
 
     async sendSignupAccountNotice(input: SendSignupAccountNoticeInput): Promise<void> {
       // As for the letter above: the language the person asked in, then the instance's.
-      const message = buildSignupAccountNoticeMessage({ language: input.language ?? language });
+      const message = buildSignupAccountNoticeMessage({
+        language: input.language ?? language,
+        clientBaseUrl: links.clientBaseUrl,
+      });
       await transport.send({ to: input.email, subject: message.subject, text: message.text, html: message.html });
       logger.info('Sign-up account notice mailed');
     },
@@ -518,7 +521,11 @@ function createLetterMailer(options: LetterMailerOptions): Mailer {
         name: receiptTemplateName(input.kind),
         languages: receiptTemplateLanguages(input.language),
       });
-      const message = buildDeclarationReceiptMessage({ declaration: input, template });
+      const message = buildDeclarationReceiptMessage({
+        declaration: input,
+        template,
+        clientBaseUrl: links.clientBaseUrl,
+      });
       await transport.send({ to: input.to, subject: message.subject, text: message.text, html: message.html });
       // No address, for the reason the module doc gives: the address is the
       // one thing this letter still carries that a log line must not. Since
@@ -529,7 +536,11 @@ function createLetterMailer(options: LetterMailerOptions): Mailer {
 
     async sendDeclarationOperatorAlert(input: SendDeclarationOperatorAlertInput): Promise<void> {
       const template = await templates.find({ name: alertTemplateName(input.kind), languages: ['en'] });
-      const message = buildDeclarationOperatorAlertMessage({ declaration: input, template });
+      const message = buildDeclarationOperatorAlertMessage({
+        declaration: input,
+        template,
+        clientBaseUrl: links.clientBaseUrl,
+      });
       await transport.send({ to: operatorEmail, subject: message.subject, text: message.text, html: message.html });
       logger.info('Declaration operator alert mailed', {
         kind: input.kind,
@@ -539,7 +550,7 @@ function createLetterMailer(options: LetterMailerOptions): Mailer {
     },
 
     async sendAiBudgetAlert(input: SendAiBudgetAlertInput): Promise<void> {
-      const message = buildAiBudgetAlertMessage(input);
+      const message = buildAiBudgetAlertMessage({ ...input, clientBaseUrl: links.clientBaseUrl });
       await transport.send({ to: operatorEmail, subject: message.subject, text: message.text, html: message.html });
     },
 

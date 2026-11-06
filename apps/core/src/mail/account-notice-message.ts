@@ -45,6 +45,8 @@ export interface AccountNoticeMessageInput {
    * mail API anywhere near the test.
    */
   language: InstanceLanguage;
+  /** The instance's own app, for the mark in the header. Omitted: the wordmark alone. */
+  clientBaseUrl?: string | undefined;
 }
 
 /**
@@ -63,6 +65,6 @@ export function buildAccountNoticeMessage(input: AccountNoticeMessageInput): Acc
     subject: strings.subject,
     text: before.join('\n\n'),
     // `link: null` is what omits the anchor paragraph; see `renderHtml`.
-    html: renderHtml({ language: input.language, before, after: [], link: null }),
+    html: renderHtml({ language: input.language, before, after: [], link: null, clientBaseUrl: input.clientBaseUrl }),
   };
 }

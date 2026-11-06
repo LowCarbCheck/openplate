@@ -26,6 +26,10 @@
 import type { InstanceLanguage } from '../protocol.js';
 import { MAIL_STRINGS, fill, formatExpiryDate } from './strings.js';
 import { stripTrailingSlashes } from '../lib/trailing-slashes.js';
+import { escapeHtml, renderHtmlDocument, renderLink } from './mail-layout.js';
+
+// The layout moved to `mail-layout.ts`; the letters import it from here.
+export { escapeHtml, renderHtmlDocument };
 
 export interface InviteMessageInput {
   /** Where the openplate client lives, from `CLIENT_BASE_URL`. */
@@ -81,14 +85,9 @@ export function buildInviteLink(parts: {
   return `${client}/join#server=${server}&invite=${invite}`;
 }
 
-/**
- * Minimal escaping for the values interpolated into the HTML part.
- *
- * Not a general-purpose sanitiser and it does not need to be: the only sinks
- * are element text and an `href` this module built itself.
- */
-export function escapeHtml(value: string): string {
-  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+/** One escaped paragraph of a letter's body. */
+function paragraph(value: string): string {
+  return `<p>${escapeHtml(value)}</p>`;
 }
 
 /**
@@ -115,31 +114,18 @@ export function renderHtml(input: {
    * clickable nothing where every other letter has its URL.
    */
   link: string | null;
+  /** The instance's own app, for the mark in the header. Omitted: the wordmark alone. */
+  clientBaseUrl?: string | undefined;
 }): string {
-  const paragraph = (value: string): string => `<p>${escapeHtml(value)}</p>`;
   const anchor =
     input.link === null
       ? []
-      : [`<p style="word-break:break-all"><a href="${escapeHtml(input.link)}">${escapeHtml(input.link)}</a></p>`];
+      : [`<p style="word-break:break-all">${renderLink({ href: input.link, label: input.link })}</p>`];
   return renderHtmlDocument({
     language: input.language,
+    clientBaseUrl: input.clientBaseUrl,
     body: [...input.before.map(paragraph), ...anchor, ...input.after.map(paragraph)],
   });
-}
-
-/**
- * The document shell every letter shares. `body` is ALREADY-ESCAPED markup,
- * one element per entry; this function adds nothing a caller could inject
- * into, only the language attribute, which is one of `InstanceLanguage`'s
- * literals.
- */
-export function renderHtmlDocument(input: { language: InstanceLanguage; body: readonly string[] }): string {
-  return [
-    '<!doctype html>',
-    `<html lang="${input.language}"><body style="font-family:system-ui,sans-serif;line-height:1.5;color:#111">`,
-    ...input.body,
-    '</body></html>',
-  ].join('\n');
 }
 
 /**
@@ -166,7 +152,7 @@ export function buildInviteMessage(input: InviteMessageInput): BuiltMessage {
   return {
     subject: strings.subject,
     text: [...before, link, ...after].join('\n\n'),
-    html: renderHtml({ language: input.language, before, after, link }),
+    html: renderHtml({ language: input.language, before, after, link, clientBaseUrl: input.clientBaseUrl }),
     link,
   };
 }

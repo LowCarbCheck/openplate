@@ -76,7 +76,7 @@ export function buildSignupRequestMessage(input: SignupRequestMessageInput): Bui
   return {
     subject: strings.subject,
     text: [...before, link, ...after].join('\n\n'),
-    html: renderHtml({ language: input.language, before, after, link }),
+    html: renderHtml({ language: input.language, before, after, link, clientBaseUrl: input.clientBaseUrl }),
     link,
   };
 }
@@ -86,12 +86,16 @@ export function buildSignupRequestMessage(input: SignupRequestMessageInput): Bui
  * for the reason the account notice carries none: a join link would make a
  * second account and a reset link would be a reset nobody asked for.
  */
-export function buildSignupAccountNoticeMessage(input: { language: InstanceLanguage }): AccountNoticeMessage {
+export function buildSignupAccountNoticeMessage(input: {
+  language: InstanceLanguage;
+  /** The instance's own app, for the mark in the header. Omitted: the wordmark alone. */
+  clientBaseUrl?: string | undefined;
+}): AccountNoticeMessage {
   const strings = SIGNUP_LETTER_STRINGS[input.language].accountNotice;
   const before = [strings.greeting, strings.asked, strings.signIn, strings.forgotten, strings.ignore];
   return {
     subject: strings.subject,
     text: before.join('\n\n'),
-    html: renderHtml({ language: input.language, before, after: [], link: null }),
+    html: renderHtml({ language: input.language, before, after: [], link: null, clientBaseUrl: input.clientBaseUrl }),
   };
 }

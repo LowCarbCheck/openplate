@@ -563,6 +563,8 @@ export function renderMailTemplate(input: {
   template: MailTemplate;
   values: MailTemplateValues;
   language: InstanceLanguage;
+  /** The instance's own app, for the mark in the header. Omitted: the wordmark alone. */
+  clientBaseUrl?: string | undefined;
 }): RenderedMail {
   const { template, values } = input;
   return {
@@ -570,6 +572,7 @@ export function renderMailTemplate(input: {
     text: template.blocks.map((block) => blockText(block, values)).join('\n\n'),
     html: renderHtmlDocument({
       language: input.language,
+      clientBaseUrl: input.clientBaseUrl,
       body: template.blocks.map((block) => blockHtml(block, values)),
     }),
   };

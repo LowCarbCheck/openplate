@@ -19,7 +19,7 @@ import type { ActivityMailKind } from '../activity-mail/due-rules.js';
 import type { InstanceLanguage } from '../protocol.js';
 import { stripTrailingSlashes } from '../lib/trailing-slashes.js';
 import { ACTIVITY_MAIL_STRINGS, fillActivityMail, type ActivityMailStrings } from './activity-mail-strings.js';
-import { escapeHtml, renderHtmlDocument } from './invite-message.js';
+import { escapeHtml, renderButton, renderHtmlDocument, renderLink } from './mail-layout.js';
 
 /** The path of the unsubscribe route, GET for the page and POST for the change. */
 export const UNSUBSCRIBE_PATH = '/v1/mail/unsubscribe';
@@ -109,15 +109,11 @@ export function buildActivityMailMessage(input: ActivityMailMessageInput): Built
     `${strings.footer.reason}\n${fillActivityMail(strings.footer.text, { link: unsubscribeUrl })}`,
   ].join('\n\n');
 
-  const button =
-    `<p><a href="${escapeHtml(actionUrl)}" style="display:inline-block;padding:10px 18px;border:1px solid #111;` +
-    `border-radius:6px;color:#111;text-decoration:none">${escapeHtml(letter.button)}</a></p>`;
-  const footer =
-    `<p style="font-size:13px">${escapeHtml(strings.footer.reason)} ` +
-    `<a href="${escapeHtml(unsubscribeUrl)}">${escapeHtml(strings.footer.linkLabel)}</a></p>`;
   const html = renderHtmlDocument({
     language: input.language,
-    body: [`<p>${escapeHtml(letter.paragraph)}</p>`, button, footer],
+    clientBaseUrl: input.clientBaseUrl,
+    body: [`<p>${escapeHtml(letter.paragraph)}</p>`, renderButton({ href: actionUrl, label: letter.button })],
+    footer: `${escapeHtml(strings.footer.reason)} ${renderLink({ href: unsubscribeUrl, label: strings.footer.linkLabel })}`,
   });
 
   return {

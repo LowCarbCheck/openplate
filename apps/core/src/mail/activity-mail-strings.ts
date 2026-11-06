@@ -6,8 +6,10 @@
  * `signup-letter-strings.ts` gives: the four generated modules there are
  * rebuilt from a translation memory by `pnpm translate:mail`, and a key added
  * to `MailStrings` would have to be bought into every one of them through that
- * pipeline. These strings were translated by the wordsmith pass (Gemini 3.8
- * Flash) from the English below, which is the operator's own copy, verbatim.
+ * pipeline. The English below is the operator's own copy (rewritten on
+ * 2026-11-06 to be more encouraging). The five translations came from the
+ * wordsmith pass (Gemini 3.8 Flash), with hand fixes for gender-neutral French
+ * and Italian.
  *
  * TWO PLACEHOLDERS, `{days}` and `{link}`, filled by `fillActivityMail`. The
  * first-scan letter has two first sentences: `joinedWeek` for exactly seven
@@ -66,16 +68,16 @@ export interface ActivityMailStrings {
 /** English, hand-written by the operator, and the source every other language translates. */
 const ACTIVITY_MAIL_EN: ActivityMailStrings = {
   firstScan: {
-    subject: 'Try your first plate photo',
-    joinedWeek: 'You joined openplate a week ago and have not tried a plate photo yet.',
-    joinedDays: 'You joined openplate {days} days ago and have not tried a plate photo yet.',
-    body: 'Take a photo of your next meal, and openplate works out the carbs, protein and calories for you. It takes about ten seconds.',
-    button: 'Take a photo',
+    subject: 'Ready for your first plate photo?',
+    joinedWeek: 'You joined openplate a week ago, and we are glad you are here.',
+    joinedDays: 'You joined openplate {days} days ago, and we are glad you are here.',
+    body: 'The easiest way to start is one photo of your next meal. In about ten seconds, openplate works out the carbs, protein and calories for you.',
+    button: 'Take my first photo',
   },
   quiet: {
-    subject: 'Your diary is where you left it',
-    body: 'You have not opened openplate for {days} days. Log one meal today and you are back on track.',
-    button: 'Open openplate',
+    subject: 'Pick up where you left off',
+    body: 'It has been {days} days since your last visit, and that is fine. Your diary is right where you left it. Log one meal today, and you are back in your rhythm.',
+    button: 'Open my diary',
   },
   footer: {
     reason: 'You get this email because you asked for reminders when you signed up.',
@@ -93,16 +95,16 @@ const ACTIVITY_MAIL_EN: ActivityMailStrings = {
 /** German, bought from the wordsmith pass (Gemini 3.8 Flash) in the du register the other letters use. */
 const ACTIVITY_MAIL_DE: ActivityMailStrings = {
   firstScan: {
-    subject: 'Probiere dein erstes Tellerfoto aus',
-    joinedWeek: 'Du hast dich vor einer Woche bei openplate angemeldet und noch kein Tellerfoto ausprobiert.',
-    joinedDays: 'Du hast dich vor {days} Tagen bei openplate angemeldet und noch kein Tellerfoto ausprobiert.',
-    body: 'Fotografiere deine nächste Mahlzeit, und openplate berechnet die Kohlenhydrate, das Protein und die Kalorien für dich. Das dauert etwa zehn Sekunden.',
-    button: 'Foto aufnehmen',
+    subject: 'Bereit für dein erstes Tellerfoto?',
+    joinedWeek: 'Du hast dich vor einer Woche bei openplate angemeldet, und wir freuen uns, dass du da bist.',
+    joinedDays: 'Du hast dich vor {days} Tagen bei openplate angemeldet, und wir freuen uns, dass du da bist.',
+    body: 'Der einfachste Start ist ein Foto deiner nächsten Mahlzeit. In etwa zehn Sekunden berechnet openplate die Kohlenhydrate, das Protein und die Kalorien für dich.',
+    button: 'Mein erstes Foto machen',
   },
   quiet: {
-    subject: 'Dein Tagebuch ist noch da, wo du es verlassen hast',
-    body: 'Du hast openplate seit {days} Tagen nicht geöffnet. Erfasse heute eine Mahlzeit und du bist wieder im Plan.',
-    button: 'openplate öffnen',
+    subject: 'Mach da weiter, wo du aufgehört hast',
+    body: 'Dein letzter Besuch ist {days} Tage her, und das ist völlig in Ordnung. Dein Tagebuch wartet genau dort auf dich, wo du es gelassen hast. Erfasse heute eine Mahlzeit, und du bist wieder in deinem Rhythmus.',
+    button: 'Mein Tagebuch öffnen',
   },
   footer: {
     reason: 'Du erhältst diese E-Mail, weil du dich bei deiner Registrierung für Erinnerungen angemeldet hast.',
@@ -120,16 +122,16 @@ const ACTIVITY_MAIL_DE: ActivityMailStrings = {
 /** French, bought from the wordsmith pass (Gemini 3.8 Flash) in the tu register. */
 const ACTIVITY_MAIL_FR: ActivityMailStrings = {
   firstScan: {
-    subject: "Essaie ta première photo d'assiette",
-    joinedWeek: "Tu as rejoint openplate il y a une semaine et tu n'as pas encore essayé la photo d'assiette.",
-    joinedDays: "Tu as rejoint openplate il y a {days} jours et tu n'as pas encore essayé la photo d'assiette.",
-    body: 'Prends en photo ton prochain repas, et openplate calcule les glucides, les protéines et les calories pour toi. Cela prend environ dix secondes.',
-    button: 'Prendre une photo',
+    subject: "Envie d'essayer ta première photo d'assiette ?",
+    joinedWeek: 'Tu as rejoint openplate il y a une semaine, et nous sommes ravis de te compter parmi nous.',
+    joinedDays: 'Tu as rejoint openplate il y a {days} jours, et nous sommes ravis de te compter parmi nous.',
+    body: 'Le moyen le plus simple de commencer est de prendre une photo de ton prochain repas. En une dizaine de secondes, openplate calcule les glucides, les protéines et les calories pour toi.',
+    button: 'Prendre ma première photo',
   },
   quiet: {
-    subject: "Ton journal est là où tu l'as laissé",
-    body: "Tu n'as pas ouvert openplate depuis {days} jours. Enregistre un repas aujourd'hui pour reprendre le fil.",
-    button: 'Ouvrir openplate',
+    subject: 'Reprends là où tu en étais',
+    body: "Ta dernière visite remonte à {days} jours, et ce n'est pas grave. Ton journal est exactement là où tu l'as laissé. Enregistre un repas aujourd'hui, et tu retrouveras ton rythme.",
+    button: 'Ouvrir mon journal',
   },
   footer: {
     reason: 'Tu reçois cet e-mail car tu as demandé des rappels lors de ton inscription.',
@@ -147,16 +149,16 @@ const ACTIVITY_MAIL_FR: ActivityMailStrings = {
 /** Italian, bought from the wordsmith pass (Gemini 3.8 Flash) in the tu register. */
 const ACTIVITY_MAIL_IT: ActivityMailStrings = {
   firstScan: {
-    subject: 'Prova la tua prima foto del piatto',
-    joinedWeek: 'Ti sei iscritto a openplate una settimana fa e non hai ancora provato una foto del piatto.',
-    joinedDays: 'Ti sei iscritto a openplate {days} giorni fa e non hai ancora provato una foto del piatto.',
-    body: 'Scatta una foto del tuo prossimo pasto e openplate calcola i carboidrati, le proteine e le calorie per te. Ci vogliono circa dieci secondi.',
-    button: 'Scatta una foto',
+    subject: 'Che ne dici della tua prima foto del piatto?',
+    joinedWeek: 'Hai scelto openplate una settimana fa, e siamo felici di averti qui.',
+    joinedDays: 'Hai scelto openplate {days} giorni fa, e siamo felici di averti qui.',
+    body: 'Il modo più semplice per iniziare è una foto del tuo prossimo pasto. In circa dieci secondi, openplate calcola per te carboidrati, proteine e calorie.',
+    button: 'Scatta la mia prima foto',
   },
   quiet: {
-    subject: 'Il tuo diario è dove lo avevi lasciato',
-    body: 'Non apri openplate da {days} giorni. Registra un pasto oggi e sarai di nuovo in carreggiata.',
-    button: 'Apri openplate',
+    subject: 'Riprendi da dove hai interrotto',
+    body: "Sono passati {days} giorni dalla tua ultima visita, e non c'è problema. Il tuo diario è esattamente dove lo avevi lasciato. Registra un pasto oggi per ritrovare il tuo ritmo.",
+    button: 'Apri il mio diario',
   },
   footer: {
     reason: "Ricevi questa email perché hai richiesto i promemoria al momento dell'iscrizione.",
@@ -174,16 +176,16 @@ const ACTIVITY_MAIL_IT: ActivityMailStrings = {
 /** Spanish, bought from the wordsmith pass (Gemini 3.8 Flash) in the tú register. */
 const ACTIVITY_MAIL_ES: ActivityMailStrings = {
   firstScan: {
-    subject: 'Prueba tu primera foto de un plato',
-    joinedWeek: 'Te uniste a openplate hace una semana y todavía no has probado una foto de un plato.',
-    joinedDays: 'Te uniste a openplate hace {days} días y todavía no has probado una foto de un plato.',
-    body: 'Haz una foto de tu próxima comida y openplate calculará los carbohidratos, las proteínas y las calorías por ti. Tarda unos diez segundos.',
-    button: 'Haz una foto',
+    subject: '¿A punto para la primera foto de un plato?',
+    joinedWeek: 'Te uniste a openplate hace una semana y nos alegra que estés aquí.',
+    joinedDays: 'Te uniste a openplate hace {days} días y nos alegra que estés aquí.',
+    body: 'La forma más fácil de empezar es hacer una foto de tu próxima comida. En unos diez segundos, openplate calcula los carbohidratos, las proteínas y las calorías por ti.',
+    button: 'Hacer mi primera foto',
   },
   quiet: {
-    subject: 'Tu diario está donde lo dejaste',
-    body: 'No has abierto openplate desde hace {days} días. Registra una comida hoy y retomarás el ritmo.',
-    button: 'Abrir openplate',
+    subject: 'Sigue donde lo dejaste',
+    body: 'Han pasado {days} días desde tu última visita, y no pasa nada. Tu diario sigue justo donde lo dejaste. Registra una comida hoy y volverás a tu ritmo.',
+    button: 'Abrir mi diario',
   },
   footer: {
     reason: 'Recibes este correo electrónico porque pediste recordatorios cuando te registraste.',
@@ -201,16 +203,16 @@ const ACTIVITY_MAIL_ES: ActivityMailStrings = {
 /** Turkish, bought from the wordsmith pass (Gemini 3.8 Flash) in the informal register. */
 const ACTIVITY_MAIL_TR: ActivityMailStrings = {
   firstScan: {
-    subject: 'İlk tabak fotoğrafını dene',
-    joinedWeek: "openplate'e bir hafta önce katıldın ve henüz bir tabak fotoğrafı denemedin.",
-    joinedDays: "openplate'e {days} gün önce katıldın ve henüz bir tabak fotoğrafı denemedin.",
-    body: 'Bir sonraki öğününün fotoğrafını çek, openplate senin için karbonhidrat, protein ve kalorileri hesaplasın. Yaklaşık on saniye sürer.',
-    button: 'Fotoğraf çek',
+    subject: 'İlk tabak fotoğrafın için hazır mısın?',
+    joinedWeek: "openplate'e bir hafta önce katıldın ve burada olmandan mutluyuz.",
+    joinedDays: "openplate'e {days} gün önce katıldın ve burada olmandan mutluyuz.",
+    body: 'Başlamanın en kolay yolu, bir sonraki öğününün tek bir fotoğrafını çekmek. Yaklaşık on saniye içinde openplate senin için karbonhidrat, protein ve kalori değerlerini hesaplar.',
+    button: 'İlk fotoğrafımı çek',
   },
   quiet: {
-    subject: 'Günlüğün bıraktığın yerde duruyor',
-    body: "openplate'i {days} gündür açmadın. Bugün bir öğün kaydet ve yeniden takipte kal.",
-    button: "openplate'i aç",
+    subject: 'Kaldığın yerden devam et',
+    body: 'Son ziyaretinin üzerinden {days} gün geçti ve bu hiç sorun değil. Günlüğün tam bıraktığın yerde duruyor. Bugün bir öğün kaydet, ritmine hemen geri dön.',
+    button: 'Günlüğümü aç',
   },
   footer: {
     reason: 'Bu e-postayı, kaydolurken hatırlatıcıları istediğin için alıyorsun.',

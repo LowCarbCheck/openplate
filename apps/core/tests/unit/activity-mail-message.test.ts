@@ -82,9 +82,7 @@ test('the unsubscribe link is the server path with the token, in the headers too
 });
 
 test('the English first-scan letter says "a week ago" at seven days, and the number otherwise', () => {
-  assert.ok(
-    build({ days: 7 }).text.startsWith('You joined openplate a week ago and have not tried a plate photo yet.'),
-  );
+  assert.ok(build({ days: 7 }).text.startsWith('You joined openplate a week ago, and we are glad you are here.'));
   const eight = build({ days: 8 }).text;
   assert.ok(eight.startsWith('You joined openplate 8 days ago'), eight);
   assert.ok(!eight.includes('a week'));
@@ -93,21 +91,23 @@ test('the English first-scan letter says "a week ago" at seven days, and the num
 
 test('the English letters, word for word', () => {
   const first = build({ kind: 'first-scan', days: 7 });
-  assert.equal(first.subject, 'Try your first plate photo');
+  assert.equal(first.subject, 'Ready for your first plate photo?');
   assert.equal(
     first.text,
     [
-      'You joined openplate a week ago and have not tried a plate photo yet. Take a photo of your next meal, and openplate works out the carbs, protein and calories for you. It takes about ten seconds.',
-      `Take a photo: ${CLIENT}/add/photo`,
+      'You joined openplate a week ago, and we are glad you are here. The easiest way to start is one photo of your next meal. In about ten seconds, openplate works out the carbs, protein and calories for you.',
+      `Take my first photo: ${CLIENT}/add/photo`,
       `You get this email because you asked for reminders when you signed up.\nTurn off reminders: ${SERVER}/v1/mail/unsubscribe?token=${TOKEN}`,
     ].join('\n\n'),
   );
   const quiet = build({ kind: 'quiet', days: 14 });
-  assert.equal(quiet.subject, 'Your diary is where you left it');
+  assert.equal(quiet.subject, 'Pick up where you left off');
   assert.ok(
-    quiet.text.startsWith('You have not opened openplate for 14 days. Log one meal today and you are back on track.'),
+    quiet.text.startsWith(
+      'It has been 14 days since your last visit, and that is fine. Your diary is right where you left it. Log one meal today, and you are back in your rhythm.',
+    ),
   );
-  assert.ok(quiet.text.includes(`Open openplate: ${CLIENT}\n`));
+  assert.ok(quiet.text.includes(`Open my diary: ${CLIENT}\n`));
 });
 
 test('a test send adds the prefix to the subject and changes nothing else', () => {

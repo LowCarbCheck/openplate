@@ -66,7 +66,7 @@ export function buildResetMessage(input: ResetMessageInput): BuiltMessage {
   return {
     subject: strings.subject,
     text: [...before, link, ...after].join('\n\n'),
-    html: renderHtml({ language: input.language, before, after, link }),
+    html: renderHtml({ language: input.language, before, after, link, clientBaseUrl: input.clientBaseUrl }),
     link,
   };
 }

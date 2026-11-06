@@ -853,3 +853,52 @@ test('with no content folder, the neutral receipt is in the reader language, for
   }
   assert.equal(new Set(subjects).size, INSTANCE_LANGUAGES.length, 'two languages share a fallback subject');
 });
+
+// ── Every letter the mailer sends carries the mark ─────────────────────────
+
+test('every letter the mailer sends puts the instance logo in its header, and none sets a left border', async () => {
+  const api = await startFakeMailApi();
+  const mailer = mailerFor(api.url, createCapturingLogger().logger);
+  const expiresAt = '2026-09-11T10:00:00.000Z';
+
+  await mailer.sendInvite({ email: 'a@example.org', displayName: null, inviteToken: 'si_a', expiresAt });
+  await mailer.sendReset({ email: 'a@example.org', resetToken: 'sr_a', expiresAt });
+  await mailer.sendAccountNotice({ email: 'a@example.org' });
+  await mailer.sendSignupRequest({
+    email: 'a@example.org',
+    displayName: null,
+    inviteToken: 'si_a',
+    expiresAt,
+    intent: { plan: null, tier: null, locale: null },
+  });
+  await mailer.sendSignupAccountNotice({ email: 'a@example.org', language: null });
+  await mailer.sendDeclarationReceipt({ ...sampleReceipt(), receiptId: 'r-1', to: 'a@example.org', language: 'de' });
+  await mailer.sendDeclarationOperatorAlert({ ...sampleDeclarationFields(), receiptId: 'r-1', matched: false });
+  await mailer.sendAiBudgetAlert({
+    limitUsd: 5,
+    remainingUsd: 1,
+    reset: null,
+    usageDailyUsd: 0,
+    usageMonthlyUsd: 4,
+    fraction: 0.2,
+  });
+  await mailer.sendActivityReminder({
+    email: 'a@example.org',
+    kind: 'quiet',
+    days: 30,
+    language: 'en',
+    unsubscribeToken: '1.abc',
+    isTest: false,
+  });
+
+  assert.equal(api.received.length, 9);
+  for (const request of api.received) {
+    // SAFETY: as above, our own adapter posted this body.
+    const payload = JSON.parse(request.body) as MailPayload;
+    assert.ok(
+      payload.html.includes(`<img src="${LINKS.clientBaseUrl}/icons/icon-192.png"`),
+      `${payload.subject} carries no logo`,
+    );
+    assert.ok(!payload.html.includes('border-left'), `${payload.subject} sets a left border`);
+  }
+});

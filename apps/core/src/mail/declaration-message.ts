@@ -512,6 +512,8 @@ function buildFallback(input: {
   language: DeclarationLanguage;
   subject: string;
   trailing: string[];
+  /** The instance's own app, for the mark in the header. Omitted: the wordmark alone. */
+  clientBaseUrl?: string | undefined;
 }): BuiltDeclarationMessage {
   const labels = FALLBACK_LABELS[input.language];
   const date = formatReceivedAt({ receivedAt: input.receivedAt, language: input.language });
@@ -525,7 +527,13 @@ function buildFallback(input: {
   return {
     subject: input.subject,
     text: paragraphs.join('\n\n'),
-    html: renderHtml({ language: input.language, before: paragraphs, after: [], link: null }),
+    html: renderHtml({
+      language: input.language,
+      before: paragraphs,
+      after: [],
+      link: null,
+      clientBaseUrl: input.clientBaseUrl,
+    }),
     origin: 'fallback',
   };
 }
@@ -541,6 +549,8 @@ function fillTemplate(input: {
   details: (language: DeclarationLanguage) => string[];
   receiptId: string;
   matched: boolean | null;
+  /** The instance's own app, for the mark in the header. Omitted: the wordmark alone. */
+  clientBaseUrl?: string | undefined;
 }): BuiltDeclarationMessage | null {
   const { found } = input;
   const inline = new Map<InlinePlaceholder, string>();
@@ -550,7 +560,12 @@ function fillTemplate(input: {
   const values = { inline, details: input.details(found.language) };
   try {
     return {
-      ...renderMailTemplate({ template: found.template, values, language: found.language }),
+      ...renderMailTemplate({
+        template: found.template,
+        values,
+        language: found.language,
+        clientBaseUrl: input.clientBaseUrl,
+      }),
       origin: 'template',
     };
   } catch (cause) {
@@ -568,6 +583,8 @@ function fillTemplate(input: {
 export function buildDeclarationReceiptMessage(input: {
   declaration: DeclarationReceiptInput;
   template: FoundMailTemplate | null;
+  /** The instance's own app, for the mark in the header. Omitted: the wordmark alone. */
+  clientBaseUrl?: string | undefined;
 }): BuiltDeclarationMessage {
   const { declaration } = input;
   const details = (language: DeclarationLanguage): string[] => receiptDetailLines({ receipt: declaration, language });
@@ -578,6 +595,7 @@ export function buildDeclarationReceiptMessage(input: {
       details,
       receiptId: declaration.receiptId,
       matched: null,
+      clientBaseUrl: input.clientBaseUrl,
     });
     if (filled !== null) return filled;
   }
@@ -590,6 +608,7 @@ export function buildDeclarationReceiptMessage(input: {
     language: declaration.language,
     subject: declaration.kind === 'kuendigung' ? labels.subjectKuendigung : labels.subjectWiderruf,
     trailing: [RECEIPT_NOT_YOU[declaration.language]],
+    clientBaseUrl: input.clientBaseUrl,
   });
 }
 
@@ -601,6 +620,8 @@ export function buildDeclarationReceiptMessage(input: {
 export function buildDeclarationOperatorAlertMessage(input: {
   declaration: DeclarationOperatorAlertInput;
   template: FoundMailTemplate | null;
+  /** The instance's own app, for the mark in the header. Omitted: the wordmark alone. */
+  clientBaseUrl?: string | undefined;
 }): BuiltDeclarationMessage {
   const { declaration } = input;
   const details = (language: DeclarationLanguage): string[] => detailLines({ fields: declaration, language });
@@ -611,6 +632,7 @@ export function buildDeclarationOperatorAlertMessage(input: {
       details,
       receiptId: declaration.receiptId,
       matched: declaration.matched,
+      clientBaseUrl: input.clientBaseUrl,
     });
     if (filled !== null) return filled;
   }
@@ -623,5 +645,6 @@ export function buildDeclarationOperatorAlertMessage(input: {
     language: 'en',
     subject: `New declaration: ${kindWord} (${declaration.receiptId})`,
     trailing: [`Matched to an existing account: ${declaration.matched ? 'yes' : 'no'}.`],
+    clientBaseUrl: input.clientBaseUrl,
   });
 }

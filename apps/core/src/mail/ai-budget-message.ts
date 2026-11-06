@@ -48,7 +48,16 @@ function formatPercent(fraction: number): string {
   return String(Number((fraction * 100).toFixed(1)));
 }
 
-export function buildAiBudgetAlertMessage(input: AiBudgetAlertInput): AiBudgetAlertMessage {
+/**
+ * `clientBaseUrl` is the mailer's, not the caller's: it is not part of
+ * {@link AiBudgetAlertInput}, which is what the budget watcher fills.
+ */
+export function buildAiBudgetAlertMessage(
+  input: AiBudgetAlertInput & {
+    /** The instance's own app, for the mark in the header. Omitted: the wordmark alone. */
+    clientBaseUrl?: string | undefined;
+  },
+): AiBudgetAlertMessage {
   const remaining = formatUsd(input.remainingUsd);
   const limit = formatUsd(input.limitUsd);
   const paragraphs = [
@@ -61,6 +70,12 @@ export function buildAiBudgetAlertMessage(input: AiBudgetAlertInput): AiBudgetAl
   return {
     subject: `AI budget low: ${remaining} of ${limit} left`,
     text: paragraphs.join('\n\n'),
-    html: renderHtml({ language: 'en', before: paragraphs, after: [], link: null }),
+    html: renderHtml({
+      language: 'en',
+      before: paragraphs,
+      after: [],
+      link: null,
+      clientBaseUrl: input.clientBaseUrl,
+    }),
   };
 }
