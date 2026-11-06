@@ -7,6 +7,17 @@ change moves the minor.
 
 ## [Unreleased]
 
+## [0.41.0] - 2026-11-06
+
+### Changed
+
+- **All core mail now uses the openplate layout.** Invitations, password resets, sign-up mails, account notices, receipts, budget alerts and reminders share one layout. It puts a white card on a light ground, the openplate mark and name at the top, a filled button where the mail has one, and the reason line and unsubscribe link below the card. The mark loads from `CLIENT_BASE_URL/icons/icon-192.png`. Mail without a client address shows only the name. Colours match the light palette in `apps/app/app/app.css`; a unit test fails if they drift. Subjects, copy, text parts and headers are unchanged. No configuration changes or migrations required. ([893d5a94](https://github.com/LowCarbCheck/openplate/commit/893d5a94))
+- **Friendlier reminder copy.** The `first-scan` and `quiet` reminders now welcome the reader and say that a break is fine, instead of stating what they have not done yet. All six languages are updated; the footer and the unsubscribe pages keep their words. ([893d5a94](https://github.com/LowCarbCheck/openplate/commit/893d5a94))
+
+### Fixed
+
+- **The first-scan reminder no longer goes to an account that already received a quiet reminder.** Before, a `first-scan` mail could arrive a few days after a `quiet` mail. Now any `quiet` mail sent to an account blocks its `first-scan` mail for good, so two reminders never arrive close together. No configuration change and no migration. See PROTOCOL.md §5.26. ([0fce36f0](https://github.com/LowCarbCheck/openplate/commit/0fce36f0))
+
 ## [0.40.0] - 2026-11-06
 
 ### Added
