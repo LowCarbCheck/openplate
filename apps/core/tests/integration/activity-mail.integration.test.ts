@@ -337,6 +337,32 @@ test('the first-scan SQL skips each account the rule refuses, and each control i
   assert.ok([used, noAi, suspended, unticked].every((s) => s.account.id !== control.account.id));
 });
 
+test('a quiet mail ever sent keeps the account out of the first-scan select and the claim', async () => {
+  await bothKindsOn();
+  const quieted = await signUp({ email: 'quieted@example.org', fields: { activityMail: true } });
+  const twin = await signUp({ email: 'twin@example.org', fields: { activityMail: true } });
+  await database.db
+    .update(accounts)
+    .set({ quietMailSentAt: new Date(service.now()) })
+    .where(eq(accounts.id, quieted.account.id));
+
+  service.advance(8 * DAY_MS);
+  const store = createDrizzleActivityMailStore(database.db);
+  const query = { now: new Date(service.now()), days: 7, instanceDefaultFreeAiLimit: { limit: 0, period: 'day' } as const };
+
+  const due = await store.findDueFirstScan({ ...query, limit: 10 });
+  assert.deepEqual(
+    due.map((candidate) => candidate.accountId),
+    [twin.account.id],
+    'only the twin without a quiet mail is selected',
+  );
+  assert.equal(due[0]?.quietMailSentAt, null, 'the selected row carries the fact the sender re-checks');
+  assert.equal(await store.claimFirstScan({ ...query, accountId: quieted.account.id }), 'taken');
+  assert.equal((await row(quieted.account.id)).firstScanMailSentAt, null, 'a refused claim stamps nothing');
+  // The control: the same claim for the twin succeeds.
+  assert.equal(await store.claimFirstScan({ ...query, accountId: twin.account.id }), 'claimed');
+});
+
 test('first-scan closes after its window: an account fourteen days old is never mailed', async () => {
   await bothKindsOn();
   await signUp({ email: 'late@example.org', fields: { activityMail: true } });

@@ -75,6 +75,7 @@ function firstScanDueSql(input: { db: Database } & FirstScanQuery): SQL | undefi
     activeConsentSql,
     isNull(accounts.suspendedAt),
     isNull(accounts.firstScanMailSentAt),
+    isNull(accounts.quietMailSentAt),
     lte(accounts.createdAt, opens),
     gt(accounts.createdAt, closes),
     notExists(aiUsageOfAccount(input.db)),
@@ -119,6 +120,7 @@ export function createDrizzleActivityMailStore(db: Database): ActivityMailStore 
       const rows = await db
         .select({
           ...recipientColumns,
+          quietMailSentAt: accounts.quietMailSentAt,
           createdAt: accounts.createdAt,
           dailyAiLimit: accounts.dailyAiLimit,
           aiLimitPeriod: accounts.aiLimitPeriod,
@@ -142,6 +144,7 @@ export function createDrizzleActivityMailStore(db: Database): ActivityMailStore 
         consent: { optInAt: row.optInAt, optOutAt: row.optOutAt },
         suspendedAt: row.suspendedAt,
         firstScanMailSentAt: row.firstScanMailSentAt,
+        quietMailSentAt: row.quietMailSentAt,
         createdAt: row.createdAt,
         hasAiUsage: row.hasAiUsage,
         dailyAiLimit: row.dailyAiLimit,

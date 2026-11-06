@@ -9,6 +9,12 @@
  *  - `quiet`: the person has not been seen for a while. Once per quiet spell:
  *    a new one is due only after they came back.
  *
+ * NEVER TWO MAILS CLOSE TOGETHER, IN BOTH DIRECTIONS. A `quiet` mail is not
+ * due while a `first-scan` mail went out inside the quiet days. A `first-scan`
+ * mail is not due once any `quiet` mail ever went to the account: first-scan
+ * is a one-time nudge for the first weeks after sign-up, and the quiet mail
+ * already reached the person.
+ *
  * A WINDOW, NOT A THRESHOLD. Each kind is due from `days` after its anchor
  * until seven days later, and never after. Turning a kind on therefore never
  * mails the old accounts that have been quiet for months, and a sender that
@@ -98,6 +104,8 @@ export interface FirstScanCandidate extends AllowanceFacts {
   consent: ActivityMailConsent;
   suspendedAt: Date | null;
   firstScanMailSentAt: Date | null;
+  /** Any quiet mail ever sent blocks the first-scan mail for good. */
+  quietMailSentAt: Date | null;
   createdAt: Date;
   /** Whether any `ai_usage_days` row exists for the account. */
   hasAiUsage: boolean;
@@ -126,6 +134,8 @@ export function isFirstScanDue(input: {
   if (!isActivityMailConsentActive(account.consent)) return false;
   if (account.suspendedAt !== null) return false;
   if (account.firstScanMailSentAt !== null) return false;
+  // NEVER TWO MAILS CLOSE TOGETHER: a quiet mail already reached the person.
+  if (account.quietMailSentAt !== null) return false;
   if (!isInDueWindow({ at: account.createdAt, context })) return false;
   if (account.hasAiUsage) return false;
   return hasUsableAiAllowance({

@@ -47,6 +47,7 @@ function dueFirstScan(): FirstScanCandidate {
     consent: ACTIVE,
     suspendedAt: null,
     firstScanMailSentAt: null,
+    quietMailSentAt: null,
     createdAt: at({ daysAgo: 8 }),
     hasAiUsage: false,
     dailyAiLimit: 0,
@@ -113,6 +114,13 @@ test('first-scan skips a suspended account', () => {
 
 test('first-scan goes once per account, ever', () => {
   assert.equal(firstScanDue({ ...dueFirstScan(), firstScanMailSentAt: at({ daysAgo: 60 }) }), false);
+});
+
+test('first-scan never follows a quiet mail, however long ago it went', () => {
+  // The control: the same account with no quiet mail is due.
+  assert.equal(firstScanDue({ ...dueFirstScan(), quietMailSentAt: null }), true);
+  assert.equal(firstScanDue({ ...dueFirstScan(), quietMailSentAt: at({ daysAgo: 2 }) }), false);
+  assert.equal(firstScanDue({ ...dueFirstScan(), quietMailSentAt: at({ daysAgo: 400 }) }), false);
 });
 
 test('first-scan skips an account that ever had a photo read', () => {
