@@ -1,4 +1,10 @@
 {
+  "v0_72_1": {
+    "date": "2026-11-07",
+    "fixed": {
+      "01": "Die Karte für Erinnerungs-E-Mails zählt Personen in jeder Sprache korrekt."
+    }
+  },
   "v0_72_0": {
     "date": "2026-11-06",
     "added": {
@@ -20,12 +26,6 @@
     "fixed": {
       "01": "Unveröffentlichte Funktionen aus Plankarten entfernt.",
       "02": "Die Anzahl der Scans aktualisiert sich sofort."
-    }
-  },
-  "v0_70_1": {
-    "date": "2026-11-02",
-    "fixed": {
-      "01": "Die Sicherheitsupdates dieses Monats stecken in den Bibliotheken der App."
     }
   }
 }

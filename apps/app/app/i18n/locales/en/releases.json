@@ -1,4 +1,10 @@
 {
+  "v0_72_1": {
+    "date": "2026-11-07",
+    "fixed": {
+      "01": "The reminder emails card counts people correctly in every language."
+    }
+  },
   "v0_72_0": {
     "date": "2026-11-06",
     "added": {
@@ -20,12 +26,6 @@
     "fixed": {
       "01": "Removed unreleased features from plan cards.",
       "02": "The scan count updates immediately."
-    }
-  },
-  "v0_70_1": {
-    "date": "2026-11-02",
-    "fixed": {
-      "01": "This month's security fixes are in the app's libraries."
     }
   }
 }

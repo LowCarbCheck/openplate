@@ -1,4 +1,10 @@
 {
+  "v0_72_1": {
+    "date": "2026-11-07",
+    "fixed": {
+      "01": "Hatırlatma e-postaları kartı, kişileri her dilde doğru sayar."
+    }
+  },
   "v0_72_0": {
     "date": "2026-11-06",
     "added": {
@@ -20,12 +26,6 @@
     "fixed": {
       "01": "Yayımlanmamış özellikler plan kartlarından kaldırıldı.",
       "02": "Tarama sayısı hemen güncellenir."
-    }
-  },
-  "v0_70_1": {
-    "date": "2026-11-02",
-    "fixed": {
-      "01": "Bu ayın güvenlik düzeltmeleri uygulamanın kütüphanelerinde yer alıyor."
     }
   }
 }

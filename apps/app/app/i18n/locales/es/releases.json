@@ -1,4 +1,10 @@
 {
+  "v0_72_1": {
+    "date": "2026-11-07",
+    "fixed": {
+      "01": "La tarjeta de correos de recordatorio cuenta a las personas correctamente en todos los idiomas."
+    }
+  },
   "v0_72_0": {
     "date": "2026-11-06",
     "added": {
@@ -20,12 +26,6 @@
     "fixed": {
       "01": "Se eliminaron las funciones no publicadas de las tarjetas de los planes.",
       "02": "El recuento de escaneos se actualiza de inmediato."
-    }
-  },
-  "v0_70_1": {
-    "date": "2026-11-02",
-    "fixed": {
-      "01": "Las correcciones de seguridad de este mes están en las bibliotecas de la aplicación."
     }
   }
 }

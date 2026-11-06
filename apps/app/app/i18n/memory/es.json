@@ -12347,6 +12347,13 @@
     "at": "2026-09-14",
     "es": "Opcional. Se le muestra a esa persona, y a ti en la lista."
   },
+  "87e9529b0bfab591": {
+    "en": "The reminder emails card counts people correctly in every language.",
+    "path": "releases:v0_72_1.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "es": "La tarjeta de correos de recordatorio cuenta a las personas correctamente en todos los idiomas."
+  },
   "8803cc7bbd6bf469": {
     "en": "This month: {{cost}} · {{scans}}",
     "path": "common:settingsAi.usage.thisMonth",

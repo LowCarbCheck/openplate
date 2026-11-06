@@ -11,9 +11,11 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+## [0.72.1] - 2026-11-07
+
 ### Fixed
 
-- **The reminder emails card says "1 person" instead of "1 people".** The count of people who asked for reminders now has a singular and a plural form in every language. The sent and came back line is now written as two labels with a number each, such as "Sent: 1, came back: 0", so no language has to bend a word around the number.
+- **The reminder emails card counts people correctly in every language.** It said "1 people" in English. The count of people who asked for reminders now has a singular and a plural form in every language. The sent and came back line is now written as two labels with a number each, such as "Sent: 1, came back: 0", so no language has to bend a word around the number. ([07ffd5ba](https://github.com/LowCarbCheck/openplate/commit/07ffd5ba))
 
 ## [0.72.0] - 2026-11-06
 

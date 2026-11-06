@@ -12347,6 +12347,13 @@
     "at": "2026-09-14",
     "tr": "İsteğe bağlı. Kendilerine ve listede sana gösterilir."
   },
+  "87e9529b0bfab591": {
+    "en": "The reminder emails card counts people correctly in every language.",
+    "path": "releases:v0_72_1.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "tr": "Hatırlatma e-postaları kartı, kişileri her dilde doğru sayar."
+  },
   "8803cc7bbd6bf469": {
     "en": "This month: {{cost}} · {{scans}}",
     "path": "common:settingsAi.usage.thisMonth",

@@ -1,4 +1,10 @@
 {
+  "v0_72_1": {
+    "date": "2026-11-07",
+    "fixed": {
+      "01": "La carte des e-mails de rappel compte correctement les personnes dans chaque langue."
+    }
+  },
   "v0_72_0": {
     "date": "2026-11-06",
     "added": {
@@ -20,12 +26,6 @@
     "fixed": {
       "01": "Suppression des fonctionnalités non publiées sur les fiches de forfait.",
       "02": "Le nombre d'analyses s'actualise immédiatement."
-    }
-  },
-  "v0_70_1": {
-    "date": "2026-11-02",
-    "fixed": {
-      "01": "Les correctifs de sécurité de ce mois-ci se trouvent dans les bibliothèques de l'application."
     }
   }
 }
