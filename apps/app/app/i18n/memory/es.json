@@ -4885,6 +4885,13 @@
     "at": "2026-09-14",
     "es": "No se han podido identificar alimentos a partir de la foto."
   },
+  "36d858695f81a46a": {
+    "en": "People can ask for reminder emails.",
+    "path": "releases:v0_72_0.added.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "es": "Los usuarios pueden solicitar correos electrónicos de recordatorio."
+  },
   "36e7ea7b02b36c58": {
     "en": "Failed to read that photo. Try another.",
     "path": "common:scan.errors.readPhoto",
@@ -17736,6 +17743,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-17",
     "es": "Lo que tienes en casa. Haz una foto a un estante o escribe la lista."
+  },
+  "c290e25810fd8c19": {
+    "en": "A tap on Plate photo right after a reload opens the camera.",
+    "path": "releases:v0_72_0.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "es": "Al pulsar en Foto del plato justo después de recargar, se abre la cámara."
   },
   "c2bba708b30c16f5": {
     "en": "Sign in",

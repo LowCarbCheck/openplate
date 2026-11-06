@@ -1,4 +1,13 @@
 {
+  "v0_72_0": {
+    "date": "2026-11-06",
+    "added": {
+      "01": "Kullanıcılar hatırlatma e-postaları isteyebilir."
+    },
+    "fixed": {
+      "01": "Sayfa yenilendikten hemen sonra Tabak fotoğrafı seçeneğine dokunulduğunda kamera açılır."
+    }
+  },
   "v0_71_0": {
     "date": "2026-11-02",
     "added": {
@@ -17,12 +26,6 @@
     "date": "2026-11-02",
     "fixed": {
       "01": "Bu ayın güvenlik düzeltmeleri uygulamanın kütüphanelerinde yer alıyor."
-    }
-  },
-  "v0_70_0": {
-    "date": "2026-10-29",
-    "fixed": {
-      "01": "Net karbonhidrat, AB etiketindeki lifi artık iki kez düşmüyor."
     }
   }
 }

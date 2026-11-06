@@ -4885,6 +4885,13 @@
     "at": "2026-09-14",
     "de": "Die Lebensmittel auf dem Foto konnten nicht erkannt werden."
   },
+  "36d858695f81a46a": {
+    "en": "People can ask for reminder emails.",
+    "path": "releases:v0_72_0.added.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "de": "Personen können Erinnerungs-E-Mails anfordern."
+  },
   "36e7ea7b02b36c58": {
     "en": "Failed to read that photo. Try another.",
     "path": "common:scan.errors.readPhoto",
@@ -17736,6 +17743,13 @@
     "model": "google/gemini-3.8-flash",
     "at": "2026-09-17",
     "de": "Was du zu Hause hast. Fotografiere ein Regal oder schreibe die Liste."
+  },
+  "c290e25810fd8c19": {
+    "en": "A tap on Plate photo right after a reload opens the camera.",
+    "path": "releases:v0_72_0.fixed.01",
+    "model": "google/gemini-3.8-flash",
+    "at": "2026-11-06",
+    "de": "Ein Tippen auf Tellerfoto direkt nach dem Neuladen öffnet die Kamera."
   },
   "c2bba708b30c16f5": {
     "en": "Sign in",

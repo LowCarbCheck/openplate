@@ -1,4 +1,13 @@
 {
+  "v0_72_0": {
+    "date": "2026-11-06",
+    "added": {
+      "01": "Personen können Erinnerungs-E-Mails anfordern."
+    },
+    "fixed": {
+      "01": "Ein Tippen auf Tellerfoto direkt nach dem Neuladen öffnet die Kamera."
+    }
+  },
   "v0_71_0": {
     "date": "2026-11-02",
     "added": {
@@ -17,12 +26,6 @@
     "date": "2026-11-02",
     "fixed": {
       "01": "Die Sicherheitsupdates dieses Monats stecken in den Bibliotheken der App."
-    }
-  },
-  "v0_70_0": {
-    "date": "2026-10-29",
-    "fixed": {
-      "01": "Netto-Kohlenhydrate ziehen die Ballaststoffe bei EU-Kennzeichnungen nicht mehr doppelt ab."
     }
   }
 }

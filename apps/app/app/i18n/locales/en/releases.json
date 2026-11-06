@@ -1,4 +1,13 @@
 {
+  "v0_72_0": {
+    "date": "2026-11-06",
+    "added": {
+      "01": "People can ask for reminder emails."
+    },
+    "fixed": {
+      "01": "A tap on Plate photo right after a reload opens the camera."
+    }
+  },
   "v0_71_0": {
     "date": "2026-11-02",
     "added": {
@@ -17,12 +26,6 @@
     "date": "2026-11-02",
     "fixed": {
       "01": "This month's security fixes are in the app's libraries."
-    }
-  },
-  "v0_70_0": {
-    "date": "2026-10-29",
-    "fixed": {
-      "01": "Net carbs no longer take the fiber out of an EU label twice."
     }
   }
 }

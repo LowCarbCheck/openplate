@@ -1,4 +1,13 @@
 {
+  "v0_72_0": {
+    "date": "2026-11-06",
+    "added": {
+      "01": "Le persone possono richiedere email di promemoria."
+    },
+    "fixed": {
+      "01": "Un tocco su Foto del piatto subito dopo una ricarica apre la fotocamera."
+    }
+  },
   "v0_71_0": {
     "date": "2026-11-02",
     "added": {
@@ -17,12 +26,6 @@
     "date": "2026-11-02",
     "fixed": {
       "01": "Le correzioni di sicurezza di questo mese si trovano nelle librerie dell'app."
-    }
-  },
-  "v0_70_0": {
-    "date": "2026-10-29",
-    "fixed": {
-      "01": "I carboidrati netti non sottraggono più due volte le fibre da un'etichetta europea."
     }
   }
 }

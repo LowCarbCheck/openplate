@@ -1,4 +1,13 @@
 {
+  "v0_72_0": {
+    "date": "2026-11-06",
+    "added": {
+      "01": "Los usuarios pueden solicitar correos electrónicos de recordatorio."
+    },
+    "fixed": {
+      "01": "Al pulsar en Foto del plato justo después de recargar, se abre la cámara."
+    }
+  },
   "v0_71_0": {
     "date": "2026-11-02",
     "added": {
@@ -17,12 +26,6 @@
     "date": "2026-11-02",
     "fixed": {
       "01": "Las correcciones de seguridad de este mes están en las bibliotecas de la aplicación."
-    }
-  },
-  "v0_70_0": {
-    "date": "2026-10-29",
-    "fixed": {
-      "01": "Los carbohidratos netos ya no restan la fibra dos veces de una etiqueta de la UE."
     }
   }
 }

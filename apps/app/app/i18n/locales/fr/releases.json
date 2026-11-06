@@ -1,4 +1,13 @@
 {
+  "v0_72_0": {
+    "date": "2026-11-06",
+    "added": {
+      "01": "Les utilisateurs peuvent demander des e-mails de rappel."
+    },
+    "fixed": {
+      "01": "Appuyer sur Photo d'assiette juste après un rechargement ouvre l'appareil photo."
+    }
+  },
   "v0_71_0": {
     "date": "2026-11-02",
     "added": {
@@ -17,12 +26,6 @@
     "date": "2026-11-02",
     "fixed": {
       "01": "Les correctifs de sécurité de ce mois-ci se trouvent dans les bibliothèques de l'application."
-    }
-  },
-  "v0_70_0": {
-    "date": "2026-10-29",
-    "fixed": {
-      "01": "Les glucides nets ne déduisent plus les fibres deux fois pour les étiquettes de l'UE."
     }
   }
 }
