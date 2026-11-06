@@ -348,7 +348,11 @@ test('a quiet mail ever sent keeps the account out of the first-scan select and 
 
   service.advance(8 * DAY_MS);
   const store = createDrizzleActivityMailStore(database.db);
-  const query = { now: new Date(service.now()), days: 7, instanceDefaultFreeAiLimit: { limit: 0, period: 'day' } as const };
+  const query = {
+    now: new Date(service.now()),
+    days: 7,
+    instanceDefaultFreeAiLimit: { limit: 0, period: 'day' } as const,
+  };
 
   const due = await store.findDueFirstScan({ ...query, limit: 10 });
   assert.deepEqual(
