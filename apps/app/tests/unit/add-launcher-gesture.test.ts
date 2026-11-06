@@ -57,9 +57,16 @@ describe('the capture gesture', () => {
     assert.doesNotMatch(body, /\basync\b/);
   });
 
-  it('goes to the scan screen instead of the camera when no provider is connected', () => {
-    assert.match(body, /aiConnection !== 'connected'/);
-    assert.match(body, /navigate\(scanTo, \{ viewTransition: true \}\)/);
+  it('goes to the scan screen instead of the camera only when the tap decision says so', () => {
+    assert.match(body, /decideTap\(aiConnection\) === 'go-to-scan'/);
+    assert.match(body, /goToScan\(\)/);
+    // The control for the decision above: the old rule read "not connected",
+    // which sent a device whose session was still resuming to the connect card.
+    assert.doesNotMatch(body, /aiConnection !== 'connected'/, 'an unknown connection navigates again');
+  });
+
+  it('keeps the navigation helper itself synchronous, with the scan target', () => {
+    assert.match(source, /const goToScan = \(\) => \{\s*void navigate\(scanTo, \{ viewTransition: true \}\);\s*\};/);
   });
 });
 
@@ -106,7 +113,11 @@ describe('a back-dated day survives the photo path', () => {
   });
 
   it('every navigation in the hook uses that target, none is hardcoded', () => {
-    assert.equal(hookNavigations.length, 2, 'expected exactly the fallback and the post-capture navigation');
+    assert.equal(
+      hookNavigations.length,
+      2,
+      'expected exactly the synchronous helper and the navigation that ends a photo wait',
+    );
     for (const navigation of hookNavigations) assert.equal(navigation, 'navigate(scanTo');
   });
 

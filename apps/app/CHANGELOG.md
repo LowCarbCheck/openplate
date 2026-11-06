@@ -15,6 +15,10 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 - **People can ask for reminder emails.** On an instance that sends them, sign-up shows one box, never ticked, and Settings, Notifications shows a switch to turn the reminders on or off. A person who opted in keeps the switch even if the instance later turns the feature off. Administrators get a Reminder emails section in the console with a switch and a day count for each of the two kinds, the numbers sent and returned, and a button that sends a test to their own address. Cores that do not know the feature show none of this.
 
+### Fixed
+
+- **A tap on Plate photo right after a reload opens the camera.** While the session was still resuming, the app took the unknown connection for a missing one and opened the connect screen instead of the camera. The camera now opens at once. A photo taken in that window waits up to 10 seconds for the account to load, then scans as usual, or lands on the connect screen without sending anything when the account has no allowance.
+
 ## [0.71.0] - 2026-11-02
 
 ### Added

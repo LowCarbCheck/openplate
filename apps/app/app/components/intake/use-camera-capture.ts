@@ -19,12 +19,21 @@
  * THAT day, not to today. It is read at render, so the gesture still awaits
  * nothing.
  *
+ * `unknown` IS NOT `absent`. After a reload the connection reads `unknown`
+ * until the session has resumed, and a tap in that window must still open the
+ * camera (`camera-capture-decision.ts` holds the rules). The PICKED photo then
+ * waits, in state and not in the gesture, for the connection to resolve:
+ * connected hands it over as usual, absent (or `CONNECTION_WAIT_MS` without an
+ * answer) goes to `scanTo` WITHOUT parking it, so nothing is sent and no photo
+ * is left in the one-shot slot for a later visit to send.
+ *
  * The caller renders the input itself, with `inputRef` and `inputProps`. Put
  * it OUTSIDE any sheet, dialog or conditional: closing a sheet must not
  * unmount the element whose `click()` is still on the gesture stack.
  */
-import { useEffect, useRef, type ChangeEvent, type ComponentProps, type RefObject } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type ComponentProps, type RefObject } from 'react';
 import { offerPickedFile } from '#app/lib/intake-handoff';
+import { CONNECTION_WAIT_MS, decidePick, decideTap } from '#app/lib/camera-capture-decision';
 import { useAiConnection } from '#app/components/add/use-ai-connection';
 import { useAppNavigate } from '#app/hooks/use-app-navigate';
 import { ADD_PHOTO_PATH } from '#app/lib/intake-hrefs';
@@ -40,6 +49,12 @@ export type CameraCapture = {
   inputProps: ComponentProps<'input'>;
 };
 
+/** A photo picked while the connection was still unknown. */
+interface WaitingPick {
+  file: File;
+  hasTimedOut: boolean;
+}
+
 export function useCameraCapture({ scanTo = ADD_PHOTO_PATH }: { scanTo?: string } = {}): CameraCapture {
   const navigate = useAppNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -48,6 +63,33 @@ export function useCameraCapture({ scanTo = ADD_PHOTO_PATH }: { scanTo?: string 
   // never disagree about whether this device can analyse anything
   // (`useAiConnection`).
   const aiConnection = useAiConnection();
+  const [waitingPick, setWaitingPick] = useState<WaitingPick | null>(null);
+  const waitingFile = waitingPick?.file ?? null;
+
+  const goToScan = () => {
+    void navigate(scanTo, { viewTransition: true });
+  };
+
+  // The bound on the wait. Keyed on the file alone, so a re-render or the
+  // connection changing between two unknown answers never restarts it.
+  useEffect(() => {
+    if (waitingFile === null) return;
+    const timer = setTimeout(() => {
+      setWaitingPick((current) => (current === null ? null : { ...current, hasTimedOut: true }));
+    }, CONNECTION_WAIT_MS);
+    return () => clearTimeout(timer);
+  }, [waitingFile]);
+
+  // The wait's end: act on the answer once there is one. Leaving the screen
+  // unmounts this hook and drops the wait with it.
+  useEffect(() => {
+    if (waitingPick === null) return;
+    const decision = decidePick({ connection: aiConnection, hasTimedOut: waitingPick.hasTimedOut });
+    if (decision === 'wait') return;
+    setWaitingPick(null);
+    if (decision === 'hand-over') offerPickedFile(waitingPick.file);
+    void navigate(scanTo, { viewTransition: true });
+  }, [waitingPick, aiConnection, navigate, scanTo]);
 
   // A dismissed camera fires `cancel`, not `change`. Nothing visible should
   // happen, the user changed their mind, but the focus that went to the file
@@ -66,10 +108,10 @@ export function useCameraCapture({ scanTo = ADD_PHOTO_PATH }: { scanTo?: string 
    * exactly that.
    */
   const capture = () => {
-    if (aiConnection !== 'connected') {
-      // No provider (or not known yet): never a camera permission prompt for a
+    if (decideTap(aiConnection) === 'go-to-scan') {
+      // No provider, definitely: never a camera permission prompt for a
       // feature that cannot work. The scan screen shows the connect card.
-      void navigate(scanTo, { viewTransition: true });
+      goToScan();
       return;
     }
     inputRef.current?.click();
@@ -80,8 +122,13 @@ export function useCameraCapture({ scanTo = ADD_PHOTO_PATH }: { scanTo?: string 
     // Reset the trigger so re-taking the same photo fires `change` again.
     event.target.value = '';
     if (picked === null) return;
-    offerPickedFile(picked);
-    void navigate(scanTo, { viewTransition: true });
+    const decision = decidePick({ connection: aiConnection, hasTimedOut: false });
+    if (decision === 'wait') {
+      setWaitingPick({ file: picked, hasTimedOut: false });
+      return;
+    }
+    if (decision === 'hand-over') offerPickedFile(picked);
+    goToScan();
   };
 
   return {
