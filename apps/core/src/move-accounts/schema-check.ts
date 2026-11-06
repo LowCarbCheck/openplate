@@ -104,6 +104,11 @@ function checkAccounts(input: { side: 'source' | 'target'; schema: SchemaColumns
       `${difference}. Deploy the core that carries migration 0034 (accounts.ai_limit_period) to the target first`,
     ];
   }
+  if (input.side === 'target' && !actual.has('activity_mail_opt_in_at')) {
+    return [
+      `${difference}. Deploy the core that carries migration 0037 (the activity reminder columns) to the target first`,
+    ];
+  }
   return [difference];
 }
 

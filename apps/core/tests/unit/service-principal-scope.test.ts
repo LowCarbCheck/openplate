@@ -39,6 +39,8 @@ import type { Router } from 'express';
 import { startAdminHarness, type AdminHarness } from './admin-harness.js';
 import { createAdminRoutes } from '../../src/server/admin-routes.js';
 import { createAdminFeedbackRoutes } from '../../src/server/admin-feedback-routes.js';
+import { createAdminActivityMailRoutes } from '../../src/server/register-activity-mail-routes.js';
+import type { ActivityMailStore } from '../../src/activity-mail/store.js';
 import { createFakeAdminStore } from './fake-admin-store.js';
 import { createFakeInviteStore } from './fake-invite-store.js';
 import { createFakeFeedbackAdminStore, createFakeFeedbackImageStore } from './feedback-harness.js';
@@ -84,8 +86,14 @@ const ADMIN_TOKEN = 'admin-9d41c7b8e0a25f36471dcb9e';
  * budget and today's AI capacity. The decision it forced: NOT on the allow
  * list. It is the operator's spend on their own provider, and a biller has
  * no plan to sell that needs it.
+ *
+ * The activity reminders took it to twenty-five with `GET /settings`, which
+ * reads the reminder switches beside the basis, `GET /activity-mail/stats` and
+ * `POST /activity-mail/test`. The decision they forced: NONE is on the allow
+ * list. Whom an instance mails, and how often, is the operator's call, and a
+ * biller has no plan to sell that needs to read it or to send a letter.
  */
-const ADMIN_ROUTE_COUNT = 22;
+const ADMIN_ROUTE_COUNT = 25;
 
 let harness: AdminHarness;
 let routes: AdminRouteRef[];
@@ -114,10 +122,28 @@ function enumerateRoutes(routers: readonly Router[]): AdminRouteRef[] {
   return [...seen.values()];
 }
 
-/** The two routers, built over fakes purely so their route tables can be read. */
+/** A reminder store that answers nothing: the enumeration reads route tables, never a row. */
+const EMPTY_ACTIVITY_MAIL_STORE: ActivityMailStore = {
+  findDueFirstScan: async () => [],
+  findDueQuiet: async () => [],
+  claimFirstScan: async () => 'taken',
+  claimQuiet: async () => 'taken',
+  stats: async () => ({ optedIn: 0, firstScan: { sent: 0, cameBack: 0 }, quiet: { sent: 0, cameBack: 0 } }),
+};
+
+/** The three routers, built over fakes purely so their route tables can be read. */
 function buildAdminRouters(): Router[] {
   const fixture = createAuthFixture();
   return [
+    createAdminActivityMailRoutes({
+      surface: { store: EMPTY_ACTIVITY_MAIL_STORE, unsubscribeKey: 'k', defaultLanguage: 'en' },
+      accounts: fixture.store,
+      mailer: fixture.mailer,
+      mailConfigured: false,
+      settings: null,
+      now: fixture.now,
+      logger: createSilentLogger(),
+    }),
     createAdminFeedbackRoutes({
       surface: { reports: createFakeFeedbackAdminStore([]), images: createFakeFeedbackImageStore() },
       logger: createSilentLogger(),

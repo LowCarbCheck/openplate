@@ -68,8 +68,11 @@ import { createPigeonRecipientEraser } from './mail/recipient-eraser.js';
 import { PUSH_DAILY_SEND_CAP, startPushScheduler } from './push/push-scheduler.js';
 import { createApp } from './server/create-app.js';
 import { createDrizzleLegalDeclarationsStore } from './legal/legal-declarations-store.js';
-import type { AuthContext } from './accounts/auth-handlers.js';
-import type { InstanceHealthConsent, InstanceInfo } from './protocol.js';
+import type { ActivityMailOffer, AuthContext } from './accounts/auth-handlers.js';
+import { isActivityMailOffered } from './activity-mail/settings.js';
+import { createDrizzleActivityMailStore } from './db/activity-mail-store.js';
+import { startActivityMailSender } from './activity-mail/sender.js';
+import type { InstanceBootInfo, InstanceHealthConsent } from './protocol.js';
 import type { InstanceStanding } from './accounts/instance-standing.js';
 import { toWireCapabilities } from './lib/capabilities.js';
 import { SERVICE_VERSION } from './version.js';
@@ -228,6 +231,28 @@ async function main(): Promise<void> {
     );
   }
 
+  // THE ONE SETTING AN ADMINISTRATOR CHANGES WITHOUT A REDEPLOY (M234). It is
+  // read ONCE here and then served from memory, because `/health` publishes it
+  // and `/health` is this container's own healthcheck: a read of the row on
+  // that path would turn a database hiccup into a restart. A row this process
+  // cannot read costs an error log and the environment default, never a boot
+  // failure. See `instance/instance-settings.ts`.
+  const settings = await startInstanceSettings({
+    store: createDrizzleInstanceSettingsStore(database.db),
+    fallback: config.nutrientReferenceBasis,
+    logger,
+  });
+
+  // THE REMINDER OFFER, ONE BINDING FOR TWO READERS: sign-up records a ticked
+  // box only while it is true, and `/health` publishes it as
+  // `instance.activityMail` (`create-app.ts` reads it off the auth context).
+  // A real mailer AND a kind an administrator turned on, read from memory.
+  const isMailConfigured = config.mail !== null && links !== null;
+  const activityMailOffer: ActivityMailOffer = {
+    isOffered: () => isActivityMailOffered({ isMailConfigured, settings: settings.activityMail() }),
+    defaultLanguage: config.instanceLanguage,
+  };
+
   const authContext: AuthContext = {
     // The zone a trial's last midnight falls in (`TRIAL_TIME_ZONE`), read at
     // every redemption and never written on an invite row.
@@ -261,6 +286,7 @@ async function main(): Promise<void> {
     accountEraseNotifier: config.plans === null ? null : createPlansEraseNotifier({ upstream: config.plans, logger }),
     // After a delete, Pigeon is asked to forget the address. `null` unless the mail API is Pigeon.
     mailRecipientEraser,
+    activityMail: activityMailOffer,
   };
 
   // ALWAYS PRESENT, because signup is invite-only and the invite store is the
@@ -392,7 +418,7 @@ async function main(): Promise<void> {
     );
   }
 
-  const instance: InstanceInfo = {
+  const instance: InstanceBootInfo = {
     name: config.instanceName,
     language: config.instanceLanguage,
     // Both reported honestly rather than omitted: a client that sees
@@ -530,21 +556,12 @@ async function main(): Promise<void> {
           endpointPolicy: pushEndpointPolicy,
         };
 
-  // THE ONE SETTING AN ADMINISTRATOR CHANGES WITHOUT A REDEPLOY (M234). It is
-  // read ONCE here and then served from memory, because `/health` publishes it
-  // and `/health` is this container's own healthcheck: a read of the row on
-  // that path would turn a database hiccup into a restart. A row this process
-  // cannot read costs an error log and the environment default, never a boot
-  // failure. See `instance/instance-settings.ts`.
-  const settings = await startInstanceSettings({
-    store: createDrizzleInstanceSettingsStore(database.db),
-    fallback: config.nutrientReferenceBasis,
-    logger,
-  });
-
   // ONE store for the route that writes declarations and the sweep that
   // deletes them past their period.
   const legalDeclarations = createDrizzleLegalDeclarationsStore(database.db);
+
+  // The reminder queries, for the hourly sender and the admin stats.
+  const activityMailStore = createDrizzleActivityMailStore(database.db);
 
   const app = createApp({
     authContext,
@@ -569,6 +586,13 @@ async function main(): Promise<void> {
     pulse,
     push,
     settings,
+    // ALWAYS BUILT, so the unsubscribe link in a reminder already sent keeps
+    // working after an administrator turns the reminders off.
+    activityMail: {
+      store: activityMailStore,
+      unsubscribeKey: secrets.activityMailUnsubscribeKey,
+      defaultLanguage: config.instanceLanguage,
+    },
     // ALWAYS BUILT, no flag beside it, exactly as `pulse` is: the two
     // statutory buttons exist on every instance. See `server/create-app.ts`.
     legal: {
@@ -701,6 +725,25 @@ async function main(): Promise<void> {
     logger.info('Push scheduler started', { dailySendCap: PUSH_DAILY_SEND_CAP });
   }
 
+  // THE ACTIVITY REMINDERS, hourly, and only beside a real mailer: without
+  // one there is nobody to mail and `/health` offers no reminders. Each run
+  // reads the switches from memory, so an administrator's change is picked up
+  // on the next tick without a restart. See `activity-mail/sender.ts`.
+  const activityMailSender = isMailConfigured
+    ? startActivityMailSender({
+        store: activityMailStore,
+        mailer,
+        settings: () => settings.activityMail(),
+        unsubscribeKey: secrets.activityMailUnsubscribeKey,
+        defaultLanguage: config.instanceLanguage,
+        instanceDefaultFreeAiLimit: standing.defaultFreeAiLimit,
+        isAiAvailable: ai !== null,
+        logger,
+        now: () => new Date(),
+      })
+    : null;
+  if (activityMailSender !== null) logger.info('Activity reminder sender started');
+
   const accountStore = authContext.store;
   const sweeper = setInterval(() => {
     void (async () => {
@@ -744,6 +787,7 @@ async function main(): Promise<void> {
     aiUsageRetention.stop();
     pulseRetention.stop();
     pushScheduler?.stop();
+    activityMailSender?.stop();
     budgetWatch?.stop();
     await new Promise<void>((resolveClose) => server.close(() => resolveClose()));
     await database.close();

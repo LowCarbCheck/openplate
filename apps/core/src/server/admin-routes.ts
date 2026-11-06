@@ -85,9 +85,11 @@ import {
   isNutrientReferenceBasis,
   type AccountRole,
   type AccountView,
+  type NutrientReferenceBasis,
   type SyncKeyRecordKind,
 } from '../protocol.js';
-import type { InstanceSettingsSurface } from '../instance/instance-settings.js';
+import type { InstanceSettingsChange, InstanceSettingsSurface } from '../instance/instance-settings.js';
+import { parseActivityMailPatch, type ActivityMailSettings } from '../activity-mail/settings.js';
 import { handleNotFound } from './error-middleware.js';
 import type { Logger } from '../logger.js';
 import type { Mailer } from '../mail/mailer.js';
@@ -149,7 +151,10 @@ export const PAGING_REFUSAL = `limit must be 0-${MAX_ADMIN_PAGE_LIMIT} and offse
  * field added to one is a compile error until it is added here too. The two
  * extra fields are ADR-0001's operator facts, see `admin/admin-store.ts`.
  */
-interface AdminAccountView extends Omit<AccountView, 'capabilities' | 'aiQuota'> {
+// `activityMail` IS LEFT OUT: the console has the stats route for reminders,
+// and a per-account consent column there would be one more personal fact on a
+// list an operator scrolls.
+interface AdminAccountView extends Omit<AccountView, 'capabilities' | 'aiQuota' | 'activityMail'> {
   /**
    * AI requests spent from this week's Monday (UTC) to today (2026-10-07),
    * the sum a weekly limit is held to. Beside `aiUsedToday`, so an operator
@@ -1071,6 +1076,16 @@ const ROLLBACK_REFUSALS = {
     'That version holds no bytes, so restoring it would leave the account unreadable. Nothing was changed.',
 } satisfies Record<RollbackRefusal, string>;
 
+/** The settings an administrator reads and writes, in the wire shape of `GET /v1/admin/settings`. */
+interface AdminSettingsView {
+  nutrientReferenceBasis: NutrientReferenceBasis;
+  activityMail: ActivityMailSettings;
+}
+
+function settingsView(settings: InstanceSettingsSurface): AdminSettingsView {
+  return { nutrientReferenceBasis: settings.current(), activityMail: settings.activityMail() };
+}
+
 /**
  * Builds the admin router. It does NOT include authentication, `create-app.ts`
  * mounts `createAdminAuthMiddleware` in front of it, in the same branch that
@@ -1934,6 +1949,20 @@ export function createAdminRoutes(options: AdminRoutesOptions): Router {
   );
 
   /**
+   * `GET /v1/admin/settings`: what this process holds now, read off the same
+   * surface `/health` publishes from. The activity reminder switches are here
+   * and not on `/health`, which says only whether reminders are offered.
+   */
+  router.get('/settings', (req, res) => {
+    const settings = options.settings;
+    if (settings === null) {
+      handleNotFound(req, res);
+      return;
+    }
+    res.status(200).json({ settings: settingsView(settings) });
+  });
+
+  /**
    * `PATCH /v1/admin/settings`, the one endpoint on this service that changes
    * what an instance is without a redeploy (M234).
    *
@@ -1941,12 +1970,17 @@ export function createAdminRoutes(options: AdminRoutesOptions): Router {
    * admin middleware `create-app.ts` mounts in front of this router is what
    * authenticates it, and the service-principal scope refuses it by default
    * because it is not in that allow list. A biller may move an allowance; it
-   * may not decide which country's nutrition advice an instance shows.
+   * may not decide which country's nutrition advice an instance shows, or
+   * whom it mails.
    *
-   * THE VALUE IS CHECKED AGAINST THE THREE NAMES, TWICE. Here, so a typo is a
-   * 400 with the alternatives in it and NOTHING is written, and again by the
-   * check constraint on the column, because what this decides is a set of
-   * numbers a person is shown beside their food.
+   * A PATCH NAMES `nutrientReferenceBasis`, `activityMail`, OR BOTH, and an
+   * `activityMail` object may name any part of either kind. Every value is
+   * checked before anything is written, so one bad value writes nothing.
+   *
+   * THE BASIS IS CHECKED AGAINST THE THREE NAMES, TWICE, and the reminder days
+   * against their bounds, twice: here, so a typo is a 400 with the
+   * alternatives or the bounds in it, and again by the check constraints on
+   * the columns.
    *
    * WHAT IT ANSWERS WITH IS WHAT THE PROCESS NOW HOLDS, read back off the same
    * surface `/health` publishes from rather than echoed from the request body:
@@ -1971,24 +2005,39 @@ export function createAdminRoutes(options: AdminRoutesOptions): Router {
       // level and yields `null` for anything that is not an object.
       const body = asObject(req.body as JsonValue) ?? {};
       const basis = body.nutrientReferenceBasis;
-      if (basis === undefined) {
+      if (basis === undefined && body.activityMail === undefined) {
         // An empty PATCH is a caller that believes it changed something, and
         // it is refused for the reason `PATCH /accounts/:id` refuses one.
-        res.status(400).json({ error: 'a patch must name nutrientReferenceBasis' });
+        res.status(400).json({ error: 'a patch must name nutrientReferenceBasis or activityMail' });
         return;
       }
-      if (!isNutrientReferenceBasis(basis)) {
+      if (basis !== undefined && !isNutrientReferenceBasis(basis)) {
         res.status(400).json({
           error: `nutrientReferenceBasis must be one of ${NUTRIENT_REFERENCE_BASES.join(', ')}`,
         });
         return;
       }
+      const activityMail = body.activityMail === undefined ? null : parseActivityMailPatch(body.activityMail);
+      if (activityMail !== null && !activityMail.ok) {
+        res.status(400).json({ error: activityMail.reason });
+        return;
+      }
 
-      await settings.set({ nutrientReferenceBasis: basis });
-      // The choice, never who made it: this is an instance-wide setting and the
-      // value is published unauthenticated on `/health` anyway.
-      logger.info('Instance settings changed by admin', { nutrientReferenceBasis: basis });
-      res.status(200).json({ settings: { nutrientReferenceBasis: settings.current() } });
+      const change: InstanceSettingsChange = {};
+      if (basis !== undefined) change.nutrientReferenceBasis = basis;
+      if (activityMail !== null) change.activityMail = activityMail.value;
+      await settings.set(change);
+      const view = settingsView(settings);
+      // The choice, never who made it: these are instance-wide settings, and
+      // none of them is personal data.
+      logger.info('Instance settings changed by admin', {
+        nutrientReferenceBasis: view.nutrientReferenceBasis,
+        activityMailFirstScan: view.activityMail.firstScan.enabled,
+        activityMailFirstScanDays: view.activityMail.firstScan.days,
+        activityMailQuiet: view.activityMail.quiet.enabled,
+        activityMailQuietDays: view.activityMail.quiet.days,
+      });
+      res.status(200).json({ settings: view });
     }),
   );
 

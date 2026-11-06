@@ -37,7 +37,8 @@ import type {
 } from '../../src/accounts/account-store.js';
 import type { AccountTokenKind } from '../../src/lib/tokens.js';
 import { SESSION_TOKEN_KINDS } from '../../src/lib/tokens.js';
-import type { AccountRole, SyncKeyRecordKind } from '../../src/protocol.js';
+import type { AccountRole, InstanceLanguage, SyncKeyRecordKind } from '../../src/protocol.js';
+import { isActivityMailConsentActive } from '../../src/activity-mail/consent.js';
 import type { HealthConsentRecord } from '../../src/accounts/health-consent.js';
 
 interface StoredTokenRow extends StoredToken {
@@ -204,6 +205,33 @@ export function createFakeAccountStore(): FakeAccountStore {
       return { ...account };
     },
 
+    async optInToActivityMail(input: {
+      accountId: number;
+      language: InstanceLanguage | null;
+      now: Date;
+    }): Promise<AccountRecord | null> {
+      const account = accountsById.get(input.accountId);
+      if (!account) return null;
+      // The real store's rule: a fresh instant only for a fresh consent, the
+      // opt-out instant never touched.
+      const optInAt = isActivityMailConsentActive(account.activityMail) ? account.activityMail.optInAt : input.now;
+      account.activityMail = {
+        ...account.activityMail,
+        optInAt,
+        language: input.language ?? account.activityMail.language,
+      };
+      return { ...account };
+    },
+
+    async optOutOfActivityMail(input: { accountId: number; now: Date }): Promise<AccountRecord | null> {
+      const account = accountsById.get(input.accountId);
+      if (!account) return null;
+      if (isActivityMailConsentActive(account.activityMail)) {
+        account.activityMail = { ...account.activityMail, optOutAt: input.now };
+      }
+      return { ...account };
+    },
+
     async updateStanding(input: UpdateStandingInput): Promise<AccountRecord | null> {
       const account = accountsById.get(input.accountId);
       if (!account) return null;
@@ -333,6 +361,12 @@ export function createFakeAccountStore(): FakeAccountStore {
         kdfDescriptor: input.account.kdfDescriptor,
         // Written with the account, exactly as the real INSERT does.
         healthConsent: input.account.healthConsent,
+        // The ticked box, at the redemption instant, exactly as the real INSERT does.
+        activityMail: {
+          optInAt: input.account.activityMail?.optInAt ?? null,
+          optOutAt: null,
+          language: input.account.activityMail?.language ?? null,
+        },
         createdAt: input.now,
       };
       accountsById.set(account.id, account);
@@ -434,6 +468,7 @@ export function createFakeAccountStore(): FakeAccountStore {
           kdfDescriptor: { salt: 'AAAA', params: { memorySizeKib: 65536, iterations: 3, parallelism: 1 } },
           keyRecords: [],
           healthConsent: input.healthConsent ?? null,
+          activityMail: null,
         },
       });
       if (!created.ok) throw new Error(`could not seed ${input.email}: ${created.reason}`);

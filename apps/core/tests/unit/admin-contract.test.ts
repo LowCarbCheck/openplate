@@ -37,8 +37,10 @@ import {
   type InstanceSettings,
   type InstanceSettingsRecord,
   type InstanceSettingsStore,
+  type InstanceSettingsValues,
 } from '../../src/instance/instance-settings.js';
 import type { NutrientReferenceBasis } from '../../src/protocol.js';
+import { DEFAULT_ACTIVITY_MAIL_SETTINGS } from '../../src/activity-mail/settings.js';
 import { asObject, asString, type JsonObject, type JsonValue } from '../../src/lib/json.js';
 import { createThrottleStore } from '../../src/lib/throttle.js';
 import { createSilentLogger } from '../../src/logger.js';
@@ -68,14 +70,17 @@ after(async () => {
 /** The single stored row, in memory. The row's persistence is the integration tier's subject, not this one's. */
 function memoryStore(initial: NutrientReferenceBasis | null): InstanceSettingsStore {
   let row: InstanceSettingsRecord | null =
-    initial === null ? null : { nutrientReferenceBasis: initial, updatedAt: new Date(0) };
+    initial === null
+      ? null
+      : { nutrientReferenceBasis: initial, activityMail: DEFAULT_ACTIVITY_MAIL_SETTINGS, updatedAt: new Date(0) };
   return {
     async read(): Promise<InstanceSettingsRecord | null> {
       return row;
     },
-    async write(input: { nutrientReferenceBasis: NutrientReferenceBasis; now: Date }): Promise<InstanceSettingsRecord> {
-      row = { nutrientReferenceBasis: input.nutrientReferenceBasis, updatedAt: input.now };
-      return row;
+    async write(input: { values: InstanceSettingsValues; now: Date }): Promise<InstanceSettingsRecord> {
+      const written: InstanceSettingsRecord = { ...input.values, updatedAt: input.now };
+      row = written;
+      return written;
     },
   };
 }
@@ -189,7 +194,9 @@ test('a patch naming a basis is answered with the wrapped settings the instance 
   });
 
   assert.equal(response.status, 200);
-  assert.deepEqual(await response.json(), { settings: { nutrientReferenceBasis: 'efsa' } });
+  assert.deepEqual(await response.json(), {
+    settings: { nutrientReferenceBasis: 'efsa', activityMail: DEFAULT_ACTIVITY_MAIL_SETTINGS },
+  });
   assert.equal(harness.current(), 'efsa', 'the process adopts what it stored');
 });
 

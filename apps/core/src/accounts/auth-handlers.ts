@@ -67,7 +67,9 @@ import {
   parseTokenField,
 } from './auth-input.js';
 import { asString, type JsonObject, type JsonValue } from '../lib/json.js';
-import type { AccountView, AiQuotaView, InstanceHealthConsent } from '../protocol.js';
+import type { AccountView, AiQuotaView, InstanceHealthConsent, InstanceLanguage } from '../protocol.js';
+import { isActivityMailConsentActive } from '../activity-mail/consent.js';
+import { parseActivityMailFields, type ActivityMailFields } from '../activity-mail/consent-input.js';
 import type { AccountEraseNotifier } from './erase-notifier.js';
 import type { MailRecipientEraser } from '../mail/recipient-eraser.js';
 import { SIGNUP_REQUEST_REFUSALS, readSignupIntent, type OpenSignupSurface } from './open-signup.js';
@@ -199,6 +201,23 @@ export interface AuthContext {
    * most two seconds. See `mail/recipient-eraser.ts`.
    */
   mailRecipientEraser?: MailRecipientEraser | null;
+  /**
+   * The activity reminder offer, or `null`/absent for an instance that makes
+   * none, which then ignores a ticked sign-up box. `isOffered` is THE SAME
+   * BINDING `/health` publishes as `instance.activityMail` (`create-app.ts`
+   * reads it off this context), so a client is never shown a box this
+   * handler would ignore, or the reverse. It reads the process-local settings,
+   * never the row.
+   */
+  activityMail?: ActivityMailOffer | null;
+}
+
+/** See {@link AuthContext.activityMail}. */
+export interface ActivityMailOffer {
+  /** A real mailer and at least one kind turned on, right now. */
+  isOffered(): boolean;
+  /** `INSTANCE_LANGUAGE`, the reminders' language when the client names none. */
+  defaultLanguage: InstanceLanguage;
 }
 
 /** What `POST /v1/auth/invites` needs to exist: the invite table, and what an invitation is worth. */
@@ -415,6 +434,7 @@ async function toAccountView(account: AccountRecord, ctx: AuthContext): Promise<
       }),
     }),
     healthConsent: healthConsentView(account.healthConsent),
+    activityMail: isActivityMailConsentActive(account.activityMail),
     createdAt: account.createdAt.toISOString(),
   };
 }
@@ -585,6 +605,8 @@ interface SignupSubmission {
   recoveryAuthHash: string;
   recoveryCode: string;
   keyRecords: KeyRecordSubmission[];
+  /** The reminder box and the client's language, each `undefined` when absent. */
+  activityMail: ActivityMailFields;
 }
 
 type ParseSignupResult = { ok: true; value: SignupSubmission } | { ok: false; outcome: AuthOutcome<never> };
@@ -637,6 +659,8 @@ function parseSignup(fields: JsonObject): ParseSignupResult {
       outcome: invalid('keyRecords must contain exactly one passphrase record and one recovery record'),
     };
   }
+  const activityMail = parseActivityMailFields({ activityMail: fields.activityMail, language: fields.language });
+  if (!activityMail.ok) return { ok: false, outcome: invalid(activityMail.reason) };
 
   return {
     ok: true,
@@ -648,8 +672,24 @@ function parseSignup(fields: JsonObject): ParseSignupResult {
       recoveryAuthHash: recoveryAuthHash.value,
       recoveryCode: recoveryCode.value,
       keyRecords: keyRecords.value,
+      activityMail: activityMail.value,
     },
   };
+}
+
+/**
+ * The reminder consent a new account starts with: the ticked box, at the
+ * redemption instant, on an instance that offers reminders right now. Any
+ * other answer, an unticked box included, is no consent.
+ */
+function signupActivityMailConsent(input: {
+  fields: ActivityMailFields;
+  offer: ActivityMailOffer | null;
+  now: Date;
+}): { optInAt: Date; language: InstanceLanguage } | null {
+  if (input.fields.activityMail !== true) return null;
+  if (input.offer === null || !input.offer.isOffered()) return null;
+  return { optInAt: input.now, language: input.fields.language ?? input.offer.defaultLanguage };
 }
 
 /** What the instance's member-invite policy grants a member-caused invite at redemption (M212, M253). */
@@ -721,6 +761,12 @@ export async function handleSignup(
       // instant. On an instance that asks for none, a submitted field is
       // ignored and nothing is recorded.
       healthConsent: consentPolicy === null ? null : { version: consentPolicy.version, at: now },
+      // The UNTICKED box, ticked: the same instant as the redemption.
+      activityMail: signupActivityMailConsent({
+        fields: submission.activityMail,
+        offer: ctx.activityMail ?? null,
+        now,
+      }),
     },
   });
 
@@ -1356,13 +1402,35 @@ export async function handleGetAccount(
 }
 
 /**
- * `PATCH /v1/auth/account` — the one thing an account owner may change about
- * themselves without a rotation.
+ * The reminder choice of a PATCH, written, or `undefined` when the body made
+ * none. `null` is an account that is gone.
+ */
+async function applyActivityMailChoice(input: {
+  accountId: number;
+  fields: ActivityMailFields;
+  ctx: AuthContext;
+}): Promise<AccountRecord | null | undefined> {
+  const { accountId, fields, ctx } = input;
+  if (fields.activityMail === undefined) return undefined;
+  if (!fields.activityMail) return ctx.store.optOutOfActivityMail({ accountId, now: ctx.now() });
+  return ctx.store.optInToActivityMail({ accountId, language: fields.language ?? null, now: ctx.now() });
+}
+
+/**
+ * `PATCH /v1/auth/account`: what an account owner may change about
+ * themselves without a rotation: the display name, and the activity reminders.
  *
- * `displayName` MUST BE PRESENT, even as `null`. An absent key is a `400`, the
- * same rule `keyRecords` and `expectedUpdatedAt` follow: silence must never be
- * read as consent, and a PATCH that quietly did nothing because a field name
- * was misspelled is a change the client believes it made.
+ * A PATCH MUST NAME `displayName` OR `activityMail`. An empty body is a `400`,
+ * the same rule `keyRecords` and `expectedUpdatedAt` follow: silence must never
+ * be read as consent, and a PATCH that quietly did nothing because a field name
+ * was misspelled is a change the client believes it made. `displayName: null`
+ * still clears the name; an absent `displayName` beside `activityMail` leaves
+ * it as it is.
+ *
+ * `activityMail: true` turns reminders on (a fresh instant only for a fresh
+ * consent), `false` turns them off. Turning them off ALWAYS works, also on an
+ * instance that offers no reminders, because withdrawing must never need the
+ * feature to be on. `language` goes with `activityMail: true` only.
  *
  * There is deliberately nothing else here. `email` is the identity and moves
  * only through an operator; `role` and `dailyAiLimit` are standing an account
@@ -1374,16 +1442,24 @@ export async function handleUpdateAccount(
   ctx: AuthContext,
 ): Promise<AuthOutcome<{ account: AccountView }>> {
   const fields = asFields(input.body);
-  if (fields.displayName === undefined) {
-    return invalid('displayName is required (send null to clear it)');
+  if (fields.displayName === undefined && fields.activityMail === undefined) {
+    return invalid('displayName is required (send null to clear it), or name activityMail');
   }
-  const displayName = parseDisplayName(fields.displayName);
-  if (!displayName.ok) return invalid(displayName.reason);
+  const activityMail = parseActivityMailFields({ activityMail: fields.activityMail, language: fields.language });
+  if (!activityMail.ok) return invalid(activityMail.reason);
+  if (activityMail.value.language !== undefined && activityMail.value.activityMail !== true) {
+    return invalid('language is set together with activityMail: true');
+  }
+  const displayName = fields.displayName === undefined ? null : parseDisplayName(fields.displayName);
+  if (displayName !== null && !displayName.ok) return invalid(displayName.reason);
 
-  const updated = await ctx.store.updateDisplayName({
-    accountId: input.accountId,
-    displayName: displayName.value,
-  });
+  const named =
+    displayName === null
+      ? undefined
+      : await ctx.store.updateDisplayName({ accountId: input.accountId, displayName: displayName.value });
+  const chosen = await applyActivityMailChoice({ accountId: input.accountId, fields: activityMail.value, ctx });
+  // The last write is the newest row; the guard above means at least one ran.
+  const updated = chosen ?? named ?? null;
   if (updated === null) return { status: 'unauthorized', reason: 'account no longer exists' };
   return { status: 'ok', body: { account: await toAccountView(updated, ctx) } };
 }

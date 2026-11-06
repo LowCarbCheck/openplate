@@ -31,7 +31,7 @@
  * (`550 5.1.1 <anna@example.org>: ...`), so the thrown message carries the
  * reply code, or nodemailer's own error code, and nothing else.
  */
-import { createTransport } from 'nodemailer';
+import { createTransport, type SendMailOptions } from 'nodemailer';
 import type { SMTPTransportOptions } from 'nodemailer/lib/smtp-transport';
 
 import type { MailTransport, OutgoingMail } from './mailer.js';
@@ -138,7 +138,7 @@ export function createSmtpTransport(input: { mail: SmtpMailConfig; timeoutMs?: n
   return {
     async send(outgoing: OutgoingMail): Promise<void> {
       try {
-        await transporter.sendMail({
+        const message: SendMailOptions = {
           from: input.mail.from,
           to: outgoing.to,
           subject: outgoing.subject,
@@ -148,7 +148,11 @@ export function createSmtpTransport(input: { mail: SmtpMailConfig; timeoutMs?: n
           // nodemailer read a file or fetch a URL.
           disableFileAccess: true,
           disableUrlAccess: true,
-        });
+        };
+        // Only the activity reminders name any: `List-Unsubscribe` and its
+        // one-click partner. nodemailer writes them as message headers.
+        if (outgoing.headers !== undefined) message.headers = { ...outgoing.headers };
+        await transporter.sendMail(message);
       } catch (cause) {
         // NO `cause` ON PURPOSE: nodemailer's error quotes the server, and the
         // server quotes the recipient. Attached, the address would be one

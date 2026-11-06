@@ -151,6 +151,14 @@ export const ACCOUNT_SET_COLUMNS = [
   'label',
   'capabilities',
   'updated_at',
+  // THE ACTIVITY REMINDERS START OVER (migration 0037). Left out of the INSERT,
+  // so the target writes `NULL`: a consent was given to the source's operator,
+  // and the target's operator asks for their own. The send stamps go with it.
+  'activity_mail_opt_in_at',
+  'activity_mail_opt_out_at',
+  'mail_language',
+  'first_scan_mail_sent_at',
+  'quiet_mail_sent_at',
 ] as const;
 
 /** The account columns a source may lack, because the move never reads them from there. */
@@ -159,6 +167,11 @@ export const ACCOUNT_COLUMNS_ABSENT_FROM_OLDER_SOURCES = [
   'free_daily_ai_limit',
   'capabilities',
   'ai_limit_period',
+  'activity_mail_opt_in_at',
+  'activity_mail_opt_out_at',
+  'mail_language',
+  'first_scan_mail_sent_at',
+  'quiet_mail_sent_at',
 ] as const;
 
 /** One source account row, by id, copied columns only. */

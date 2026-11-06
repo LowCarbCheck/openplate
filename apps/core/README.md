@@ -635,6 +635,14 @@ service that can send arbitrary mail grows a notification system, and a
 notification system is a reason to keep reaching for the address column beside
 an encrypted diary.
 
+There is one opt-in exception, off until you turn it on: two **activity
+reminders** (PROTOCOL.md §5.26). One goes a few days after sign-up to a person
+who never had a photo read, the other to a person who has not opened the app
+for a while. Each goes only to somebody who ticked an unticked box for it, in
+fixed words you cannot change, with a one-click unsubscribe. Turn either on in
+the admin console, or with `PATCH /v1/admin/settings`; nothing goes out without
+a real mailer. The sender runs every hour, and a failed send is not retried.
+
 **So if you need to reach your users about anything else, keep that list
 yourself, outside this service.** You already know who they are: you addressed
 their invitations. A household has a chat, a clinic has a patient record, an
@@ -971,6 +979,7 @@ The test runs in `pnpm test:integration`, so in the push gate and the release ga
 | `src/admin/`          | The admin metadata read contract, deliberately not part of `AccountStore`.                                                                                                                                                                                                              |
 | `src/ai/`             | The completion proxy, its quota store, the minute limiter, the scrubber and the usage retention sweep.                                                                                                                                                                                  |
 | `src/feedback/`       | Reported estimates: submit, the operator's read side, image storage, retention.                                                                                                                                                                                                         |
+| `src/activity-mail/`  | The opt-in activity reminders: the consent rule, the due rules, the unsubscribe token and page, the settings parser and the hourly sender. The SQL twin of the rules is `src/db/activity-mail-store.ts`.                                                                                |
 | `src/pulse/`          | The community pulse: its store, the rounding, the per account limits, the cache and the retention sweep.                                                                                                                                                                                |
 | `src/mail/`           | The letters in six languages, their strings, and the two transports that send them: the HTTP mail API in `mailer.ts`, SMTP in `smtp-transport.ts`. `en` and `de` are hand-written in `strings.ts`; `strings.<lang>.ts` is generated from `memory/<lang>.json` by `pnpm translate:mail`. |
 | `src/lib/`            | Pure primitives: verifier, tokens, KDF descriptors, throttle.                                                                                                                                                                                                                           |

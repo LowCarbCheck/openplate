@@ -29,11 +29,29 @@
 import type { NutrientReferenceBasis } from '../protocol.js';
 import type { Logger } from '../logger.js';
 import { errorFields } from '../log-error.js';
+import {
+  DEFAULT_ACTIVITY_MAIL_SETTINGS,
+  applyActivityMailPatch,
+  type ActivityMailSettings,
+  type ActivityMailSettingsPatch,
+} from '../activity-mail/settings.js';
 
-/** The stored row, as everything above the database sees it. */
-export interface InstanceSettingsRecord {
+/** Every setting the row holds, as everything above the database sees it. */
+export interface InstanceSettingsValues {
   nutrientReferenceBasis: NutrientReferenceBasis;
+  /** The two activity reminder kinds (`activity-mail/settings.ts`). Off until an administrator turns one on. */
+  activityMail: ActivityMailSettings;
+}
+
+/** The stored row. */
+export interface InstanceSettingsRecord extends InstanceSettingsValues {
   updatedAt: Date;
+}
+
+/** A change an administrator asked for: each absent field is left as it is. */
+export interface InstanceSettingsChange {
+  nutrientReferenceBasis?: NutrientReferenceBasis;
+  activityMail?: ActivityMailSettingsPatch;
 }
 
 /**
@@ -43,7 +61,17 @@ export interface InstanceSettingsRecord {
  */
 export interface InstanceSettingsStore {
   read(): Promise<InstanceSettingsRecord | null>;
-  write(input: { nutrientReferenceBasis: NutrientReferenceBasis; now: Date }): Promise<InstanceSettingsRecord>;
+  /**
+   * Upserts the row. `values` is what a NEW row is written with: the change
+   * applied to what this process holds. An EXISTING row is changed only in the
+   * fields `change` names, so a replica whose copy is a minute old cannot put
+   * back a setting another replica changed in the meantime.
+   */
+  write(input: {
+    values: InstanceSettingsValues;
+    change: InstanceSettingsChange;
+    now: Date;
+  }): Promise<InstanceSettingsRecord>;
 }
 
 /**
@@ -56,11 +84,14 @@ export interface InstanceSettingsStore {
 export interface InstanceSettingsSurface {
   /** The process-local value. Never a query, see the module header. */
   current(): NutrientReferenceBasis;
+  /** The process-local activity reminder settings. Never a query, for the same reason. */
+  activityMail(): ActivityMailSettings;
   /**
-   * Persists the choice, then adopts it here. It THROWS when the write fails,
-   * so the route answers 500 rather than reporting a change it did not make.
+   * Persists the change, then adopts the stored row here. It THROWS when the
+   * write fails, so the route answers 500 rather than reporting a change it
+   * did not make.
    */
-  set(input: { nutrientReferenceBasis: NutrientReferenceBasis }): Promise<void>;
+  set(input: InstanceSettingsChange): Promise<void>;
 }
 
 export interface InstanceSettings extends InstanceSettingsSurface {
@@ -96,13 +127,21 @@ export async function startInstanceSettings(options: StartInstanceSettingsOption
   const { store, logger } = options;
   const now = options.now ?? ((): Date => new Date());
   let basis = options.fallback;
+  // OFF until the row says otherwise, and kept off when the row cannot be read:
+  // a reminder nobody turned on must not go out because a read failed.
+  let activityMail = DEFAULT_ACTIVITY_MAIL_SETTINGS;
+
+  function adopt(row: InstanceSettingsRecord): void {
+    basis = row.nutrientReferenceBasis;
+    activityMail = row.activityMail;
+  }
 
   async function refresh(): Promise<void> {
     const row = await store.read();
     // A missing row is the ordinary state of an instance nobody has changed
     // anything on, never an error: the environment default stands until
     // somebody writes one.
-    if (row !== null) basis = row.nutrientReferenceBasis;
+    if (row !== null) adopt(row);
   }
 
   try {
@@ -132,11 +171,17 @@ export async function startInstanceSettings(options: StartInstanceSettingsOption
     current(): NutrientReferenceBasis {
       return basis;
     },
-    async set(input: { nutrientReferenceBasis: NutrientReferenceBasis }): Promise<void> {
+    activityMail(): ActivityMailSettings {
+      return activityMail;
+    },
+    async set(input: InstanceSettingsChange): Promise<void> {
+      const values: InstanceSettingsValues = {
+        nutrientReferenceBasis: input.nutrientReferenceBasis ?? basis,
+        activityMail: applyActivityMailPatch({ current: activityMail, patch: input.activityMail ?? {} }),
+      };
       // PERSIST FIRST, ADOPT SECOND. A failed write must leave this process
       // reporting what is actually stored, not what somebody asked for.
-      const written = await store.write({ nutrientReferenceBasis: input.nutrientReferenceBasis, now: now() });
-      basis = written.nutrientReferenceBasis;
+      adopt(await store.write({ values, change: input, now: now() }));
     },
     stop(): void {
       clearInterval(timer);

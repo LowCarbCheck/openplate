@@ -727,6 +727,8 @@ test('GET /account reports the whole AccountView, including today’s AI spend',
   assert.equal(outcome.status, 'ok');
   if (outcome.status !== 'ok') throw new Error('unreachable');
   assert.deepEqual(Object.keys(outcome.body.account).toSorted(), [
+    // Whether reminder mails are on, `false` here because nobody ticked the box.
+    'activityMail',
     // 2026-10-07: the window of the paid limit, "day" here.
     'aiLimitPeriod',
     // 2026-10-07: the grant the proxy would pick now and its count, `null` here because this account holds none.

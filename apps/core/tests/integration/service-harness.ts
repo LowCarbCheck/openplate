@@ -60,7 +60,10 @@ import type {
   SendResetInput,
   SendSignupAccountNoticeInput,
   SendSignupRequestInput,
+  SendActivityReminderInput,
 } from '../../src/mail/mailer.js';
+import { isActivityMailOffered } from '../../src/activity-mail/settings.js';
+import { createDrizzleActivityMailStore } from '../../src/db/activity-mail-store.js';
 import { createDrizzleLegalDeclarationsStore } from '../../src/legal/legal-declarations-store.js';
 import type { MailRecipientEraser } from '../../src/mail/recipient-eraser.js';
 import { createPlansEraseNotifier } from '../../src/accounts/erase-notifier.js';
@@ -71,7 +74,7 @@ import { RESEARCH_BODY_MIN_BYTES } from '../../src/server/research-routes.js';
 import { createDrizzleBlobRollbackStore } from '../../src/db/blob-rollback-store.js';
 import { createDrizzleInstanceSettingsStore } from '../../src/db/settings-store.js';
 import { startInstanceSettings, type InstanceSettings } from '../../src/instance/instance-settings.js';
-import type { InstanceHealthConsent, InstanceInfo, NutrientReferenceBasis } from '../../src/protocol.js';
+import type { InstanceBootInfo, InstanceHealthConsent, NutrientReferenceBasis } from '../../src/protocol.js';
 import { DEFAULT_AI_MAX_OUTPUT_TOKENS } from '../../src/ai/chat-body-policy.js';
 import { parseRecoveryCode } from '../../src/accounts/auth-input.js';
 import { deriveRecoveryAuthHash } from '../../src/lib/recovery-auth.js';
@@ -115,6 +118,10 @@ export interface RecordingMailer extends Mailer {
   declarationOperatorAlerts: SendDeclarationOperatorAlertInput[];
   /** The operator's low-budget letters (2026-09-30). */
   aiBudgetAlerts: SendAiBudgetAlertInput[];
+  /** Every activity reminder ASKED for, failed ones included, in order. */
+  activityReminders: SendActivityReminderInput[];
+  /** Set to make every reminder send throw after it was recorded, the way a refusing mail API does. */
+  activityRemindersFail: boolean;
 }
 
 function createRecordingMailer(): RecordingMailer {
@@ -126,7 +133,8 @@ function createRecordingMailer(): RecordingMailer {
   const declarationReceipts: SendDeclarationReceiptInput[] = [];
   const declarationOperatorAlerts: SendDeclarationOperatorAlertInput[] = [];
   const aiBudgetAlerts: SendAiBudgetAlertInput[] = [];
-  return {
+  const activityReminders: SendActivityReminderInput[] = [];
+  const mailer: RecordingMailer = {
     invites,
     resets,
     accountNotices,
@@ -159,7 +167,14 @@ function createRecordingMailer(): RecordingMailer {
     async sendAiBudgetAlert(input: SendAiBudgetAlertInput): Promise<void> {
       aiBudgetAlerts.push(input);
     },
+    activityReminders,
+    activityRemindersFail: false,
+    async sendActivityReminder(input: SendActivityReminderInput): Promise<void> {
+      activityReminders.push(input);
+      if (mailer.activityRemindersFail) throw new Error('mail API responded 503');
+    },
   };
+  return mailer;
 }
 
 /** What a test asks for when it needs an account. Everything but the address has a default. */
@@ -196,6 +211,8 @@ export interface ServiceHarness {
   baseUrl: string;
   /** The process-local settings surface the app publishes from, so a test can read what `/health` will say. */
   settings: InstanceSettings;
+  /** The key behind the unsubscribe token, derived from the suite's `SERVER_SECRET` as `main.ts` does. */
+  unsubscribeKey: string;
   authContext: AuthContext;
   mailer: RecordingMailer;
   advance(ms: number): void;
@@ -510,6 +527,13 @@ export interface StartServiceOptions {
    * 2026-10-05: no default free limit.
    */
   standing?: InstanceStanding | null;
+  /**
+   * Whether the instance has a REAL mailer, as `main.ts` decides from the mail
+   * config. Absent is `false`, every suite before the activity reminders: the
+   * handshake then says `activityMail: false` whatever the settings say, and
+   * the admin test send answers 409. The letters are recorded either way.
+   */
+  mailConfigured?: boolean;
 }
 
 /** The root secret every suite runs under unless it names another. */
@@ -614,6 +638,18 @@ export async function startService(options: StartServiceOptions): Promise<Servic
     }
   };
 
+  // The REAL store against the real table, always: see
+  // `StartServiceOptions.nutrientReferenceBasis`.
+  const settings = await startInstanceSettings({
+    store: createDrizzleInstanceSettingsStore(options.db),
+    fallback: options.nutrientReferenceBasis ?? 'dge',
+    logger: options.logger ?? createSilentLogger(),
+    now: () => new Date(clock),
+    refreshIntervalMs: options.settingsRefreshIntervalMs,
+  });
+
+  const isMailConfigured = options.mailConfigured ?? false;
+
   const authContext: AuthContext = {
     // The zone the trial's last midnight falls in, as `main.ts` reads it from
     // `TRIAL_TIME_ZONE`: UTC unless the suite names one.
@@ -661,6 +697,11 @@ export async function startService(options: StartServiceOptions): Promise<Servic
             timeoutMs: options.plans.timeoutMs,
           }),
     mailRecipientEraser: options.mailRecipientEraser ?? null,
+    // As `main.ts` builds it: a real mailer and a kind turned on, from memory.
+    activityMail: {
+      isOffered: () => isActivityMailOffered({ isMailConfigured, settings: settings.activityMail() }),
+      defaultLanguage: 'en',
+    },
   };
 
   const aiSurface =
@@ -736,17 +777,7 @@ export async function startService(options: StartServiceOptions): Promise<Servic
           endpointPolicy: createPushEndpointPolicy({ extraHosts: ['push.example.org'] }),
         };
 
-  // The REAL store against the real table, always: see
-  // `StartServiceOptions.nutrientReferenceBasis`.
-  const settings = await startInstanceSettings({
-    store: createDrizzleInstanceSettingsStore(options.db),
-    fallback: options.nutrientReferenceBasis ?? 'dge',
-    logger: options.logger ?? createSilentLogger(),
-    now: () => new Date(clock),
-    refreshIntervalMs: options.settingsRefreshIntervalMs,
-  });
-
-  const instance: InstanceInfo = {
+  const instance: InstanceBootInfo = {
     name: 'integration',
     language: 'en',
     mail: false,
@@ -789,6 +820,7 @@ export async function startService(options: StartServiceOptions): Promise<Servic
     logger: options.logger ?? createSilentLogger(),
     trustProxy: options.trustProxy ?? false,
     mailer,
+    mailConfigured: isMailConfigured,
     now: () => new Date(clock),
     admin: {
       // The REAL store, against the real table: the rollback this service
@@ -821,6 +853,12 @@ export async function startService(options: StartServiceOptions): Promise<Servic
     // `main.ts` wires this the same way: one surface, read by `/health` and
     // written by `PATCH /v1/admin/settings`.
     settings,
+    // ALWAYS BUILT, as in `main.ts`.
+    activityMail: {
+      store: createDrizzleActivityMailStore(options.db),
+      unsubscribeKey: secrets.activityMailUnsubscribeKey,
+      defaultLanguage: 'en',
+    },
     // `main.ts` builds this the same way, and the harness mirrors it rather
     // than omitting it: `/health` is the ONLY way a client learns whether this
     // instance can scan a plate at all, so a fixture that left it off would
@@ -840,6 +878,7 @@ export async function startService(options: StartServiceOptions): Promise<Servic
   const harness: ServiceHarness = {
     baseUrl,
     settings,
+    unsubscribeKey: secrets.activityMailUnsubscribeKey,
     authContext,
     mailer,
     advance(ms: number) {

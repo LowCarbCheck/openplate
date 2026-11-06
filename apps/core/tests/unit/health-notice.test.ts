@@ -15,7 +15,12 @@ import assert from 'node:assert/strict';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { createApp } from '../../src/server/create-app.js';
-import { isProtocolHandshake, PROTOCOL_VERSION, type InstanceInfo, type OperatorNotice } from '../../src/protocol.js';
+import {
+  isProtocolHandshake,
+  PROTOCOL_VERSION,
+  type InstanceBootInfo,
+  type OperatorNotice,
+} from '../../src/protocol.js';
 import { asObject, type JsonObject, type JsonValue } from '../../src/lib/json.js';
 import { createThrottleStore } from '../../src/lib/throttle.js';
 import { createSilentLogger } from '../../src/logger.js';
@@ -31,7 +36,7 @@ import { createFakeBlobRollbackStore } from './fake-blob-rollback-store.js';
 const servers: Server[] = [];
 
 /** A minimal instance block with one field under test, so a case names only what it is about. */
-function instanceInfo({ plans }: { plans: boolean }): InstanceInfo {
+function instanceInfo({ plans }: { plans: boolean }): InstanceBootInfo {
   return {
     name: 'openplate',
     language: 'en',
@@ -51,7 +56,10 @@ after(async () => {
 });
 
 /** Reads `/health` off a real listening app configured with (or without) a notice and an instance block. */
-async function readHandshake(notice: OperatorNotice | null, instance: InstanceInfo | null = null): Promise<JsonObject> {
+async function readHandshake(
+  notice: OperatorNotice | null,
+  instance: InstanceBootInfo | null = null,
+): Promise<JsonObject> {
   const fixture = createAuthFixture();
   const app = createApp({
     authContext: fixture.ctx,
@@ -159,7 +167,7 @@ test('an instance block is published whole, and omitted entirely when there is n
   // older than protocol 2 must parse the body exactly as it always did.
   assert.ok(!('instance' in withNone), 'an unconfigured instance must not add a field to the healthcheck body');
 
-  const instance: InstanceInfo = {
+  const instance: InstanceBootInfo = {
     name: 'Praxis Nord',
     language: 'de',
     mail: false,
@@ -172,5 +180,7 @@ test('an instance block is published whole, and omitted entirely when there is n
     plans: false,
   };
   const body = await readHandshake(null, instance);
-  assert.deepEqual(body.instance, instance);
+  // Published whole, plus the one field `create-app.ts` merges per request:
+  // `activityMail`, `false` with no reminder offer wired.
+  assert.deepEqual(body.instance, { ...instance, activityMail: false });
 });

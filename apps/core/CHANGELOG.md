@@ -7,6 +7,10 @@ change moves the minor.
 
 ## [Unreleased]
 
+### Added
+
+- **Opt-in activity reminders.** An instance can send two reminder mails, each off until an administrator turns it on: `first-scan`, a few days after sign-up to a person who never had a photo read, and `quiet`, to a person not seen for a while. Each goes only to a person who ticked an unticked box at sign-up (`activityMail` on `POST /v1/auth/signup`) or in the settings (`PATCH /v1/auth/account`), and each is due in a window of seven days, so turning a kind on never mails people who left months ago. `instance.activityMail` on `/health` says whether the box is offered, and `AccountView.activityMail` says whether the person agreed. Every mail carries a one-click unsubscribe (RFC 8058) to the new unauthenticated `GET` and `POST /v1/mail/unsubscribe`; the GET changes nothing. Administrators get `GET /v1/admin/settings`, the reminder switches on `PATCH /v1/admin/settings`, `GET /v1/admin/activity-mail/stats` and `POST /v1/admin/activity-mail/test`. The sender runs hourly, only with a real mailer. Migration 0037 adds the consent, withdrawal, language and send columns to `accounts` and the four switches to `instance_settings`. No configuration change: the unsubscribe key is a new subkey of `SERVER_SECRET`. PROTOCOL.md §5.26.
+
 ## [0.39.0] - 2026-11-06
 
 ### Fixed

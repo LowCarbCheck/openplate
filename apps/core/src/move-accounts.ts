@@ -36,7 +36,9 @@
  *    `allowance_expires_at`, no scan trial (`trial_scans` and `trial_ends_at`
  *    NULL, `trial_scans_used` 0 because the column is NOT NULL), the label
  *    from `--label`, and `updated_at` now. The health-consent pair is kept:
- *    both instances publish the same consent version.
+ *    both instances publish the same consent version. The activity reminder
+ *    columns are NOT kept: that consent was given to the source's operator,
+ *    so a moved account starts with no reminders and no send stamps.
  *  - `sync_key_records`, `sync_blobs`: the diary and the wraps of its key,
  *    every retained blob version with its `pinned_until`, verbatim.
  *  - `ai_usage_days`: the account's own counter. It keeps the operator's

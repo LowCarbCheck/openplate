@@ -19,6 +19,7 @@ import type { AuthContext } from '../../src/accounts/auth-handlers.js';
 import type {
   Mailer,
   SendAccountNoticeInput,
+  SendActivityReminderInput,
   SendAiBudgetAlertInput,
   SendDeclarationOperatorAlertInput,
   SendDeclarationReceiptInput,
@@ -43,6 +44,8 @@ export interface RecordingMailer extends Mailer {
   declarationOperatorAlerts: SendDeclarationOperatorAlertInput[];
   /** The operator's low-budget letters (2026-09-30). */
   aiBudgetAlerts: SendAiBudgetAlertInput[];
+  /** The activity reminders. */
+  activityReminders: SendActivityReminderInput[];
 }
 
 export function createRecordingMailer(): RecordingMailer {
@@ -54,7 +57,12 @@ export function createRecordingMailer(): RecordingMailer {
   const declarationReceipts: SendDeclarationReceiptInput[] = [];
   const declarationOperatorAlerts: SendDeclarationOperatorAlertInput[] = [];
   const aiBudgetAlerts: SendAiBudgetAlertInput[] = [];
+  const activityReminders: SendActivityReminderInput[] = [];
   return {
+    activityReminders,
+    async sendActivityReminder(input: SendActivityReminderInput): Promise<void> {
+      activityReminders.push(input);
+    },
     invites,
     resets,
     accountNotices,

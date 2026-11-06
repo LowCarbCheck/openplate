@@ -190,6 +190,18 @@ test('every letter that carries a secret link posts retain_body: false, spelled 
           intent: { plan: null, tier: null, locale: null },
         }),
     },
+    {
+      name: 'an activity reminder, whose unsubscribe link carries a token',
+      send: (mailer) =>
+        mailer.sendActivityReminder({
+          email: 'a@example.org',
+          kind: 'quiet',
+          days: 14,
+          language: 'en',
+          unsubscribeToken: '1.mac',
+          isTest: false,
+        }),
+    },
   ];
   for (const letter of letters) {
     const api = await startFakeMailApi();
@@ -219,6 +231,41 @@ test('a letter with no secret in it posts no retain_body field at all', async ()
     await letter.send(mailerFor(api.url, createCapturingLogger().logger));
     assert.equal('retain_body' in onlyPayload(api), false, letter.name);
   }
+});
+
+/** The two fields the header tests read off a posted body. */
+interface HeaderPayload {
+  subject?: string;
+  headers?: Record<string, string>;
+}
+
+test('an activity reminder posts the one-click unsubscribe headers, and the test send says so in its subject', async () => {
+  const api = await startFakeMailApi();
+  await mailerFor(api.url, createCapturingLogger().logger).sendActivityReminder({
+    email: 'a@example.org',
+    kind: 'first-scan',
+    days: 7,
+    language: 'en',
+    unsubscribeToken: '7.some-mac',
+    isTest: true,
+  });
+  // SAFETY: this adapter posted the body, and it is a JSON object by construction.
+  const payload = JSON.parse(api.received[0]?.body ?? '{}') as HeaderPayload;
+  assert.equal(payload.headers?.['List-Unsubscribe-Post'], 'List-Unsubscribe=One-Click');
+  assert.match(
+    payload.headers?.['List-Unsubscribe'] ?? '',
+    /^<https:\/\/[^>]+\/v1\/mail\/unsubscribe\?token=7\.some-mac>$/,
+  );
+  assert.ok(payload.subject?.startsWith('[Test] '), 'a test send is marked in the subject');
+});
+
+test('a letter other than the reminder posts no headers field', async () => {
+  // THE CONTROL for the test above: it fails against a transport that adds headers to everything.
+  const api = await startFakeMailApi();
+  await mailerFor(api.url, createCapturingLogger().logger).sendAccountNotice({ email: 'a@example.org' });
+  // SAFETY: as above.
+  const payload = JSON.parse(api.received[0]?.body ?? '{}') as HeaderPayload;
+  assert.equal('headers' in payload, false);
 });
 
 // ── What it posts ──────────────────────────────────────────────────────────

@@ -93,7 +93,13 @@
 import express from 'express';
 import type { Express } from 'express';
 import { ENVELOPE_VERSION, PLANS_API_PREFIX, PROTOCOL_VERSION, SYNC_API_PREFIX } from '../protocol.js';
-import type { InstanceInfo, OperatorNotice, ProtocolHandshake } from '../protocol.js';
+import type { InstanceBootInfo, OperatorNotice, ProtocolHandshake } from '../protocol.js';
+import {
+  createAdminActivityMailRoutes,
+  registerUnsubscribeRoutes,
+  type ActivityMailSurface,
+} from './register-activity-mail-routes.js';
+import type { ActivityMailSettings } from '../activity-mail/settings.js';
 import type { InstanceSettingsSurface } from '../instance/instance-settings.js';
 import type {
   SyncBlobRollbackStore,
@@ -327,7 +333,7 @@ export interface CreateAppOptions {
    * `instance` field is omitted entirely, which is what a client older than
    * protocol 2 expects to see.
    */
-  instance?: InstanceInfo | null;
+  instance?: InstanceBootInfo | null;
   /**
    * The two letters this service sends. Absent means a no-op mailer, which is
    * what an instance with no mail configuration gets, invites come back as
@@ -422,6 +428,17 @@ export interface CreateAppOptions {
    */
   settings?: InstanceSettingsSurface | null;
   /**
+   * The activity reminder routes: the unsubscribe link every reminder carries,
+   * and the administrator's stats and test send. Absent leaves all of them
+   * answering the ordinary unknown-path 404. `main.ts` always builds it, so a
+   * link already in an inbox keeps working after an administrator turns the
+   * reminders off.
+   *
+   * WHETHER REMINDERS ARE OFFERED is not here: `/health` reads
+   * `authContext.activityMail`, the binding sign-up enforces.
+   */
+  activityMail?: ActivityMailSurface | null;
+  /**
    * `POST /v1/legal/declarations` (M214/09), REQUIRED, AND THERE IS NO FLAG,
    * unlike every optional surface above. §312k Absatz 6 BGB makes the absence
    * of a working cancellation button the expensive outcome — it voids the
@@ -493,8 +510,13 @@ export function createApp(options: CreateAppOptions): Express {
     // process-local copy rather than from the row, because this path is the
     // container's own healthcheck: see `instance/instance-settings.ts`.
     if (options.instance != null) {
+      // `activityMail` the same way, from memory, and from THE binding sign-up
+      // enforces, so the box a client draws is the box this service honours.
+      const activityMail = options.authContext.activityMail?.isOffered() ?? false;
       handshake.instance =
-        settings === null ? options.instance : { ...options.instance, nutrientReferenceBasis: settings.current() };
+        settings === null
+          ? { ...options.instance, activityMail }
+          : { ...options.instance, nutrientReferenceBasis: settings.current(), activityMail };
     }
     // The operator's notice rides on this same /health body, and only when
     // there is one: an instance with nothing to say sends no field at all, so
@@ -806,6 +828,18 @@ export function createApp(options: CreateAppOptions): Express {
     receiptsPerDay: options.legal.receiptsPerDay,
   });
 
+  // THE UNSUBSCRIBE LINK, unauthenticated, outside every prefix a bearer gate
+  // stands on. It must work for a person who is signed out everywhere.
+  const activityMail = options.activityMail ?? null;
+  if (activityMail !== null) {
+    registerUnsubscribeRoutes(app, {
+      surface: activityMail,
+      accounts: options.authContext.store,
+      logger: options.logger,
+      now,
+    });
+  }
+
   // The admin API, ALWAYS mounted, and its middleware decides what to admit
   // to. An instance with no `ADMIN_TOKEN` and no admin account is
   // indistinguishable from one where the feature was never written, because
@@ -837,6 +871,17 @@ export function createApp(options: CreateAppOptions): Express {
     enforceServicePrincipalScope,
     createAdminFeedbackRoutes({
       surface: feedback === null ? null : { reports: feedback.review, images: feedback.images },
+      logger: options.logger,
+    }),
+    // The reminder stats and test send, in the SAME mount for the reason the
+    // feedback router is: one admin middleware run per request.
+    createAdminActivityMailRoutes({
+      surface: activityMail,
+      accounts: options.authContext.store,
+      mailer,
+      mailConfigured: options.mailConfigured ?? false,
+      settings: settings === null ? null : (): ActivityMailSettings => settings.activityMail(),
+      now,
       logger: options.logger,
     }),
     createAdminRoutes({

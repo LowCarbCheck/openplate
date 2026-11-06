@@ -29,7 +29,7 @@ import type { AddressInfo } from 'node:net';
 import { fileURLToPath } from 'node:url';
 
 import { createApp } from '../../src/server/create-app.js';
-import { isProtocolHandshake, type InstanceInfo } from '../../src/protocol.js';
+import { isProtocolHandshake, type InstanceBootInfo } from '../../src/protocol.js';
 import { asNumber, asObject, type JsonObject, type JsonValue } from '../../src/lib/json.js';
 import { createThrottleStore } from '../../src/lib/throttle.js';
 import { createSilentLogger } from '../../src/logger.js';
@@ -65,8 +65,8 @@ after(async () => {
  * feedback surface is on or off. The wiring under test is the CONDITIONAL: the
  * field is added by the same expression the service uses, or not added at all.
  */
-function instanceInfo({ feedbackEnabled }: { feedbackEnabled: boolean }): InstanceInfo {
-  const instance: InstanceInfo = {
+function instanceInfo({ feedbackEnabled }: { feedbackEnabled: boolean }): InstanceBootInfo {
+  const instance: InstanceBootInfo = {
     name: 'openplate',
     language: 'en',
     mail: false,
@@ -83,7 +83,7 @@ function instanceInfo({ feedbackEnabled }: { feedbackEnabled: boolean }): Instan
 }
 
 /** Reads `/health` off a real listening app, so this observes a PUBLICATION rather than an object literal. */
-async function readHandshake(instance: InstanceInfo): Promise<JsonObject> {
+async function readHandshake(instance: InstanceBootInfo): Promise<JsonObject> {
   const fixture = createAuthFixture();
   const app = createApp({
     authContext: fixture.ctx,
@@ -200,6 +200,8 @@ test('an instance that accepts no reports advertises no window at all', async ()
     ai: null,
     push: false,
     plans: false,
+    // Merged per request by `create-app.ts`; `false` with no reminder offer wired.
+    activityMail: false,
   });
 });
 

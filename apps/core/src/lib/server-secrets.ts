@@ -15,7 +15,9 @@
  * client mid-flight against a dummy would see the salt change), and
  * `escrowKey` decrypts every stored recovery code — change it and every
  * mailed reset on the instance stops working, silently, for accounts that
- * signed up before the change.
+ * signed up before the change. `activityMailUnsubscribeKey` signs the
+ * unsubscribe link in every activity reminder: change it and every link
+ * already in an inbox answers "this link does not work any more".
  */
 import { createHmac } from 'node:crypto';
 
@@ -35,19 +37,28 @@ export const ENUMERATION_SECRET_LABEL = 'openplate-sync:kdf-dummy:v1';
  * handles on every login, is never the key an escrow is sealed under.
  */
 export const ESCROW_KEY_LABEL = 'openplate-sync:escrow-key:v1';
+/**
+ * Feeds `activity-mail/unsubscribe-token.ts`, the key behind the one-click
+ * unsubscribe link in an activity reminder. FROZEN like the three above: a new
+ * label is a new key, and every link already in somebody's inbox would stop
+ * working.
+ */
+export const ACTIVITY_MAIL_UNSUBSCRIBE_KEY_LABEL = 'openplate-core:activity-mail-unsubscribe:v1';
 
 export interface ServerSecrets {
   verifierPepper: string;
   enumerationSecret: string;
   /** RAW 32 bytes, not hex: it is an AES-256-GCM key, and `crypto.createCipheriv` wants the key itself. */
   escrowKey: Buffer;
+  /** HMAC key for the activity reminder's unsubscribe token, hex. */
+  activityMailUnsubscribeKey: string;
 }
 
 function deriveSubkey(rootSecret: string, label: string): string {
   return createHmac('sha256', rootSecret).update(label).digest('hex');
 }
 
-/** Pure. Same root secret always yields the same three values — this is required, not incidental (see the header). */
+/** Pure. Same root secret always yields the same values: this is required, not incidental (see the header). */
 export function deriveServerSecrets(rootSecret: string): ServerSecrets {
   return {
     verifierPepper: deriveSubkey(rootSecret, VERIFIER_PEPPER_LABEL),
@@ -57,5 +68,6 @@ export function deriveServerSecrets(rootSecret: string): ServerSecrets {
     // material, and a caller that truncated it to 32 would keep only half the
     // entropy.
     escrowKey: createHmac('sha256', rootSecret).update(ESCROW_KEY_LABEL).digest(),
+    activityMailUnsubscribeKey: deriveSubkey(rootSecret, ACTIVITY_MAIL_UNSUBSCRIBE_KEY_LABEL),
   };
 }

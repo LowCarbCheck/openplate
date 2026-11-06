@@ -355,6 +355,45 @@ export const accounts = pgTable(
      * directly cannot store an empty string or an overlong one either.
      */
     label: text('label'),
+    /**
+     * When the person last agreed to activity reminder mails, on this server's
+     * clock, or `NULL` when they never did. The box at sign-up is UNTICKED, so
+     * `NULL` is what every account has until a person ticks it.
+     *
+     * NEVER CLEARED. Turning the reminders off writes
+     * {@link accounts.activityMailOptOutAt} and leaves this instant standing,
+     * because it is the record that a mail already sent had consent behind it.
+     * Consent is ACTIVE while this is set and no later opt-out exists
+     * (`activity-mail/consent.ts`, and the one SQL form of the rule in
+     * `db/activity-mail-store.ts`). A fresh consent after an opt-out writes a
+     * fresh instant here.
+     */
+    activityMailOptInAt: timestamp('activity_mail_opt_in_at'),
+    /**
+     * When the person last turned the reminders off (the app setting or the
+     * unsubscribe link), or `NULL` when they never did. Written only while
+     * consent is active, so the first withdrawal after a consent is the one
+     * kept. Never cleared either: the pair is the record of consent and
+     * withdrawal, and it goes with the row at deletion.
+     */
+    activityMailOptOutAt: timestamp('activity_mail_opt_out_at'),
+    /**
+     * The language the reminders are written in, set by the client when the
+     * person opts in, or `NULL` for the instance's own (`INSTANCE_LANGUAGE`).
+     */
+    mailLanguage: text('mail_language').$type<InstanceLanguage>(),
+    /**
+     * When the sender CLAIMED the one first-scan reminder for this account, or
+     * `NULL` when none was ever due. Stamped before the send and kept when the
+     * send fails, so no run mails the same account twice.
+     */
+    firstScanMailSentAt: timestamp('first_scan_mail_sent_at'),
+    /**
+     * When the sender claimed the last quiet reminder, or `NULL` for none. A
+     * new one is due only after the person came back (`last_seen_at` is
+     * later), so it is one mail per quiet spell.
+     */
+    quietMailSentAt: timestamp('quiet_mail_sent_at'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at')
       .defaultNow()
@@ -368,6 +407,12 @@ export const accounts = pgTable(
   //, never a read-then-insert check.
   (table) => [
     uniqueIndex('accounts_email_idx').on(table.email),
+    // THE SENDER'S DOOR: both due queries start from the accounts that ever
+    // opted in, which is a small part of the table, so a partial index keeps
+    // the hourly run off a sequential scan.
+    index('accounts_activity_mail_opt_in_idx')
+      .on(table.activityMailOptInAt)
+      .where(sql`${table.activityMailOptInAt} IS NOT NULL`),
     // BOTH OR NEITHER. A version with no instant cannot say when consent was
     // given, and an instant with no version cannot say to what. Either half
     // alone is a record an operator could not stand behind.
@@ -1685,11 +1730,25 @@ export const instanceSettings = pgTable(
      * other path would be shown to a person as a nutrition target.
      */
     nutrientReferenceBasis: text('nutrient_reference_basis').$type<NutrientReferenceBasis>().notNull(),
+    /**
+     * The two activity reminder kinds (`activity-mail/settings.ts`). OFF BY
+     * DEFAULT, so a self-hosted instance mails nobody until its administrator
+     * turns a kind on. The days are bounded twice, by the admin route and by
+     * the checks below.
+     */
+    activityMailFirstScanEnabled: boolean('activity_mail_first_scan_enabled').default(false).notNull(),
+    /** Days after sign-up, with no photo read, before the first-scan reminder. 3 to 30. */
+    activityMailFirstScanDays: smallint('activity_mail_first_scan_days').default(7).notNull(),
+    activityMailQuietEnabled: boolean('activity_mail_quiet_enabled').default(false).notNull(),
+    /** Days since the person was last seen before the quiet reminder. 7 to 60. */
+    activityMailQuietDays: smallint('activity_mail_quiet_days').default(14).notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },
   (table) => [
     check('instance_settings_single_row', sql`${table.id} = 1`),
     check('instance_settings_nutrient_reference_basis', sql`${table.nutrientReferenceBasis} in ('dge', 'efsa', 'us')`),
+    check('instance_settings_activity_mail_first_scan_days', sql`${table.activityMailFirstScanDays} BETWEEN 3 AND 30`),
+    check('instance_settings_activity_mail_quiet_days', sql`${table.activityMailQuietDays} BETWEEN 7 AND 60`),
   ],
 );
 

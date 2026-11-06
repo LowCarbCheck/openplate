@@ -2,7 +2,7 @@
  * The mail PORT — what this service needs from a mailer, and nothing about how
  * one is built.
  *
- * SIX LETTERS NOW, EACH ONE NAMED HERE AND NOWHERE ELSE. The bound that used
+ * SEVEN LETTERS NOW, EACH ONE NAMED HERE AND NOWHERE ELSE. The bound that used
  * to read "three letters, ever" held while every letter this service sent was
  * part of the account lifecycle: an invitation, a password reset, and the note
  * that says an invited address already has an account. M214/09 added two more
@@ -71,6 +71,8 @@ import {
 import type { DeclarationTemplateSource } from './declaration-templates.js';
 import { createSmtpTransport, type SmtpMailConfig } from './smtp-transport.js';
 import { buildAiBudgetAlertMessage, type AiBudgetAlertInput } from './ai-budget-message.js';
+import { buildActivityMailMessage } from './activity-mail-message.js';
+import type { ActivityMailKind } from '../activity-mail/due-rules.js';
 
 export interface SendInviteInput {
   /** The address the invitation goes to — the invite's own `email`, never one from a request body. */
@@ -137,6 +139,24 @@ export type SendDeclarationOperatorAlertInput = DeclarationOperatorAlertInput;
 /** The operator's low-budget letter (2026-09-30). Numbers only, English only, see `ai-budget-message.ts`. */
 export type SendAiBudgetAlertInput = AiBudgetAlertInput;
 
+/**
+ * One activity reminder, to a person who opted in (`activity-mail/sender.ts`),
+ * or an administrator's test of one.
+ */
+export interface SendActivityReminderInput {
+  /** The account's own address, read off the row. */
+  email: string;
+  kind: ActivityMailKind;
+  /** Days since sign-up (first-scan) or since last seen (quiet), as the letter states them. */
+  days: number;
+  /** The account's reminder language, already resolved to the instance's when it named none. */
+  language: InstanceLanguage;
+  /** The unsubscribe token. A capability: never logged. */
+  unsubscribeToken: string;
+  /** `true` for an administrator's test: the subject starts with `[Test] `. */
+  isTest: boolean;
+}
+
 export interface Mailer {
   sendInvite(input: SendInviteInput): Promise<void>;
   sendReset(input: SendResetInput): Promise<void>;
@@ -160,6 +180,14 @@ export interface Mailer {
    * reset period by `ai/budget-alert.ts`, which owns that rule.
    */
   sendAiBudgetAlert(input: SendAiBudgetAlertInput): Promise<void>;
+  /**
+   * The SEVENTH letter, and the first one a person asked for in advance: an
+   * activity reminder (`activity-mail-message.ts`). It goes only to an account
+   * whose consent is active, and it carries a one-click unsubscribe link and
+   * the `List-Unsubscribe` headers. Unlike the account letters, A FAILED SEND
+   * THROWS to the caller, which logs it and does not retry.
+   */
+  sendActivityReminder(input: SendActivityReminderInput): Promise<void>;
 }
 
 /**
@@ -206,6 +234,10 @@ export function createNoopMailer(): Mailer {
     async sendAiBudgetAlert(): Promise<void> {
       // Deliberately nothing. `ai/budget-alert.ts` never calls this without
       // mail configured; it logs the low budget instead.
+    },
+    async sendActivityReminder(): Promise<void> {
+      // Deliberately nothing. The sender runs only beside a real mailer, and
+      // `/health` offers no reminders without one.
     },
   };
 }
@@ -283,6 +315,13 @@ export interface OutgoingMail {
    * the letters that must, and one that does not is a failing test.
    */
   retainBody?: false;
+  /**
+   * Extra message headers, or absent for none. Only the activity reminders set
+   * any: `List-Unsubscribe` and `List-Unsubscribe-Post` (RFC 8058). The HTTP
+   * transport sends them as Pigeon's and Resend's `headers` field, SMTP as
+   * message headers.
+   */
+  headers?: Readonly<Record<string, string>>;
 }
 
 /** The body the HTTP mail API receives. Resend-compatible, plus Pigeon's one extra field. */
@@ -294,6 +333,8 @@ interface MailApiPayload {
   html: string;
   /** Present only as `false`, on a letter that carries a secret. Pigeon's field, in its exact spelling. */
   retain_body?: false;
+  /** Present only on a letter that names headers. Resend and Pigeon both read `headers`. */
+  headers?: Readonly<Record<string, string>>;
 }
 
 /**
@@ -335,6 +376,7 @@ async function postMail(input: { mail: HttpMailConfig; timeoutMs: number; outgoi
   // A letter with a secret asks Pigeon to keep no body. The field is added only
   // then, so every other letter posts exactly what it always did.
   if (input.outgoing.retainBody === false) payload.retain_body = false;
+  if (input.outgoing.headers !== undefined) payload.headers = input.outgoing.headers;
   const response = await fetch(input.mail.url, {
     method: 'POST',
     headers: {
@@ -499,6 +541,29 @@ function createLetterMailer(options: LetterMailerOptions): Mailer {
     async sendAiBudgetAlert(input: SendAiBudgetAlertInput): Promise<void> {
       const message = buildAiBudgetAlertMessage(input);
       await transport.send({ to: operatorEmail, subject: message.subject, text: message.text, html: message.html });
+    },
+
+    async sendActivityReminder(input: SendActivityReminderInput): Promise<void> {
+      const message = buildActivityMailMessage({
+        kind: input.kind,
+        days: input.days,
+        language: input.language,
+        clientBaseUrl: links.clientBaseUrl,
+        serverPublicUrl: links.serverPublicUrl,
+        unsubscribeToken: input.unsubscribeToken,
+        isTest: input.isTest,
+      });
+      // THE UNSUBSCRIBE LINK IS A CAPABILITY: Pigeon keeps no body after the send (`retainBody`).
+      await transport.send({
+        to: input.email,
+        subject: message.subject,
+        text: message.text,
+        html: message.html,
+        retainBody: false,
+        headers: message.headers,
+      });
+      // The kind, never the address, the link or the account: the sender logs the id.
+      logger.info('Activity reminder mailed', { kind: input.kind, test: input.isTest });
     },
   };
 }

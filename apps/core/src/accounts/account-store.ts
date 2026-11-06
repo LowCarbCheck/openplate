@@ -13,7 +13,8 @@
  * `rotateCredential` is the one method whose ATOMICITY is a correctness
  * requirement rather than an implementation detail — see its doc.
  */
-import type { AccountRole, AiLimitPeriod, SyncKeyRecordKind } from '../protocol.js';
+import type { AccountRole, AiLimitPeriod, InstanceLanguage, SyncKeyRecordKind } from '../protocol.js';
+import type { ActivityMailConsent } from '../activity-mail/consent.js';
 import type { JsonObject } from '../lib/json.js';
 import type { AccountTokenKind } from '../lib/tokens.js';
 import type { KdfDescriptor } from '../lib/kdf-descriptor.js';
@@ -81,7 +82,18 @@ export interface AccountRecord {
    * columns behind it are both set or both `NULL`, by a check constraint.
    */
   healthConsent: HealthConsentRecord | null;
+  /**
+   * The activity reminder consent: the two instants (`activity-mail/consent.ts`
+   * says when they mean "active") and the language the person chose, or `null`
+   * for the instance's own.
+   */
+  activityMail: ActivityMailAccountRecord;
   createdAt: Date;
+}
+
+/** The activity reminder columns of one account. */
+export interface ActivityMailAccountRecord extends ActivityMailConsent {
+  language: InstanceLanguage | null;
 }
 
 /** A persisted token row, reduced to what a lifecycle decision needs. The digest itself never comes back out. */
@@ -126,6 +138,12 @@ export interface CreateAccountInput {
    * asks, and the instant is the handler's injected clock.
    */
   healthConsent: HealthConsentRecord | null;
+  /**
+   * The activity reminder consent to write on the new row, or `null` for none:
+   * the box was not ticked, or the instance offers no reminders. REQUIRED, like
+   * `healthConsent`, so every caller names it. The instant is the redemption's.
+   */
+  activityMail: { optInAt: Date; language: InstanceLanguage } | null;
 }
 
 /**
@@ -318,6 +336,28 @@ export interface AccountStore {
    * columns, and nothing here can clear them: withdrawal is deletion.
    */
   recordHealthConsent(input: { accountId: number; consent: HealthConsentRecord }): Promise<AccountRecord | null>;
+
+  /**
+   * Turns activity reminders ON and returns the row, or `null` when the account
+   * is gone. `language`, when given, becomes the reminders' language.
+   *
+   * A FRESH INSTANT ONLY FOR A FRESH CONSENT. While consent is already active
+   * the first instant stands, so a retry does not move it. After an opt-out the
+   * consent is new, and it gets `now`. The opt-out instant is never touched.
+   */
+  optInToActivityMail(input: {
+    accountId: number;
+    language: InstanceLanguage | null;
+    now: Date;
+  }): Promise<AccountRecord | null>;
+
+  /**
+   * Turns activity reminders OFF and returns the row, or `null` when the
+   * account is gone. Writes the opt-out instant only while consent is active,
+   * so the first withdrawal is the one kept, and never clears the opt-in
+   * instant: the pair is the record of what was agreed and when it ended.
+   */
+  optOutOfActivityMail(input: { accountId: number; now: Date }): Promise<AccountRecord | null>;
 
   /**
    * The operator's edit: role, allowance, when the allowance ends, and display

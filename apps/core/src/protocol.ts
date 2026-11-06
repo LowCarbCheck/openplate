@@ -442,6 +442,16 @@ export interface AccountView {
    * the account removes it with the row.
    */
   healthConsent: HealthConsentView | null;
+  /**
+   * Whether the person agreed to activity reminder mails and has not turned
+   * them off since. `PATCH /v1/auth/account` with `activityMail` changes it,
+   * and so does the unsubscribe link in a reminder.
+   *
+   * DERIVED FROM TWO INSTANTS the service keeps as the record of consent and
+   * withdrawal (`activity-mail/consent.ts`); the view shows only the answer.
+   * ADDITIVE: an older client ignores the key.
+   */
+  activityMail: boolean;
   createdAt: IsoTimestamp;
 }
 
@@ -619,7 +629,27 @@ export interface InstanceInfo {
    * restart the container. See `instance/instance-settings.ts`.
    */
   nutrientReferenceBasis?: NutrientReferenceBasis;
+  /**
+   * Whether this instance offers activity reminder mails: a real mailer is
+   * configured AND an administrator turned at least one kind on. A client
+   * draws the UNTICKED sign-up box and the settings switch only then.
+   *
+   * A BOOLEAN, LIKE `push` AND `plans`, and `false` for every service older
+   * than the field. It is a stored setting, like `nutrientReferenceBasis`, so
+   * `create-app.ts` merges it per request from the process-local copy and
+   * never reads the row on this path.
+   *
+   * DESCRIPTIVE, NEVER A GRANT. `POST /v1/auth/signup` records a consent only
+   * while this is `true`, and turning reminders off always works.
+   */
+  activityMail: boolean;
 }
+
+/**
+ * What a builder hands `create-app.ts`: every field but the ones the app
+ * merges per request from the stored settings.
+ */
+export type InstanceBootInfo = Omit<InstanceInfo, 'activityMail'>;
 
 /**
  * What an instance promises about a reported photograph. One number, because

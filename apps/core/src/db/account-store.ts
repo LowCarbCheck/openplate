@@ -20,7 +20,9 @@
  *    it owns, inside Postgres, with no application-level cleanup that could be
  *    skipped or half-run. That is the self-serve erasure path.
  */
-import { and, eq, gt, gte, inArray, isNotNull, isNull, lt, lte, ne, or, sql } from 'drizzle-orm';
+import { and, eq, gt, gte, inArray, isNotNull, isNull, lt, lte, ne, not, or, sql } from 'drizzle-orm';
+import type { InstanceLanguage } from '../protocol.js';
+import { activeConsentSql } from './activity-mail-store.js';
 import type {
   AccountRecord,
   AccountStore,
@@ -122,6 +124,11 @@ function mapAccountRow(row: AccountRow): AccountRecord {
     recoveryVerifier: row.recoveryVerifier,
     kdfDescriptor: row.kdfDescriptor,
     healthConsent: healthConsentFromColumns({ version: row.healthConsentVersion, at: row.healthConsentAt }),
+    activityMail: {
+      optInAt: row.activityMailOptInAt,
+      optOutAt: row.activityMailOptOutAt,
+      language: row.mailLanguage,
+    },
     createdAt: row.createdAt,
   };
 }
@@ -500,6 +507,47 @@ export function createDrizzleAccountStore(db: Database, options: DrizzleAccountS
       return existing ? mapAccountRow(existing) : null;
     },
 
+    async optInToActivityMail(input: {
+      accountId: number;
+      language: InstanceLanguage | null;
+      now: Date;
+    }): Promise<AccountRecord | null> {
+      // A FRESH CONSENT gets `now`; an active one keeps its first instant. The
+      // first UPDATE matches only a row whose consent is NOT active, so a
+      // retry against an active row changes nothing there, and the opt-out
+      // instant is never in either SET list.
+      const languageChange = input.language === null ? {} : { mailLanguage: input.language };
+      const [fresh] = await db
+        .update(accounts)
+        .set({ activityMailOptInAt: input.now, ...languageChange })
+        .where(and(eq(accounts.id, input.accountId), not(activeConsentSql)))
+        .returning();
+      if (fresh) return mapAccountRow(fresh);
+      if (input.language !== null) {
+        const [renamed] = await db
+          .update(accounts)
+          .set(languageChange)
+          .where(eq(accounts.id, input.accountId))
+          .returning();
+        return renamed ? mapAccountRow(renamed) : null;
+      }
+      const [existing] = await db.select().from(accounts).where(eq(accounts.id, input.accountId)).limit(1);
+      return existing ? mapAccountRow(existing) : null;
+    },
+
+    async optOutOfActivityMail(input: { accountId: number; now: Date }): Promise<AccountRecord | null> {
+      // ONLY WHILE ACTIVE: a second opt-out keeps the first instant, and the
+      // opt-in instant is never touched.
+      const [withdrawn] = await db
+        .update(accounts)
+        .set({ activityMailOptOutAt: input.now })
+        .where(and(eq(accounts.id, input.accountId), activeConsentSql))
+        .returning();
+      if (withdrawn) return mapAccountRow(withdrawn);
+      const [existing] = await db.select().from(accounts).where(eq(accounts.id, input.accountId)).limit(1);
+      return existing ? mapAccountRow(existing) : null;
+    },
+
     async updateStanding(input: UpdateStandingInput): Promise<AccountRecord | null> {
       // `undefined` omits a column from the SET list, which is how "leave it
       // alone" is expressed. `displayName: null` is a real value here — it
@@ -693,6 +741,10 @@ export function createDrizzleAccountStore(db: Database, options: DrizzleAccountS
                 // never exist without it. Both `null` where it asks for none.
                 healthConsentVersion: input.account.healthConsent?.version ?? null,
                 healthConsentAt: input.account.healthConsent?.at ?? null,
+                // The box at sign-up, ticked on an instance that offers
+                // reminders, at the redemption's instant. `null` otherwise.
+                activityMailOptInAt: input.account.activityMail?.optInAt ?? null,
+                mailLanguage: input.account.activityMail?.language ?? null,
               })
               .returning();
           } catch (error) {
