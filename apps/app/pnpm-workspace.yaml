@@ -43,7 +43,10 @@ overrides:
 
 # Urgent security patch (react-router advisories, 2026-11-18): the 8.5.2 release
 # is younger than minimumReleaseAge, and pnpm 11.5.1 rejects such a lockfile even
-# on --frozen-lockfile. Remove this entry after 2026-11-25, when 8.5.2 is a week old.
+# on --frozen-lockfile. Entries are pinned to exact versions. Remove them after 2026-11-25, when 8.5.2 is a week old.
 minimumReleaseAgeExclude:
-  - react-router
-  - '@react-router/*'
+  - 'react-router@8.5.2'
+  - '@react-router/dev@8.5.2'
+  - '@react-router/express@8.5.2'
+  - '@react-router/node@8.5.2'
+  - '@react-router/serve@8.5.2'
