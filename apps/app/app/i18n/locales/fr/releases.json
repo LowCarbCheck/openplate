@@ -1,4 +1,10 @@
 {
+  "v0_72_2": {
+    "date": "2026-11-18",
+    "fixed": {
+      "01": "L'application intègre des mises à jour de sécurité pour son framework web et son outil de build."
+    }
+  },
   "v0_72_1": {
     "date": "2026-11-07",
     "fixed": {
@@ -12,20 +18,6 @@
     },
     "fixed": {
       "01": "Appuyer sur Photo d'assiette juste après un rechargement ouvre l'appareil photo."
-    }
-  },
-  "v0_71_0": {
-    "date": "2026-11-02",
-    "added": {
-      "01": "L'en-tête indique quand le quota d'analyses par IA est épuisé."
-    },
-    "changed": {
-      "01": "Les détails du forfait sont plus clairs.",
-      "02": "L'en-tête du statut du forfait est plus compact."
-    },
-    "fixed": {
-      "01": "Suppression des fonctionnalités non publiées sur les fiches de forfait.",
-      "02": "Le nombre d'analyses s'actualise immédiatement."
     }
   }
 }

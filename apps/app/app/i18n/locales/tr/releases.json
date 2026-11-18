@@ -1,4 +1,10 @@
 {
+  "v0_72_2": {
+    "date": "2026-11-18",
+    "fixed": {
+      "01": "Uygulamanın web çatısı ve derleme aracı için güvenlik güncellemeleri var."
+    }
+  },
   "v0_72_1": {
     "date": "2026-11-07",
     "fixed": {
@@ -12,20 +18,6 @@
     },
     "fixed": {
       "01": "Sayfa yenilendikten hemen sonra Tabak fotoğrafı seçeneğine dokunulduğunda kamera açılır."
-    }
-  },
-  "v0_71_0": {
-    "date": "2026-11-02",
-    "added": {
-      "01": "Başlık, yapay zeka taramalarının ne zaman bittiğini gösterir."
-    },
-    "changed": {
-      "01": "Plan ayrıntıları daha nettir.",
-      "02": "Plan durumu başlığı daha küçüktür."
-    },
-    "fixed": {
-      "01": "Yayımlanmamış özellikler plan kartlarından kaldırıldı.",
-      "02": "Tarama sayısı hemen güncellenir."
     }
   }
 }

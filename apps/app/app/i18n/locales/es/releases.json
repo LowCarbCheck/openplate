@@ -1,4 +1,10 @@
 {
+  "v0_72_2": {
+    "date": "2026-11-18",
+    "fixed": {
+      "01": "La aplicación incluye actualizaciones de seguridad para su framework web y su herramienta de compilación."
+    }
+  },
   "v0_72_1": {
     "date": "2026-11-07",
     "fixed": {
@@ -12,20 +18,6 @@
     },
     "fixed": {
       "01": "Al pulsar en Foto del plato justo después de recargar, se abre la cámara."
-    }
-  },
-  "v0_71_0": {
-    "date": "2026-11-02",
-    "added": {
-      "01": "La cabecera muestra cuándo se agotan los escaneos de IA."
-    },
-    "changed": {
-      "01": "Los detalles del plan son más claros.",
-      "02": "La cabecera de estado del plan es más pequeña."
-    },
-    "fixed": {
-      "01": "Se eliminaron las funciones no publicadas de las tarjetas de los planes.",
-      "02": "El recuento de escaneos se actualiza de inmediato."
     }
   }
 }

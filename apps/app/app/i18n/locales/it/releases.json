@@ -1,4 +1,10 @@
 {
+  "v0_72_2": {
+    "date": "2026-11-18",
+    "fixed": {
+      "01": "L'app include aggiornamenti di sicurezza per il suo framework web e per lo strumento di build."
+    }
+  },
   "v0_72_1": {
     "date": "2026-11-07",
     "fixed": {
@@ -12,20 +18,6 @@
     },
     "fixed": {
       "01": "Un tocco su Foto del piatto subito dopo una ricarica apre la fotocamera."
-    }
-  },
-  "v0_71_0": {
-    "date": "2026-11-02",
-    "added": {
-      "01": "L'intestazione mostra quando le scansioni IA si esauriscono."
-    },
-    "changed": {
-      "01": "I dettagli del piano sono più chiari.",
-      "02": "L'intestazione dello stato del piano è più piccola."
-    },
-    "fixed": {
-      "01": "Rimosse le funzionalità non rilasciate dalle schede del piano.",
-      "02": "Il conteggio delle scansioni si aggiorna subito."
     }
   }
 }

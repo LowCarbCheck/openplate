@@ -11,6 +11,12 @@ renames that heading to `## [x.y.z] - YYYY-MM-DD`, appends the commit links, and
 
 ## [Unreleased]
 
+## [0.72.2] - 2026-11-18
+
+### Fixed
+
+- **The app has security updates for its web framework and build tool.** React Router moves to 8.5.2, which fixes the advisories of 2026-11-18 (GHSA-2rq8-3rm6-2w8f and related ones): denial of service in route matching, route discovery and request handling, prototype pollution in data deserialization, an open redirect, a CSRF bypass and cross-site scripting in redirects. Vite moves to 8.3.8, which fixes GHSA-p4f5-76q4-ffq7 in its dev server. Nothing changes in how the app works. ([52db180f](https://github.com/LowCarbCheck/openplate/commit/52db180f), [77f79137](https://github.com/LowCarbCheck/openplate/commit/77f79137))
+
 ## [0.72.1] - 2026-11-07
 
 ### Fixed
