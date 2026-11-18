@@ -40,3 +40,10 @@ minimumReleaseAge: 10080
 overrides:
   shell-quote: '>=1.11.0'
   postcss-selector-parser: '>=7.1.6'
+
+# Urgent security patch (react-router advisories, 2026-11-18): the 8.5.2 release
+# is younger than minimumReleaseAge, and pnpm 11.5.1 rejects such a lockfile even
+# on --frozen-lockfile. Remove this entry after 2026-11-25, when 8.5.2 is a week old.
+minimumReleaseAgeExclude:
+  - react-router
+  - '@react-router/*'
